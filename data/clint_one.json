@@ -1,0 +1,14 @@
+{
+  "marker_file": "clint_one/targets.mind",
+  "items": [
+    {
+      "id": 1,
+      "name": "Relax Park",
+      "price": "Free",
+      "model": "clint_one/park.glb",
+      "scale": "1 1 1",
+      "rotation": "0 0 0", 
+      "position": "0 0 0"
+    }
+  ]
+}

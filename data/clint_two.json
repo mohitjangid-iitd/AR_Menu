@@ -1,0 +1,14 @@
+{
+  "marker_file": "clint_two/targets.mind",
+  "items": [
+    {
+      "id": 1,
+      "name": "Donut",
+      "price": "199",
+      "model": "clint_two/Donut.glb",
+      "scale": "2 2 2",
+      "rotation": "0 0 0",
+      "position": "0 0 0"
+    }
+  ]
+}
