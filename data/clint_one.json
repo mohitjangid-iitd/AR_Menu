@@ -7,10 +7,11 @@
       "price": "Free",
       "model": "clint_one/park.glb",
       "scale": "1 1 1",
-      "rotation": "0 0 0", 
+      "rotation": "0 90 0", 
       "position": "0 0 0"
     }
   ]
 }
+
 
 
