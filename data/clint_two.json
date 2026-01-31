@@ -3,12 +3,14 @@
   "items": [
     {
       "id": 1,
-      "name": "Donut",
-      "price": "199",
-      "model": "clint_two/Donut.glb",
+      "name": "Relax Park",
+      "price": "Free",
+      "model": "clint_one/park.glb",
       "scale": "2 2 2",
       "rotation": "0 0 0",
-      "position": "0 0 0"
+      "position": "0 0.1 0",
+      "auto_rotate": true,
+      "rotate_speed": 12000
     }
   ]
 }
