@@ -16,14 +16,31 @@ def get_client_data(client_id: str):
     with open(file_path, "r") as f:
         return json.load(f)
 
-@app.get("/view/{client_id}", response_class=HTMLResponse)
-async def view_menu(request: Request, client_id: str):
+@app.get("/{client_id}", response_class=HTMLResponse)
+async def restaurant_home(request: Request, client_id: str):
+    """Restaurant's home/landing page"""
+    data = get_client_data(client_id)
+    if not data:
+        raise HTTPException(status_code=404, detail="Restaurant not found")
+    return templates.TemplateResponse("home.html", {
+        "request": request, 
+        "client_id": client_id,
+        "data": data
+    })
+
+@app.get("/{client_id}/ar-menu", response_class=HTMLResponse)
+async def ar_menu(request: Request, client_id: str):
+    """AR Menu experience page"""
     if not get_client_data(client_id):
         raise HTTPException(status_code=404, detail="Restaurant not found")
-    return templates.TemplateResponse("index.html", {"request": request, "client_id": client_id})
+    return templates.TemplateResponse("ar_menu.html", {
+        "request": request, 
+        "client_id": client_id
+    })
 
 @app.get("/api/menu/{client_id}")
 async def get_menu_api(client_id: str):
+    """API endpoint for menu data"""
     data = get_client_data(client_id)
     if data:
         return JSONResponse(content=data)
