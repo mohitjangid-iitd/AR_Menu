@@ -59,18 +59,60 @@ body { margin:0; overflow:hidden; background:#000; font-family:Arial; }
 }
 
 .dish-btn{
-    min-width:100px;
-    padding:10px;
+    min-width:80px;
+    max-width:80px;
+    padding:0;
     background:rgba(255,255,255,0.15);
-    border-radius:15px;
+    backdrop-filter:blur(10px);
+    border-radius:14px;
     color:white;
     text-align:center;
     cursor:pointer;
+    overflow:hidden;
+    border:2px solid transparent;
+    transition: border-color 0.2s ease, transform 0.15s ease;
+    flex-shrink:0;
 }
 
-.active{
-    background:white !important;
-    color:black !important;
+.dish-btn:active { transform: scale(0.95); }
+
+.dish-btn .thumb {
+    width:100%;
+    height:60px;
+    object-fit:cover;
+    display:block;
+    background:#333;
+}
+
+.dish-btn .thumb-placeholder {
+    width:100%;
+    height:60px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:1.6rem;
+    background:rgba(255,255,255,0.1);
+}
+
+.dish-btn .dish-label {
+    padding:6px 6px 4px;
+    font-size:0.68rem;
+    font-weight:600;
+    line-height:1.2;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+}
+
+.dish-btn .dish-price-label {
+    padding:0 6px 7px;
+    font-size:0.65rem;
+    opacity:0.75;
+}
+
+.active {
+    border-color: white !important;
+    background: rgba(255,255,255,0.25) !important;
 }
 </style>
 </head>
@@ -80,6 +122,7 @@ body { margin:0; overflow:hidden; background:#000; font-family:Arial; }
 <div id="top-controls">
     <a href="/{{ client_id }}" class="control-btn">🏠</a>
     <div style="display:flex; gap:10px;">
+        <a href="/{{ client_id }}/menu" class="control-btn">📋</a>
         <div class="control-btn" id="screenshot-btn">📷</div>
         <div class="control-btn" id="share-btn">🔗</div>
     </div>
@@ -127,7 +170,15 @@ async function loadMenu(){
     data.items.forEach((item,index)=>{
         const btn = document.createElement("div");
         btn.className="dish-btn";
-        btn.innerHTML=`${item.name}<br>${item.price}`;
+        btn.innerHTML=`
+            ${item.image
+                ? `<img class="thumb" src="${item.image}" alt="${item.name}"
+                       onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
+                : ''}
+            <div class="thumb-placeholder" style="${item.image ? 'display:none' : ''}">🍽️</div>
+            <div class="dish-label">${item.name}</div>
+            <div class="dish-price-label">${item.price}</div>
+        `;
 
         btn.onclick=()=>{
             modelEl.setAttribute("gltf-model", `/static/assets/${item.model}`);

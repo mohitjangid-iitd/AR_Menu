@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
+    <title>{{ data.restaurant.name }} — Menu</title>
+    <link href="https://fonts.googleapis.com/css2?family={{ data.theme.font_primary.replace(' ', '+') }}:wght@400;600;700&family={{ data.theme.font_secondary.replace(' ', '+') }}:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        :root {
+            --primary: {{ data.theme.primary_color }};
+            --secondary: {{ data.theme.secondary_color }};
+            --accent: {{ data.theme.accent_color }};
+            --text: {{ data.theme.text_color }};
+            --bg: {{ data.theme.background }};
+            --font-primary: '{{ data.theme.font_primary }}', serif;
+            --font-secondary: '{{ data.theme.font_secondary }}', sans-serif;
+            --card-bg: #ffffff;
+            --shadow: 0 2px 12px rgba(0,0,0,0.08);
+            --radius: 16px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            font-family: var(--font-secondary);
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            padding-bottom: 100px; /* space for floating plate btn */
+        }
+
+        /* ── HERO BANNER ── */
+        .banner {
+            position: relative;
+            height: 200px;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.2), rgba(0,0,0,0.6)),
+                        url('{{ data.restaurant.banner }}') center/cover no-repeat;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-end;
+            padding: 20px;
+            color: white;
+        }
+
+        .banner-logo {
+            width: 55px;
+            height: 55px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid rgba(255,255,255,0.6);
+            margin-bottom: 8px;
+        }
+
+        .banner h1 {
+            font-family: var(--font-primary);
+            font-size: 1.6rem;
+            text-align: center;
+            text-shadow: 0 2px 8px rgba(0,0,0,0.4);
+        }
+
+        .banner p {
+            font-size: 0.78rem;
+            letter-spacing: 1.5px;
+            opacity: 0.85;
+            text-transform: uppercase;
+            margin-top: 3px;
+        }
+
+        /* Back button */
+        .back-btn {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            background: rgba(0,0,0,0.35);
+            backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            text-decoration: none;
+            font-size: 1rem;
+        }
+
+        /* AR button */
+        .ar-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            padding: 8px 14px;
+            border-radius: 20px;
+            background: rgba(0,0,0,0.35);
+            backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: white;
+            text-decoration: none;
+            font-size: 0.78rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        /* ── CATEGORY TABS ── */
+        .tabs-wrapper {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: var(--bg);
+            border-bottom: 1px solid rgba(0,0,0,0.07);
+            padding: 0 16px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 6px;
+            overflow-x: auto;
+            padding: 12px 0;
+            scrollbar-width: none;
+        }
+
+        .tabs::-webkit-scrollbar { display: none; }
+
+        .tab {
+            flex-shrink: 0;
+            padding: 7px 16px;
+            border-radius: 20px;
+            border: 1.5px solid rgba(0,0,0,0.1);
+            background: transparent;
+            color: var(--text);
+            font-family: var(--font-secondary);
+            font-size: 0.82rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .tab.active {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: var(--secondary);
+            font-weight: 600;
+        }
+
+        /* ── MENU CONTENT ── */
+        .menu-content {
+            padding: 20px 16px 0;
+        }
+
+        .category-section {
+            margin-bottom: 30px;
+        }
+
+        .category-title {
+            font-family: var(--font-primary);
+            font-size: 1.25rem;
+            color: var(--secondary);
+            margin-bottom: 14px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid var(--primary);
+            display: inline-block;
+        }
+
+        /* ── DISH CARD ── */
+        .dish-card {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            padding: 14px;
+            margin-bottom: 12px;
+            box-shadow: var(--shadow);
+            transition: transform 0.15s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .dish-card:active { transform: scale(0.98); }
+
+        .dish-img {
+            width: 85px;
+            height: 85px;
+            border-radius: 12px;
+            object-fit: cover;
+            flex-shrink: 0;
+            background: #f0f0f0;
+        }
+
+        /* fallback if no image */
+        .dish-img-placeholder {
+            width: 85px;
+            height: 85px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #f5f5f5, #e8e8e8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            flex-shrink: 0;
+        }
+
+        .dish-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .dish-top {
+            display: flex;
+            align-items: flex-start;
+            gap: 6px;
+            margin-bottom: 4px;
+        }
+
+        /* Veg / Non-veg dot */
+        .veg-dot {
+            width: 14px;
+            height: 14px;
+            border-radius: 2px;
+            border: 1.5px solid;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            margin-top: 3px;
+        }
+
+        .veg-dot.veg { border-color: #2e7d32; }
+        .veg-dot.veg::after {
+            content: '';
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: #2e7d32;
+        }
+
+        .veg-dot.nonveg { border-color: #c62828; }
+        .veg-dot.nonveg::after {
+            content: '';
+            width: 0;
+            height: 0;
+            border-left: 4px solid transparent;
+            border-right: 4px solid transparent;
+            border-bottom: 7px solid #c62828;
+        }
+
+        .dish-name {
+            font-family: var(--font-primary);
+            font-size: 1rem;
+            color: var(--secondary);
+            line-height: 1.3;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .dish-desc {
+            font-size: 0.75rem;
+            color: #888;
+            line-height: 1.4;
+            margin-bottom: 8px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .dish-bottom {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .dish-price {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        /* Add to plate button */
+        .add-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--primary);
+            border: none;
+            color: var(--secondary);
+            font-size: 1.3rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+            flex-shrink: 0;
+            font-weight: 300;
+            line-height: 1;
+        }
+
+        .add-btn:active { transform: scale(0.9); }
+
+        /* Qty controls — show when item in plate */
+        .qty-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .qty-btn {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            border: 1.5px solid var(--primary);
+            background: transparent;
+            color: var(--primary);
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .qty-num {
+            font-weight: 600;
+            font-size: 0.95rem;
+            color: var(--secondary);
+            min-width: 16px;
+            text-align: center;
+        }
+
+        /* ── FLOATING PLATE BUTTON ── */
+        #plate-btn {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: var(--secondary);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            padding: 15px 28px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-family: var(--font-secondary);
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.25);
+            transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+            z-index: 200;
+            white-space: nowrap;
+        }
+
+        #plate-btn.visible {
+            transform: translateX(-50%) translateY(0);
+        }
+
+        #plate-btn .plate-count {
+            background: var(--primary);
+            color: var(--secondary);
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            font-weight: 700;
+        }
+
+        #plate-btn .plate-total {
+            font-size: 0.9rem;
+            opacity: 0.85;
+        }
+
+        /* ── PLATE DRAWER ── */
+        #plate-drawer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            border-radius: 24px 24px 0 0;
+            box-shadow: 0 -8px 40px rgba(0,0,0,0.15);
+            z-index: 300;
+            transform: translateY(100%);
+            transition: transform 0.35s cubic-bezier(0.34, 1.1, 0.64, 1);
+            max-height: 75vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #plate-drawer.open { transform: translateY(0); }
+
+        .drawer-handle {
+            width: 40px;
+            height: 4px;
+            background: #ddd;
+            border-radius: 2px;
+            margin: 14px auto 0;
+        }
+
+        .drawer-header {
+            padding: 16px 20px 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .drawer-header h2 {
+            font-family: var(--font-primary);
+            font-size: 1.2rem;
+            color: var(--secondary);
+        }
+
+        .drawer-close {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: #f5f5f5;
+            border: none;
+            font-size: 1rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #666;
+        }
+
+        .drawer-items {
+            overflow-y: auto;
+            flex: 1;
+            padding: 12px 20px;
+        }
+
+        .drawer-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #f5f5f5;
+            gap: 10px;
+        }
+
+        .drawer-item-name {
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--secondary);
+            flex: 1;
+        }
+
+        .drawer-item-price {
+            font-size: 0.9rem;
+            color: var(--primary);
+            font-weight: 600;
+            min-width: 70px;
+            text-align: right;
+        }
+
+        .drawer-footer {
+            padding: 16px 20px;
+            border-top: 1px solid #f0f0f0;
+        }
+
+        .drawer-total {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 14px;
+            font-weight: 600;
+            font-size: 1rem;
+            color: var(--secondary);
+        }
+
+        .drawer-total span:last-child { color: var(--primary); }
+
+        .place-order-btn {
+            width: 100%;
+            padding: 15px;
+            background: var(--primary);
+            color: var(--secondary);
+            border: none;
+            border-radius: 14px;
+            font-family: var(--font-secondary);
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            letter-spacing: 0.5px;
+        }
+
+        /* Overlay */
+        #overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.4);
+            z-index: 250;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        #overlay.show { opacity: 1; pointer-events: all; }
+
+        /* Empty plate state */
+        .empty-plate {
+            text-align: center;
+            padding: 30px 20px;
+            color: #aaa;
+            font-size: 0.9rem;
+        }
+
+        .empty-plate i { font-size: 2.5rem; margin-bottom: 10px; display: block; }
+    </style>
+</head>
+<body>
+
+<!-- Banner -->
+<div class="banner">
+    <a href="/{{ client_id }}" class="back-btn"><i class="fas fa-arrow-left"></i></a>
+    <a href="/{{ client_id }}/ar-menu" class="ar-btn"><i class="fas fa-camera"></i> View in AR</a>
+    <img src="{{ data.restaurant.logo }}" alt="logo" class="banner-logo">
+    <h1>{{ data.restaurant.name }}</h1>
+    <p>{{ data.restaurant.tagline }}</p>
+</div>
+
+<!-- Category Tabs -->
+<div class="tabs-wrapper">
+    <div class="tabs" id="tabs">
+        <button class="tab active" data-cat="all">All</button>
+        {% set categories = [] %}
+        {% for item in data['items'] %}
+            {% if item.category not in categories %}
+                {% set _ = categories.append(item.category) %}
+            {% endif %}
+        {% endfor %}
+        {% for cat in categories %}
+        <button class="tab" data-cat="{{ cat }}">{{ cat }}</button>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Menu Items -->
+<div class="menu-content" id="menu-content">
+    {% set categories = [] %}
+    {% for item in data['items'] %}
+        {% if item.category not in categories %}
+            {% set _ = categories.append(item.category) %}
+        {% endif %}
+    {% endfor %}
+
+    {% for cat in categories %}
+    <div class="category-section" data-section="{{ cat }}">
+        <div class="category-title">{{ cat }}</div>
+
+        {% for item in data['items'] %}
+        {% if item.category == cat %}
+        <div class="dish-card" data-name="{{ item.name }}" data-price="{{ item.price }}" data-category="{{ item.category }}">
+
+            {% if item.image %}
+            <img src="{{ item.image }}" alt="{{ item.name }}" class="dish-img"
+                 onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+            <div class="dish-img-placeholder" style="display:none">🍽️</div>
+            {% else %}
+            <div class="dish-img-placeholder">🍽️</div>
+            {% endif %}
+
+            <div class="dish-info">
+                <div class="dish-top">
+                    <div class="veg-dot {{ 'veg' if item.veg else 'nonveg' }}"></div>
+                    <div class="dish-name">{{ item.name }}</div>
+                </div>
+                {% if item.description %}
+                <div class="dish-desc">{{ item.description }}</div>
+                {% endif %}
+                <div class="dish-bottom">
+                    <div class="dish-price">{{ item.price }}</div>
+                    <div class="add-btn-wrapper">
+                        <button class="add-btn" onclick="addToPlate('{{ item.name }}', '{{ item.price }}', this)">+</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        {% endfor %}
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Floating Plate Button -->
+<button id="plate-btn" onclick="toggleDrawer()">
+    <i class="fas fa-utensils"></i>
+    My Plate
+    <span class="plate-count" id="plate-count">0</span>
+    <span class="plate-total" id="plate-total"></span>
+</button>
+
+<!-- Overlay -->
+<div id="overlay" onclick="toggleDrawer()"></div>
+
+<!-- Plate Drawer -->
+<div id="plate-drawer">
+    <div class="drawer-handle"></div>
+    <div class="drawer-header">
+        <h2>🍽️ My Plate</h2>
+        <button class="drawer-close" onclick="toggleDrawer()">✕</button>
+    </div>
+    <div class="drawer-items" id="drawer-items">
+        <div class="empty-plate">
+            <i class="fas fa-utensils"></i>
+            Your plate is empty
+        </div>
+    </div>
+    <div class="drawer-footer">
+        <div class="drawer-total">
+            <span>Total</span>
+            <span id="drawer-total-price">INR 0</span>
+        </div>
+        <button class="place-order-btn" onclick="placeOrder()">Place Order</button>
+    </div>
+</div>
+
+<script>
+// ── State ──
+const plate = {}; // { itemName: { qty, price } }
+
+function parsePrice(priceStr) {
+    return parseInt(priceStr.replace(/[^0-9]/g, '')) || 0;
+}
+
+// ── Add to Plate ──
+function addToPlate(name, price, btn) {
+    if (!plate[name]) {
+        plate[name] = { qty: 1, price };
+        // Replace + button with qty controls
+        const wrapper = btn.parentElement;
+        wrapper.innerHTML = `
+            <div class="qty-controls">
+                <button class="qty-btn" onclick="changeQty('${name}', -1, this)">−</button>
+                <span class="qty-num" id="qty-${name.replace(/\s/g,'_')}">1</span>
+                <button class="qty-btn" onclick="changeQty('${name}', 1, this)">+</button>
+            </div>`;
+    }
+    updatePlateUI();
+}
+
+function changeQty(name, delta, btn) {
+    if (!plate[name]) return;
+    plate[name].qty += delta;
+
+    if (plate[name].qty <= 0) {
+        delete plate[name];
+        // Restore + button
+        const wrapper = btn.closest('.add-btn-wrapper');
+        const price = wrapper.closest('.dish-card').dataset.price;
+        wrapper.innerHTML = `<button class="add-btn" onclick="addToPlate('${name}', '${price}', this)">+</button>`;
+    } else {
+        const id = `qty-${name.replace(/\s/g,'_')}`;
+        document.getElementById(id).textContent = plate[name].qty;
+    }
+    updatePlateUI();
+}
+
+function updatePlateUI() {
+    const items = Object.entries(plate);
+    const totalQty = items.reduce((s, [, v]) => s + v.qty, 0);
+    const totalPrice = items.reduce((s, [, v]) => s + parsePrice(v.price) * v.qty, 0);
+
+    const btn = document.getElementById('plate-btn');
+    document.getElementById('plate-count').textContent = totalQty;
+    document.getElementById('plate-total').textContent = totalQty > 0 ? `• INR ${totalPrice}` : '';
+    document.getElementById('drawer-total-price').textContent = `INR ${totalPrice}`;
+
+    // Show/hide floating button
+    if (totalQty > 0) btn.classList.add('visible');
+    else btn.classList.remove('visible');
+
+    // Update drawer
+    const drawerItems = document.getElementById('drawer-items');
+    if (items.length === 0) {
+        drawerItems.innerHTML = `<div class="empty-plate"><i class="fas fa-utensils"></i>Your plate is empty</div>`;
+        return;
+    }
+
+    drawerItems.innerHTML = items.map(([name, { qty, price }]) => `
+        <div class="drawer-item">
+            <div class="qty-controls">
+                <button class="qty-btn" onclick="changeQty('${name}', -1, this)">−</button>
+                <span class="qty-num" id="dqty-${name.replace(/\s/g,'_')}">${qty}</span>
+                <button class="qty-btn" onclick="changeQty('${name}', 1, this)">+</button>
+            </div>
+            <div class="drawer-item-name">${name}</div>
+            <div class="drawer-item-price">INR ${parsePrice(price) * qty}</div>
+        </div>
+    `).join('');
+}
+
+// ── Drawer ──
+let drawerOpen = false;
+function toggleDrawer() {
+    drawerOpen = !drawerOpen;
+    document.getElementById('plate-drawer').classList.toggle('open', drawerOpen);
+    document.getElementById('overlay').classList.toggle('show', drawerOpen);
+}
+
+// ── Category Tabs ──
+document.getElementById('tabs').addEventListener('click', (e) => {
+    const tab = e.target.closest('.tab');
+    if (!tab) return;
+
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+
+    const cat = tab.dataset.cat;
+    document.querySelectorAll('.category-section').forEach(section => {
+        if (cat === 'all' || section.dataset.section === cat) {
+            section.style.display = 'block';
+        } else {
+            section.style.display = 'none';
+        }
+    });
+});
+
+// ── Place Order (placeholder) ──
+function placeOrder() {
+    const items = Object.entries(plate);
+    if (items.length === 0) return;
+    // TODO: connect to order API when table system is ready
+    alert('Order placed! (Table system coming soon)');
+}
+</script>
+
+</body>
+</html>

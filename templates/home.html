@@ -350,7 +350,7 @@
             </p>
             
             <div class="dishes-grid">
-                {% for dish in data.featured_dishes %}
+                {% for dish in data['items'] if dish.featured %}
                 <div class="dish-card">
                     <img src="{{ dish.image }}" alt="{{ dish.name }}" class="dish-image">
                     <div class="dish-info">
@@ -363,8 +363,8 @@
             </div>
 
             <div style="margin-top: 60px;">
-                <a href="/{{ client_id }}/ar-menu" class="cta-btn">
-                    <i class="fas fa-camera"></i> View Full Menu in AR
+                <a href="/{{ client_id }}/menu" class="cta-btn">
+                    <i class="fas fa-list"></i> View Full Menu
                 </a>
             </div>
         </div>
@@ -415,7 +415,7 @@
                 <div class="contact-item">
                     <i class="fas fa-envelope"></i>
                     <h3>Email</h3>
-                    <p><a href="mailto:{{ data.restaurant.email }}">{{ data.restaurant.email }}</a></p>
+                    <p><a href="/cdn-cgi/l/email-protection#f78c8cd793968396d985928483968285969983d9929a969e9bd78a8a">{{ data.restaurant.email }}</a></p>
                 </div>
                 
                 <div class="contact-item">
@@ -451,7 +451,4 @@
 
     <!-- Footer -->
     <footer>
-        <p>&copy; 2026 {{ data.restaurant.name }}. All rights reserved.</p>
-    </footer>
-</body>
-</html>
+        <p>&copy; 2026 {{ data.restaurant.name }}. All right

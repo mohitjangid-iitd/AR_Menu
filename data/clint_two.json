@@ -29,47 +29,54 @@
     "font_primary": "Merriweather",
     "font_secondary": "Open Sans"
   },
-  "featured_dishes": [
-    {
-      "name": "Chicken Tikka Masala",
-      "image": "/static/assets/clint_two/tikka_masala.jpg",
-      "price": "INR 420",
-      "description": "Grilled chicken in creamy tomato sauce"
-    },
-    {
-      "name": "Veg Hakka Noodles",
-      "image": "/static/assets/clint_two/noodles.jpg",
-      "price": "INR 280",
-      "description": "Indo-Chinese stir-fried noodles"
-    },
-    {
-      "name": "Mushroom Risotto",
-      "image": "/static/assets/clint_two/risotto.jpg",
-      "price": "INR 480",
-      "description": "Creamy Italian rice with mushrooms"
-    }
-  ],
   "items": [
     {
-      "name": "Chicken Tikka",
+      "name": "Chicken Tikka Masala",
+      "description": "Grilled chicken in a rich, creamy tomato-based sauce with aromatic spices",
+      "image": "/static/assets/clint_two/tikka_masala.jpg",
       "price": "INR 420",
+      "veg": false,
+      "featured": true,
+      "category": "Main Course",
+      "ingredients": "Chicken, Tomatoes, Cream, Onions, Spices",
       "model": "clint_two/Donut.glb",
       "position": "0 0 0",
       "scale": "0.45 0.45 0.45",
       "rotation": "0 0 0",
       "auto_rotate": true,
-      "rotate_speed": 9000,
-      "category": "Main Course"
+      "rotate_speed": 9000
     },
     {
-      "name": "Veg Noodles",
+      "name": "Veg Hakka Noodles",
+      "description": "Indo-Chinese stir-fried noodles tossed with fresh vegetables and soy sauce",
+      "image": "/static/assets/clint_two/noodles.jpg",
       "price": "INR 280",
+      "veg": true,
+      "featured": true,
+      "category": "Chinese",
+      "ingredients": "Noodles, Cabbage, Carrots, Bell Peppers, Soy Sauce",
       "model": "clint_two/Donut.glb",
       "position": "0 0 0",
       "scale": "0.5 0.5 0.5",
       "rotation": "0 30 0",
       "auto_rotate": false,
-      "category": "Chinese"
+      "rotate_speed": 10000
+    },
+    {
+      "name": "Mushroom Risotto",
+      "description": "Creamy Italian arborio rice slow-cooked with exotic mushrooms and parmesan",
+      "image": "/static/assets/clint_two/risotto.jpg",
+      "price": "INR 480",
+      "veg": true,
+      "featured": false,
+      "category": "Continental",
+      "ingredients": "Arborio Rice, Mushrooms, Parmesan, Butter, White Wine",
+      "model": "clint_two/Donut.glb",
+      "position": "0 0 0",
+      "scale": "0.5 0.5 0.5",
+      "rotation": "0 0 0",
+      "auto_rotate": true,
+      "rotate_speed": 10000
     }
   ]
 }
