@@ -4,25 +4,17 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
 from fastapi.templating import Jinja2Templates
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from typing import Optional, List
 from database import (
-    init_db, get_table_status,
+    init_db, seed_tables, get_table_status,
     place_order, get_orders, update_order_status,
     generate_bill, get_bill, mark_bill_paid, get_summary,
     activate_table, close_table, get_all_tables,
     get_table_summary, get_table_orders_detail,
     get_analytics
 )
-
-@asynccontextmanager
-async def lifespan(app):
-    init_db()  # DB initialize on startup
-    yield
-
-# app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None, lifespan=lifespan)
-app = FastAPI(lifespan=lifespan)
-templates = Jinja2Templates(directory="templates")
 
 ALLOWED_EXTENSIONS  = {".glb", ".mind", ".png", ".jpg", ".jpeg", ".webp"}
 PROTECTED_EXTENSIONS = {".glb", ".mind"}
@@ -37,6 +29,27 @@ def get_client_data(client_id: str):
         return None
     with open(file_path, "r") as f:
         return json.load(f)
+
+@asynccontextmanager
+async def lifespan(app):
+    init_db()
+    # Har client ka JSON padho aur tables seed karo
+    for filename in os.listdir("data"):
+        if filename.endswith(".json"):
+            client_id = filename.replace(".json", "")
+            data = get_client_data(client_id)
+            if data and "num_tables" in data.get("restaurant", {}):
+                seed_tables(client_id, data["restaurant"]["num_tables"])
+    yield
+
+# app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None, lifespan=lifespan)
+app = FastAPI(lifespan=lifespan)
+templates = Jinja2Templates(directory="templates")
+
+@app.on_event("startup")
+def setup_jinja():
+    templates.env.globals["static_v"] = lambda path: \
+        int(os.path.getmtime(f"static/{path}")) if os.path.exists(f"static/{path}") else 0
 
 # ════════════════════════════════
 # PYDANTIC MODELS
@@ -70,6 +83,8 @@ class MarkPaidRequest(BaseModel):
 # ════════════════════════════════
 # ASSET SERVING
 # ════════════════════════════════
+
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 @app.get("/static/assets/{client_id}/{filename}")
 async def serve_asset(request: Request, client_id: str, filename: str):
@@ -105,7 +120,7 @@ async def restaurant_home(request: Request, client_id: str):
     if not data:
         raise HTTPException(status_code=404, detail="Restaurant not found")
     return templates.TemplateResponse("home.html", {
-        "request": request, "client_id": client_id, "data": data
+        "request": request, "client_id": client_id, "data": data, "table_no": None  # 👈 ye add karo
     })
 
 @app.get("/{client_id}/menu", response_class=HTMLResponse)
@@ -135,6 +150,18 @@ async def ar_menu(request: Request, client_id: str):
         raise HTTPException(status_code=404, detail="Restaurant not found")
     return templates.TemplateResponse("ar_menu.html", {
         "request": request, "client_id": client_id, "table_no": None
+    })
+
+@app.get("/{client_id}/table/{table_no}", response_class=HTMLResponse)
+async def table_home(request: Request, client_id: str, table_no: int):
+    data = get_client_data(client_id)
+    if not data:
+        raise HTTPException(status_code=404, detail="Restaurant not found")
+    table = get_table_status(client_id, table_no)
+    if not table or table["status"] == "inactive":
+        raise HTTPException(status_code=403, detail="Table not active. Please ask staff.")
+    return templates.TemplateResponse("home.html", {
+        "request": request, "client_id": client_id, "data": data, "table_no": table_no
     })
 
 @app.get("/{client_id}/table/{table_no}/ar-menu", response_class=HTMLResponse)

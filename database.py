@@ -81,6 +81,17 @@ def init_db():
 # TABLE OPERATIONS
 # ════════════════════════════════
 
+def seed_tables(client_id: str, num_tables: int):
+    conn = get_db()
+    for i in range(1, num_tables + 1):
+        conn.execute("""
+            INSERT INTO tables (client_id, table_no, status)
+            VALUES (?, ?, 'inactive')
+            ON CONFLICT(client_id, table_no) DO NOTHING   -- 👈 yahi problem hai
+        """, (client_id, i))
+    conn.commit()
+    conn.close()
+
 def activate_table(client_id: str, table_no: int):
     # Use SQLite-compatible datetime format (space separator, no microseconds)
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")

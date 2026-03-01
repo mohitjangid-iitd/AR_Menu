@@ -1,6 +1,7 @@
 {
   "restaurant": {
     "name": "Spice Garden",
+    "num_tables": 12,
     "tagline": "A Journey Through Authentic Flavors",
     "logo": "/static/assets/clint_two/logo.png",
     "banner": "/static/assets/clint_two/banner.jpg",
