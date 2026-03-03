@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
+    <title>Counter — {{ data.restaurant.name }}</title>
+
+    <link href="https://fonts.googleapis.com/css2?family={{ data.theme.font_primary.replace(' ', '+') }}:wght@400;600;700&family={{ data.theme.font_secondary.replace(' ', '+') }}:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        :root {
+            --primary: {{ data.theme.primary_color }};
+            --secondary: {{ data.theme.secondary_color }};
+            --font-primary: '{{ data.theme.font_primary }}', serif;
+            --font-secondary: '{{ data.theme.font_secondary }}', sans-serif;
+            --radius: 14px;
+            --shadow: 0 2px 16px rgba(0,0,0,0.08);
+        }
+    </style>
+
+    <link rel="stylesheet" href="/static/css/staff_counter.css?v={{ static_v('css/staff_counter.css') }}">
+</head>
+<body>
+
+<div class="topbar">
+    <div class="topbar-left">
+        <img src="{{ data.restaurant.logo }}" alt="logo">
+        <h1>{{ data.restaurant.name }}</h1>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px">
+        <span class="role-badge">COUNTER</span>
+        <a href="#" class="logout-btn" onclick="doLogout()">Logout</a>
+    </div>
+</div>
+
+<div class="tab-nav">
+    <button class="tab-btn active" onclick="switchTab('billing', this)">🧾 Billing</button>
+    <button class="tab-btn" onclick="switchTab('tables', this)">🪑 Tables</button>
+</div>
+
+<div class="body">
+
+    <!-- BILLING TAB -->
+    <div id="tab-billing">
+        <div class="toolbar">
+            <h2>Pending Bills</h2>
+            <button class="refresh-btn" onclick="loadBilling()">
+                <i class="fas fa-rotate"></i> Refresh
+            </button>
+        </div>
+        <div id="billing-list">
+            <div class="empty-state"><i class="fas fa-spinner fa-spin"></i><p>Loading...</p></div>
+        </div>
+    </div>
+
+    <!-- TABLES TAB -->
+    <div id="tab-tables" style="display:none">
+        <div class="toolbar">
+            <h2>Table Management</h2>
+            <button class="refresh-btn" onclick="loadTables()">
+                <i class="fas fa-rotate"></i> Refresh
+            </button>
+        </div>
+
+        <div class="bulk-actions">
+            <button class="bulk-btn activate-all" onclick="activateAll()">
+                <i class="fas fa-play-circle"></i> Activate All
+            </button>
+            <button class="bulk-btn close-all" onclick="closeAll()">
+                <i class="fas fa-stop-circle"></i> Close All
+            </button>
+        </div>
+
+        <div class="legend">
+            <span><span class="legend-dot" style="background:#81c784"></span>Active</span>
+            <span><span class="legend-dot" style="background:#ffb74d"></span>Occupied</span>
+            <span><span class="legend-dot" style="background:#4caf50"></span>Ready</span>
+            <span><span class="legend-dot" style="background:#90caf9"></span>Done</span>
+            <span><span class="legend-dot" style="background:var(--primary)"></span>Billed</span>
+            <span><span class="legend-dot" style="background:#bdbdbd"></span>Paid/Inactive</span>
+        </div>
+
+        <div class="tables-grid" id="tables-grid">
+            <div style="grid-column:span 3;text-align:center;padding:30px;color:#bbb">Loading...</div>
+        </div>
+    </div>
+
+</div>
+
+<div id="toast"></div>
+
+<script>
+    const clientId = "{{ client_id }}";
+    const numTables = {{ data.restaurant.num_tables | default(6) }};
+</script>
+
+<script src="/static/js/staff_counter.js?v={{ static_v('js/staff_counter.js') }}"></script>
+<script>
+async function doLogout() {
+    await fetch('/api/auth/logout', { method: 'POST' });
+    window.location.href = '/login';
+}
+</script>
+
+</body>
+</html>

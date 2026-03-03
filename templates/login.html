@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Staff Login — {{ site.name }}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary:   {{ site.primary }};
+            --secondary: {{ site.secondary }};
+            --accent:    {{ site.accent }};
+            --font-display: '{{ site.font_display }}', sans-serif;
+            --font-body:    '{{ site.font_body }}', sans-serif;
+        }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family:var(--font-body); background:var(--secondary); min-height:100vh; display:flex; align-items:center; justify-content:center; overflow:hidden; position:relative; }
+        .bg-orbs { position:fixed; inset:0; pointer-events:none; z-index:0; }
+        .orb { position:absolute; border-radius:50%; filter:blur(90px); opacity:0.12; animation:float 8s ease-in-out infinite; }
+        .orb-1 { width:600px;height:600px;background:var(--primary);top:-200px;left:-150px;animation-delay:0s; }
+        .orb-2 { width:450px;height:450px;background:var(--accent);bottom:-120px;right:-100px;animation-delay:3s; }
+        .orb-3 { width:300px;height:300px;background:var(--primary);top:55%;right:25%;animation-delay:5s; }
+        @keyframes float { 0%,100%{transform:translateY(0) scale(1);} 50%{transform:translateY(-28px) scale(1.04);} }
+        body::before { content:''; position:fixed; inset:0; background-image:linear-gradient(rgba(108,99,255,0.035) 1px,transparent 1px),linear-gradient(90deg,rgba(108,99,255,0.035) 1px,transparent 1px); background-size:44px 44px; z-index:0; }
+        .page-wrap { position:relative; z-index:10; display:flex; align-items:center; gap:64px; padding:24px; width:100%; max-width:880px; margin:0 auto; }
+        .brand-panel { flex:1; color:white; display:flex; flex-direction:column; gap:20px; }
+        .logo-row { display:flex; align-items:center; gap:14px; }
+        .logo-icon { width:52px; height:52px; background:linear-gradient(135deg,var(--primary),var(--accent)); border-radius:14px; display:flex; align-items:center; justify-content:center; font-size:1.5rem; box-shadow:0 8px 24px rgba(108,99,255,0.35); flex-shrink:0; }
+        .logo-name { font-family:var(--font-display); font-size:2rem; font-weight:700; letter-spacing:-1px; line-height:1; color:white; }
+        .logo-name span { color:var(--primary); }
+        .brand-tagline { font-size:1rem; color:rgba(255,255,255,0.45); line-height:1.65; max-width:300px; }
+        .brand-features { display:flex; flex-direction:column; gap:10px; margin-top:4px; }
+        .feature-row { display:flex; align-items:center; gap:10px; font-size:0.83rem; color:rgba(255,255,255,0.38); }
+        .feature-dot { width:6px; height:6px; border-radius:50%; background:var(--primary); flex-shrink:0; }
+        .login-card { width:100%; max-width:390px; flex-shrink:0; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:24px; padding:38px 34px; backdrop-filter:blur(24px); box-shadow:0 32px 64px rgba(0,0,0,0.45); animation:slideUp 0.5s cubic-bezier(0.16,1,0.3,1); }
+        @keyframes slideUp { from{opacity:0;transform:translateY(20px);} to{opacity:1;transform:translateY(0);} }
+        .card-title { font-family:var(--font-display); font-size:1.2rem; font-weight:600; color:white; margin-bottom:5px; }
+        .card-sub { font-size:0.78rem; color:rgba(255,255,255,0.32); margin-bottom:26px; }
+        .form-group { margin-bottom:13px; }
+        .form-group label { display:block; font-size:0.69rem; font-weight:500; color:rgba(255,255,255,0.38); text-transform:uppercase; letter-spacing:0.9px; margin-bottom:7px; }
+        .form-group input { width:100%; padding:12px 14px; background:rgba(255,255,255,0.06); border:1.5px solid rgba(255,255,255,0.08); border-radius:11px; color:white; font-family:var(--font-body); font-size:0.88rem; outline:none; transition:border-color 0.2s,background 0.2s; }
+        .form-group input::placeholder { color:rgba(255,255,255,0.18); }
+        .form-group input:focus { border-color:var(--primary); background:rgba(108,99,255,0.08); }
+        .pass-wrap { position:relative; }
+        .pass-wrap input { padding-right:44px; }
+        .eye-btn { position:absolute; right:12px; top:50%; transform:translateY(-50%); background:none; border:none; cursor:pointer; color:rgba(255,255,255,0.3); font-size:1rem; padding:4px; line-height:1; transition:color 0.2s; }
+        .eye-btn:hover { color:rgba(255,255,255,0.6); }
+        .submit-btn { width:100%; padding:13px; background:linear-gradient(135deg,var(--primary),#8B83FF); border:none; border-radius:11px; color:white; font-family:var(--font-display); font-size:0.92rem; font-weight:600; cursor:pointer; margin-top:6px; transition:all 0.2s; letter-spacing:0.3px; }
+        .submit-btn:hover { transform:translateY(-1px); box-shadow:0 8px 24px rgba(108,99,255,0.45); }
+        .submit-btn:active { transform:translateY(0); }
+        .submit-btn:disabled { opacity:0.6; cursor:not-allowed; transform:none; }
+        .error-msg { display:none; background:rgba(255,71,87,0.1); border:1px solid rgba(255,71,87,0.25); border-radius:9px; padding:10px 13px; font-size:0.8rem; color:#FF6B7A; margin-top:12px; text-align:center; }
+        .error-msg.show { display:block; animation:shake 0.3s ease; }
+        @keyframes shake { 0%,100%{transform:translateX(0);} 25%{transform:translateX(-5px);} 75%{transform:translateX(5px);} }
+        .card-footer { text-align:center; margin-top:22px; font-size:0.69rem; color:rgba(255,255,255,0.16); }
+        .card-footer span { color:rgba(108,99,255,0.55); }
+        .spinner { display:none; width:17px; height:17px; border:2px solid rgba(255,255,255,0.3); border-top-color:white; border-radius:50%; animation:spin 0.6s linear infinite; margin:0 auto; }
+        @keyframes spin { to{transform:rotate(360deg);} }
+        @media (max-width:680px) {
+            .page-wrap { flex-direction:column; gap:0; min-height:100vh; justify-content:center; }
+            .brand-panel { display:none; }
+            .login-card { max-width:100%; border-radius:20px; padding:34px 26px; }
+            .mobile-logo { display:flex !important; }
+        }
+        .mobile-logo { display:none; align-items:center; gap:12px; margin-bottom:26px; }
+        .mobile-logo .logo-icon { width:42px; height:42px; font-size:1.2rem; background:linear-gradient(135deg,var(--primary),var(--accent)); border-radius:12px; display:flex; align-items:center; justify-content:center; }
+        .mobile-logo .m-name { font-family:var(--font-display); font-size:1.45rem; font-weight:700; color:white; letter-spacing:-0.5px; }
+        .mobile-logo .m-name span { color:var(--primary); }
+    </style>
+</head>
+<body>
+<div class="bg-orbs">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+</div>
+<div class="page-wrap">
+    <div class="brand-panel">
+        <div class="logo-row">
+            <div class="logo-icon">🍽️</div>
+            <div class="logo-name">Menu<span>AR</span></div>
+        </div>
+        <div class="brand-tagline">{{ site.tagline }}<br>Manage your restaurant smarter.</div>
+        <div class="brand-features">
+            <div class="feature-row"><div class="feature-dot"></div>Real-time order tracking</div>
+            <div class="feature-row"><div class="feature-dot"></div>AR-powered menu experience</div>
+            <div class="feature-row"><div class="feature-dot"></div>Kitchen & waiter dashboards</div>
+            <div class="feature-row"><div class="feature-dot"></div>Analytics & billing in one place</div>
+        </div>
+    </div>
+    <div class="login-card">
+        <div class="mobile-logo">
+            <div class="logo-icon">🍽️</div>
+            <div class="m-name">Menu<span>AR</span></div>
+        </div>
+        <div class="card-title">Welcome back</div>
+        <div class="card-sub">Sign in to your restaurant dashboard</div>
+        <div class="form-group">
+            <label>Restaurant ID</label>
+            <input type="text" id="restaurant_id" placeholder="e.g. golden_spoon" autocomplete="off" autocapitalize="none">
+        </div>
+        <div class="form-group">
+            <label>Username</label>
+            <input type="text" id="username" placeholder="Your username" autocomplete="username" autocapitalize="none">
+        </div>
+        <div class="form-group">
+            <label>Password</label>
+            <div class="pass-wrap">
+                <input type="password" id="password" placeholder="••••••••"
+                       autocomplete="current-password"
+                       onkeydown="if(event.key==='Enter') doLogin()">
+                <button type="button" class="eye-btn" id="eye1" onclick="togglePass('password','eye1')">👁</button>
+            </div>
+        </div>
+        <button class="submit-btn" id="login-btn" onclick="doLogin()">
+            <span id="btn-text">Sign In</span>
+            <div class="spinner" id="spinner"></div>
+        </button>
+        <div class="error-msg" id="error-msg"></div>
+        <div class="card-footer">
+            Powered by <span>{{ site.name }}</span> &nbsp;·&nbsp; v{{ site.version }}
+        </div>
+    </div>
+</div>
+<script>
+    function togglePass(inputId, btnId) {
+        const inp = document.getElementById(inputId);
+        const btn = document.getElementById(btnId);
+        if (inp.type === 'password') { inp.type = 'text'; btn.textContent = '🙈'; }
+        else { inp.type = 'password'; btn.textContent = '👁'; }
+    }
+    function showError(msg) {
+        const el = document.getElementById('error-msg');
+        el.textContent = msg;
+        el.classList.remove('show');
+        void el.offsetWidth;
+        el.classList.add('show');
+    }
+    function setLoading(on) {
+        document.getElementById('btn-text').style.display = on ? 'none' : 'block';
+        document.getElementById('spinner').style.display  = on ? 'block' : 'none';
+        document.getElementById('login-btn').disabled = on;
+    }
+    async function doLogin() {
+        document.getElementById('error-msg').classList.remove('show');
+        const restaurant_id = document.getElementById('restaurant_id').value.trim();
+        const username      = document.getElementById('username').value.trim();
+        const password      = document.getElementById('password').value;
+        if (!restaurant_id) { showError('Restaurant ID required'); return; }
+        if (!username)      { showError('Username required'); return; }
+        if (!password)      { showError('Password required'); return; }
+        setLoading(true);
+        try {
+            const res = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password, restaurant_id })
+            });
+            const data = await res.json();
+            if (res.ok) { window.location.href = data.redirect; }
+            else { showError(data.detail || 'Invalid credentials'); setLoading(false); }
+        } catch(e) {
+            showError('Connection error — try again');
+            setLoading(false);
+        }
+    }
+</script>
+</body>
+</html>

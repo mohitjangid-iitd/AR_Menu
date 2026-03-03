@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin — {{ site.name }}</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --primary: {
+                    {
+                    site.primary
+                }
+            }
+
+            ;
+
+            --accent: {
+                    {
+                    site.accent
+                }
+            }
+
+            ;
+
+            --danger: {
+                    {
+                    site.danger
+                }
+            }
+
+            ;
+            --font-display: 'Space Grotesk',
+            sans-serif;
+            --font-mono: 'JetBrains Mono',
+            monospace;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-display);
+            background: #0A0A0F;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Scanline effect */
+        body::after {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background: repeating-linear-gradient(0deg,
+                    transparent,
+                    transparent 2px,
+                    rgba(0, 0, 0, 0.08) 2px,
+                    rgba(0, 0, 0, 0.08) 4px);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* Corner accents */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background:
+                radial-gradient(ellipse 400px 400px at 0% 0%, rgba(108, 99, 255, 0.08) 0%, transparent 70%),
+                radial-gradient(ellipse 300px 300px at 100% 100%, rgba(255, 101, 132, 0.06) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .card {
+            position: relative;
+            z-index: 10;
+            width: 100%;
+            max-width: 360px;
+            margin: 20px;
+            background: #0F0F1A;
+            border: 1px solid rgba(108, 99, 255, 0.2);
+            border-radius: 4px;
+            padding: 40px 36px;
+            box-shadow:
+                0 0 0 1px rgba(108, 99, 255, 0.05),
+                0 40px 80px rgba(0, 0, 0, 0.6),
+                inset 0 1px 0 rgba(255, 255, 255, 0.04);
+            animation: appear 0.4s ease;
+        }
+
+        @keyframes appear {
+            from {
+                opacity: 0;
+                transform: scale(0.97);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        /* Top bar accent */
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, var(--primary), var(--accent));
+            border-radius: 4px 4px 0 0;
+        }
+
+        .header {
+            margin-bottom: 32px;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-family: var(--font-mono);
+            font-size: 0.65rem;
+            color: rgba(108, 99, 255, 0.7);
+            background: rgba(108, 99, 255, 0.08);
+            border: 1px solid rgba(108, 99, 255, 0.15);
+            padding: 4px 10px;
+            border-radius: 2px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            margin-bottom: 16px;
+        }
+
+        .badge::before {
+            content: '';
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: var(--primary);
+            animation: pulse 2s ease infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.3;
+            }
+        }
+
+        .title {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: white;
+            letter-spacing: -0.5px;
+            margin-bottom: 4px;
+        }
+
+        .title span {
+            color: var(--primary);
+        }
+
+        .subtitle {
+            font-family: var(--font-mono);
+            font-size: 0.72rem;
+            color: rgba(255, 255, 255, 0.25);
+            letter-spacing: 0.5px;
+        }
+
+        /* Form */
+        .form-group {
+            margin-bottom: 14px;
+        }
+
+        .form-group label {
+            display: block;
+            font-family: var(--font-mono);
+            font-size: 0.65rem;
+            font-weight: 500;
+            color: rgba(255, 255, 255, 0.3);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 7px;
+        }
+
+        .input-wrap {
+            position: relative;
+        }
+
+        .input-wrap input {
+            width: 100%;
+            padding: 11px 14px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 3px;
+            color: white;
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            outline: none;
+            transition: all 0.2s;
+            letter-spacing: 0.5px;
+        }
+
+        .input-wrap input::placeholder {
+            color: rgba(255, 255, 255, 0.12);
+            letter-spacing: normal;
+            font-family: var(--font-display);
+        }
+
+        .input-wrap input:focus {
+            border-color: rgba(108, 99, 255, 0.5);
+            background: rgba(108, 99, 255, 0.05);
+            box-shadow: 0 0 0 3px rgba(108, 99, 255, 0.08);
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 12px;
+            background: var(--primary);
+            border: none;
+            border-radius: 3px;
+            color: white;
+            font-family: var(--font-display);
+            font-size: 0.88rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 8px;
+            transition: all 0.2s;
+            letter-spacing: 0.5px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .submit-btn:hover {
+            background: #7B73FF;
+            box-shadow: 0 4px 20px rgba(108, 99, 255, 0.4);
+        }
+
+        .submit-btn:active {
+            transform: scale(0.99);
+        }
+
+        .submit-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .error-msg {
+            display: none;
+            font-family: var(--font-mono);
+            font-size: 0.72rem;
+            color: #FF4757;
+            background: rgba(255, 71, 87, 0.08);
+            border: 1px solid rgba(255, 71, 87, 0.2);
+            border-radius: 3px;
+            padding: 9px 12px;
+            margin-top: 12px;
+            text-align: center;
+            letter-spacing: 0.3px;
+        }
+
+        .error-msg.show {
+            display: block;
+        }
+
+        .footer {
+            margin-top: 28px;
+            padding-top: 18px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .footer-brand {
+            font-family: var(--font-mono);
+            font-size: 0.65rem;
+            color: rgba(255, 255, 255, 0.15);
+            letter-spacing: 0.5px;
+        }
+
+        .footer-brand span {
+            color: rgba(108, 99, 255, 0.4);
+        }
+
+        .back-link {
+            font-family: var(--font-mono);
+            font-size: 0.65rem;
+            color: rgba(255, 255, 255, 0.2);
+            text-decoration: none;
+            letter-spacing: 0.5px;
+            transition: color 0.2s;
+        }
+
+        .back-link:hover {
+            color: rgba(108, 99, 255, 0.6);
+        }
+
+        .spinner {
+            display: none;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="card">
+        <div class="header">
+            <div class="badge">Secure Access</div>
+            <div class="title">{{ site.name }}<span>.</span></div>
+            <div class="subtitle">ADMIN CONTROL PANEL // RESTRICTED</div>
+        </div>
+
+        <div class="form-group">
+            <label>Username</label>
+            <div class="input-wrap">
+                <input type="text" id="username" placeholder="Admin username" autocomplete="username"
+                    autocapitalize="none" spellcheck="false">
+            </div>
+        </div>
+        <div class="form-group">
+            <label>Password</label>
+            <div class="input-wrap" style="position:relative">
+                <input type="password" id="password" placeholder="••••••••••••" style="padding-right:44px"
+                    autocomplete="current-password" onkeydown="if(event.key==='Enter') doLogin()">
+                <button type="button" onclick="togglePass('password','eye1')" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);
+                   background:none;border:none;cursor:pointer;
+                   color:rgba(255,255,255,0.25);font-size:1rem;padding:4px;" id="eye1">👁</button>
+            </div>
+        </div>
+
+        <button class="submit-btn" id="login-btn" onclick="doLogin()">
+            <span id="btn-text">Authenticate</span>
+            <div class="spinner" id="spinner"></div>
+        </button>
+
+        <div class="error-msg" id="error-msg"></div>
+
+        <div class="footer">
+            <div class="footer-brand"><span>{{ site.name }}</span> v{{ site.version }}</div>
+            <a href="/login" class="back-link">← Staff login</a>
+        </div>
+    </div>
+
+    <script>
+        function showError(msg) {
+            const el = document.getElementById('error-msg');
+            el.textContent = '⚠ ' + msg;
+            el.classList.remove('show');
+            void el.offsetWidth;
+            el.classList.add('show');
+        }
+        function setLoading(on) {
+            document.getElementById('btn-text').style.display = on ? 'none' : 'block';
+            document.getElementById('spinner').style.display = on ? 'block' : 'none';
+            document.getElementById('login-btn').disabled = on;
+        }
+        async function doLogin() {
+            document.getElementById('error-msg').classList.remove('show');
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value;
+            if (!username) { showError('Username required'); return; }
+            if (!password) { showError('Password required'); return; }
+            setLoading(true);
+            try {
+                const res = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password, restaurant_id: null })
+                });
+                const data = await res.json();
+                if (res.ok) { window.location.href = data.redirect; }
+                else { showError(data.detail || 'Authentication failed'); setLoading(false); }
+            } catch (e) {
+                showError('Connection error');
+                setLoading(false);
+            }
+        }
+        function togglePass(inputId, btnId) {
+            const inp = document.getElementById(inputId);
+            const btn = document.getElementById(btnId);
+            if (inp.type === 'password') {
+                inp.type = 'text';
+                btn.textContent = '🙈';
+            } else {
+                inp.type = 'password';
+                btn.textContent = '👁';
+            }
+        }
+    </script>
+</body>
+
+</html>
