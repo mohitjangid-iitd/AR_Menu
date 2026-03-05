@@ -29,7 +29,7 @@ async function loadMenu() {
         `;
 
         btn.onclick = () => {
-            modelEl.setAttribute("gltf-model", `/static/assets/${item.model}`);
+            modelEl.setAttribute("gltf-model", item.model_url);
             modelEl.setAttribute("position", item.position || "0 0 0");
             modelEl.setAttribute("scale", item.scale || "1 1 1");
 

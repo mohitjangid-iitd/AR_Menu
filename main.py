@@ -1,5 +1,8 @@
 import json
 import os
+import hashlib
+import hmac
+import time
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, HTTPException, Cookie, Response
 from fastapi.responses import HTMLResponse, JSONResponse, FileResponse, RedirectResponse
@@ -22,6 +25,39 @@ from auth import login_staff, login_admin, decode_token, get_redirect_url
 
 ALLOWED_EXTENSIONS   = {".glb", ".mind", ".png", ".jpg", ".jpeg", ".webp"}
 PROTECTED_EXTENSIONS = {".glb", ".mind"}
+GLB_SECRET = os.environ.get("GLB_SECRET", "glb-secret-change-in-production")
+GLB_TOKEN_EXPIRY = 600  # 10 minutes
+
+def create_glb_token(client_id: str, filepath: str) -> str:
+    """GLB file ke liye signed token banao — 10 min expiry"""
+    expires = int(time.time()) + GLB_TOKEN_EXPIRY
+    msg = f"{client_id}:{filepath}:{expires}"
+    sig = hmac.new(GLB_SECRET.encode(), msg.encode(), hashlib.sha256).hexdigest()[:16]
+    import base64
+    payload = base64.urlsafe_b64encode(f"{msg}:{sig}".encode()).decode()
+    return payload
+
+def verify_glb_token(token: str):
+    """Token verify karo — valid hone pe (client_id, filepath) return karo"""
+    try:
+        import base64
+        decoded = base64.urlsafe_b64decode(token.encode()).decode()
+        parts = decoded.rsplit(":", 1)
+        if len(parts) != 2:
+            return None
+        msg, sig = parts
+        expected = hmac.new(GLB_SECRET.encode(), msg.encode(), hashlib.sha256).hexdigest()[:16]
+        if not hmac.compare_digest(sig, expected):
+            return None
+        msg_parts = msg.split(":")
+        if len(msg_parts) != 3:
+            return None
+        client_id, filepath, expires_str = msg_parts
+        if int(time.time()) > int(expires_str):
+            return None
+        return client_id, filepath
+    except:
+        return None
 
 # ════════════════════════════════
 # HELPERS
@@ -136,24 +172,17 @@ async def serve_asset(request: Request, client_id: str, filename: str):
     if ".." in client_id or ".." in filename or "/" in filename:
         raise HTTPException(status_code=403, detail="Forbidden")
     ext = os.path.splitext(filename)[1].lower()
+    # GLB/mind ab is route se serve nahi honge — /glb/{token} se serve honge
+    if ext in PROTECTED_EXTENSIONS:
+        raise HTTPException(status_code=403, detail="Use signed URL")
     if ext not in ALLOWED_EXTENSIONS:
         raise HTTPException(status_code=403, detail="File type not allowed")
     if not get_client_data(client_id):
         raise HTTPException(status_code=404, detail="Restaurant not found")
-    if ext in PROTECTED_EXTENSIONS:
-        referer = request.headers.get("referer", "")
-        host = request.headers.get("host", "")
-        if not referer or host not in referer:
-            raise HTTPException(status_code=403, detail="Direct access not allowed")
     file_path = f"static/assets/{client_id}/{filename}"
     if not os.path.exists(file_path):
         raise HTTPException(status_code=404, detail="Asset not found")
-    response = FileResponse(file_path)
-    if ext in PROTECTED_EXTENSIONS:
-        response.headers["Content-Disposition"] = "inline"
-        response.headers["X-Content-Type-Options"] = "nosniff"
-        response.headers["Cache-Control"] = "no-store"
-    return response
+    return FileResponse(file_path)
 
 # ════════════════════════════════
 # LOGIN / LOGOUT
@@ -386,11 +415,41 @@ async def api_delete_staff(staff_id: int, auth_token: Optional[str] = Cookie(Non
 # ════════════════════════════════
 
 @app.get("/api/menu/{client_id}")
-async def get_menu_api(client_id: str):
+async def get_menu_api(client_id: str, request: Request):
     data = get_client_data(client_id)
-    if data:
-        return JSONResponse(content=data)
-    raise HTTPException(status_code=404, detail="Data not found")
+    if not data:
+        raise HTTPException(status_code=404, detail="Data not found")
+    # GLB items ke liye signed URLs inject karo
+    import copy
+    safe_data = copy.deepcopy(data)
+    for item in safe_data.get("items", []):
+        if item.get("model"):
+            token = create_glb_token(client_id, item["model"])
+            item["model_url"] = f"/glb/{token}"
+        else:
+            item["model_url"] = None
+    return JSONResponse(content=safe_data)
+
+@app.get("/glb/{token}")
+async def serve_glb(token: str):
+    """Signed token se GLB file serve karo"""
+    result = verify_glb_token(token)
+    if not result:
+        raise HTTPException(status_code=403, detail="Invalid or expired token")
+    client_id, filepath = result
+    # private/ folder se serve karo
+    file_path = f"private/assets/{filepath}"
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="Model not found")
+    return FileResponse(
+        file_path,
+        media_type="model/gltf-binary",
+        headers={
+            "Cache-Control": "no-store, no-cache",
+            "X-Content-Type-Options": "nosniff",
+            "Content-Disposition": "inline"
+        }
+    )
 
 # ════════════════════════════════
 # TABLE API
