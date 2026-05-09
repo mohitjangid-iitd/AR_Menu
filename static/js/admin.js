@@ -1001,6 +1001,13 @@ async function loadStaff() {
     if (!client_id) { tbody.innerHTML = '<tr><td colspan="7" class="empty">Restaurant select karo</td></tr>'; return; }
     tbody.innerHTML = '<tr><td colspan="7" class="loading">Loading...</td></tr>';
 
+    // Branch id → name map (dropdown jaisa)
+    let branchNameMap = {};
+    try {
+        const bRes = await fetch(`/api/admin/restaurant/${client_id}/branches`, { credentials: 'include' });
+        if (bRes.ok) { (await bRes.json()).forEach(b => { branchNameMap[b.branch_id] = b.name; }); }
+    } catch(e) {}
+
     const res = await fetch(`/api/admin/staff/${client_id}`);
     const staff = await res.json();
     const filtered = branch_filter ? staff.filter(s => (s.branch_id || '__default__') === branch_filter) : staff;
@@ -1014,7 +1021,7 @@ async function loadStaff() {
             <td>${s.name}</td>
             <td class="mono">${s.username}</td>
             <td><span class="badge badge-${s.role}">${s.role}</span></td>
-            <td><span style="font-size:0.7rem;padding:2px 8px;border-radius:4px;background:rgba(108,99,255,0.12);color:#a89cff;border:1px solid rgba(108,99,255,0.2);font-family:var(--font-m);">${s.branch_id && s.branch_id !== '__default__' ? s.branch_id : 'Main'}</span></td>
+            <td><span style="font-size:0.7rem;padding:2px 8px;border-radius:4px;background:rgba(108,99,255,0.12);color:#a89cff;border:1px solid rgba(108,99,255,0.2);font-family:var(--font-m);">${!s.branch_id || s.branch_id === '__default__' ? 'Main' : (branchNameMap[s.branch_id] || s.branch_id)}</span></td>
             <td><span class="badge ${s.is_active ? 'badge-active' : 'badge-inactive'}">${s.is_active ? 'Active' : 'Inactive'}</span></td>
             <td>
                 <div style="display:flex;gap:6px;">
