@@ -40,27 +40,27 @@ def get_client_data(client_id: str, branch_id: str = "__default__"):
         )
         row = cur.fetchone()
 
-    conn.close()
     if not row:
+        conn.close()
         return None
 
     config = row["config"] if isinstance(row["config"], dict) else json.loads(row["config"])
-
-    # Theme merge karo — brand-level shared hai
     theme = row["theme"]
-    if theme:
-        config["theme"] = theme if isinstance(theme, dict) else json.loads(theme)
-    elif "theme" not in config:
-        # Theme alag row pe stored hai — fetch karo
-        conn2 = get_db()
-        cur2 = conn2.execute(
-            "SELECT theme FROM restaurants WHERE client_id=%s AND theme IS NOT NULL LIMIT 1",
+
+    # Theme merge karo — theam keval main branch wale theme column me h
+    if not theme:
+        cur = conn.execute(
+            "SELECT theme FROM restaurants WHERE client_id=%s AND branch_id='__default__'",
             (client_id,)
         )
-        trow = cur2.fetchone()
-        conn2.close()
+        trow = cur.fetchone()
         if trow and trow["theme"]:
-            config["theme"] = trow["theme"] if isinstance(trow["theme"], dict) else json.loads(trow["theme"])
+            theme = trow["theme"]
+
+    conn.close()
+
+    if theme:
+        config["theme"] = theme if isinstance(theme, dict) else json.loads(theme)
 
     return config
 

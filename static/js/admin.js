@@ -64,7 +64,7 @@ function customConfirm({ title = 'Confirm', message = '', okText = 'OK', cancelT
             setTimeout(() => { overlay.remove(); resolve(val); }, 120);
         };
 
-        overlay.querySelector('#_cf-ok').onclick     = () => close(true);
+        overlay.querySelector('#_cf-ok').onclick = () => close(true);
         overlay.querySelector('#_cf-cancel').onclick = () => close(false);
         overlay.addEventListener('click', e => { if (e.target === overlay) close(false); });
     });
@@ -80,6 +80,7 @@ let currentEditData = null;
 let currentEditItemIndex = -1;
 let currentPasswordStaffId = null;
 let branchDataCache = {};   // { branch_id: data } — unsaved changes preserve karne ke liye
+let _qrBranchesMap = {};    // { client_id: branches[] } — QR modal ke liye branches cache
 
 // ════════════════════════════════
 // FILE UPLOAD HELPERS
@@ -198,8 +199,8 @@ function initUploadDragDrop(boxId, inputId) {
 function resetUploadBox(boxId, iconEmoji, hintText, previewId, iconId, hintId) {
     const box = document.getElementById(boxId);
     if (box) box.classList.remove('upload-success', 'upload-error');
-    if (previewId) { const p = document.getElementById(previewId); if (p) { p.src=''; p.style.display='none'; } }
-    if (iconId) { const ic = document.getElementById(iconId); if (ic) { ic.textContent = iconEmoji; ic.style.display=''; } }
+    if (previewId) { const p = document.getElementById(previewId); if (p) { p.src = ''; p.style.display = 'none'; } }
+    if (iconId) { const ic = document.getElementById(iconId); if (ic) { ic.textContent = iconEmoji; ic.style.display = ''; } }
     if (hintId) { const h = document.getElementById(hintId); if (h) h.textContent = hintText; }
     const prog = box?.querySelector?.('.upload-progress');
     if (prog) prog.style.display = 'none';
@@ -233,7 +234,7 @@ function switchEditTab(name, btn) {
 // ════════════════════════════════
 // TOAST
 // ════════════════════════════════
-function toast(msg, type='') {
+function toast(msg, type = '') {
     const el = document.getElementById('toast');
     el.textContent = msg;
     el.className = 'show ' + type;
@@ -249,7 +250,7 @@ function closeModal(id) { document.getElementById(id).classList.remove('open'); 
 // ════════════════════════════════
 // OVERVIEW
 // ════════════════════════════════
-async function loadOverview(period='alltime') {
+async function loadOverview(period = 'alltime') {
     const res = await fetch(`/api/admin/overview?period=${period}`);
     const d = await res.json();
     allRestaurants = d.restaurants;
@@ -285,7 +286,7 @@ async function loadOverview(period='alltime') {
         tbody.innerHTML = '<tr><td colspan="4" class="empty">Koi restaurant nahi</td></tr>';
     } else {
         tbody.innerHTML = d.restaurants.map(r => `
-            <tr class="rest-row" onclick="drillIntoRestaurant('${r.client_id}', '${r.name.replace(/'/g,"\\'")}')">
+            <tr class="rest-row" onclick="drillIntoRestaurant('${r.client_id}', '${r.name.replace(/'/g, "\\'")}')">
                 <td>
                     <div style="font-weight:500">${r.name}</div>
                     <div class="mono">${r.client_id}</div>
@@ -305,9 +306,9 @@ async function loadOverview(period='alltime') {
         const maxQty = d.top_dishes[0].qty;
         dishEl.innerHTML = d.top_dishes.map((item, i) => `
             <div class="dish-row">
-                <div class="dish-rank">#${i+1}</div>
+                <div class="dish-rank">#${i + 1}</div>
                 <div class="dish-name">${item.name}</div>
-                <div class="dish-bar-wrap"><div class="dish-bar" style="width:${Math.round(item.qty/maxQty*100)}%"></div></div>
+                <div class="dish-bar-wrap"><div class="dish-bar" style="width:${Math.round(item.qty / maxQty * 100)}%"></div></div>
                 <div class="dish-qty">${item.qty}x</div>
                 <div class="dish-rev">₹${item.revenue.toLocaleString()}</div>
             </div>
@@ -352,21 +353,21 @@ function renderRestGrid() {
                     <div class="rest-id">${r.client_id}</div>
                     <div style="display:flex;align-items:center;gap:8px;margin-top:6px;flex-wrap:wrap;">
                         ${r.active === false
-                            ? `<span style="font-size:0.58rem;padding:2px 7px;border-radius:3px;background:rgba(239,83,80,0.12);color:#ef9a9a;border:1px solid rgba(239,83,80,0.2);font-family:var(--font-m);letter-spacing:.5px;">INACTIVE</span>`
-                            : `<span style="font-size:0.58rem;padding:2px 7px;border-radius:3px;background:rgba(76,175,80,0.10);color:#81c784;border:1px solid rgba(76,175,80,0.2);font-family:var(--font-m);letter-spacing:.5px;">ACTIVE</span>`
-                        }
+                ? `<span style="font-size:0.58rem;padding:2px 7px;border-radius:3px;background:rgba(239,83,80,0.12);color:#ef9a9a;border:1px solid rgba(239,83,80,0.2);font-family:var(--font-m);letter-spacing:.5px;">INACTIVE</span>`
+                : `<span style="font-size:0.58rem;padding:2px 7px;border-radius:3px;background:rgba(76,175,80,0.10);color:#81c784;border:1px solid rgba(76,175,80,0.2);font-family:var(--font-m);letter-spacing:.5px;">ACTIVE</span>`
+            }
                         ${isMultiBranch ? `<span style="font-size:0.58rem;padding:2px 7px;border-radius:3px;background:rgba(108,99,255,0.12);color:#a89cff;border:1px solid rgba(108,99,255,0.2);font-family:var(--font-m);">${branches.length} Branches</span>` : ''}
                     </div>
                 </div>
                 <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0;">
                     <div style="display:flex;gap:6px;">
                         <button class="btn btn-ghost btn-icon btn-sm" onclick="${editOnclick}" title="Edit">✏️</button>
-                        <button class="btn btn-ghost btn-icon btn-sm" onclick="toggleRestaurant('${r.client_id}','${r.name.replace(/'/g,"\\'")}',${r.active !== false})"
+                        <button class="btn btn-ghost btn-icon btn-sm" onclick="toggleRestaurant('${r.client_id}','${r.name.replace(/'/g, "\\'")}',${r.active !== false})"
                             title="${r.active === false ? 'Activate' : 'Deactivate'}"
                             style="${r.active === false ? 'color:#81c784;border-color:rgba(76,175,80,0.3)' : 'color:#ef9a9a;border-color:rgba(239,83,80,0.3)'}">
                             ${r.active === false ? '🟢' : '🔴'}
                         </button>
-                        <button class="btn btn-danger btn-icon btn-sm" onclick="deleteRestaurant('${r.client_id}','${r.name.replace(/'/g,"\\'")}') " title="Delete">🗑️</button>
+                        <button class="btn btn-danger btn-icon btn-sm" onclick="deleteRestaurant('${r.client_id}','${r.name.replace(/'/g, "\\'")}') " title="Delete">🗑️</button>
                     </div>
                     ${branchSelectHtml}
                 </div>
@@ -381,13 +382,19 @@ function renderRestGrid() {
                 ${(r.features || ['basic']).map(f => `<span style="font-size:0.6rem;padding:2px 7px;border-radius:3px;background:rgba(108,99,255,0.12);color:var(--primary);border:1px solid var(--border);font-family:var(--font-m)">${f}</span>`).join('')}
             </div>
             <button class="btn btn-ghost btn-sm" style="width:100%;margin-top:12px;font-size:0.78rem;" onclick="downloadAllQRs('${r.client_id}')">⬇ Download All QR Codes</button>
-            <button class="btn btn-ghost btn-sm" style="width:100%;margin-top:6px;font-size:0.78rem;" onclick="openBranchesModal('${r.client_id}','${r.name.replace(/'/g,"\\'")}')">🏪 Branches</button>
+            <button class="btn btn-ghost btn-sm" style="width:100%;margin-top:6px;font-size:0.78rem;" onclick="openBranchesModal('${r.client_id}','${r.name.replace(/'/g, "\\'")}')">🏪 Branches</button>
         </div>`;
     }).join('');
+
+    // QR branch modal ke liye branches cache populate karo
+    _qrBranchesMap = {};
+    allRestaurants.forEach(r => {
+        _qrBranchesMap[r.client_id] = r.branches || [];
+    });
 }
 
 function openAddRestaurant() {
-    ['nr-id','nr-name','nr-tagline','nr-cuisine','nr-phone','nr-email','nr-address','nr-desc','nr-lunch','nr-dinner','nr-closed','nr-instagram','nr-facebook','nr-twitter'].forEach(id => {
+    ['nr-id', 'nr-name', 'nr-tagline', 'nr-cuisine', 'nr-phone', 'nr-email', 'nr-address', 'nr-desc', 'nr-lunch', 'nr-dinner', 'nr-closed', 'nr-instagram', 'nr-facebook', 'nr-twitter'].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.value = '';
     });
@@ -396,26 +403,26 @@ function openAddRestaurant() {
 }
 
 async function createRestaurant() {
-    const client_id = document.getElementById('nr-id').value.trim().toLowerCase().replace(/ /g,'_');
+    const client_id = document.getElementById('nr-id').value.trim().toLowerCase().replace(/ /g, '_');
     const name = document.getElementById('nr-name').value.trim();
     if (!client_id || !name) { toast('Restaurant ID aur Name required hain', 'error'); return; }
     const body = {
         client_id, name,
         num_tables: parseInt(document.getElementById('nr-tables').value) || 6,
-        tagline:    document.getElementById('nr-tagline').value.trim(),
+        tagline: document.getElementById('nr-tagline').value.trim(),
         cuisine_type: document.getElementById('nr-cuisine').value.trim(),
-        phone:      document.getElementById('nr-phone').value.trim(),
-        email:      document.getElementById('nr-email').value.trim(),
-        address:    document.getElementById('nr-address').value.trim(),
+        phone: document.getElementById('nr-phone').value.trim(),
+        email: document.getElementById('nr-email').value.trim(),
+        address: document.getElementById('nr-address').value.trim(),
         description: document.getElementById('nr-desc').value.trim(),
-        lunch:      document.getElementById('nr-lunch').value.trim(),
-        dinner:     document.getElementById('nr-dinner').value.trim(),
-        closed:     document.getElementById('nr-closed').value.trim(),
-        instagram:  document.getElementById('nr-instagram').value.trim(),
-        facebook:   document.getElementById('nr-facebook').value.trim(),
-        twitter:    document.getElementById('nr-twitter').value.trim(),
+        lunch: document.getElementById('nr-lunch').value.trim(),
+        dinner: document.getElementById('nr-dinner').value.trim(),
+        closed: document.getElementById('nr-closed').value.trim(),
+        instagram: document.getElementById('nr-instagram').value.trim(),
+        facebook: document.getElementById('nr-facebook').value.trim(),
+        twitter: document.getElementById('nr-twitter').value.trim(),
     };
-    const res = await fetch('/api/admin/restaurant', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    const res = await fetch('/api/admin/restaurant', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
     const d = await res.json();
     if (res.ok) {
         lastCreatedClientId = client_id;
@@ -447,7 +454,7 @@ async function openEditRestaurant(client_id, branch_id = '__default__') {
         if (!res2.ok) { toast('Load failed', 'error'); return; }
         currentEditData = await res2.json();
         branchDataCache['__default__'] = JSON.parse(JSON.stringify(defaultData));
-        branchDataCache[branch_id]     = JSON.parse(JSON.stringify(currentEditData));
+        branchDataCache[branch_id] = JSON.parse(JSON.stringify(currentEditData));
     } else {
         currentEditData = defaultData;
         branchDataCache['__default__'] = JSON.parse(JSON.stringify(defaultData));
@@ -463,7 +470,7 @@ async function openEditRestaurant(client_id, branch_id = '__default__') {
 
     // Logo upload box — agar pehle se path hai toh preview dikhao
     const r = currentEditData.restaurant || {};
-    resetUploadBox('ei-logo-box','🖼️','Click karo ya drag karo','ei-logo-preview','ei-logo-icon','ei-logo-hint');
+    resetUploadBox('ei-logo-box', '🖼️', 'Click karo ya drag karo', 'ei-logo-preview', 'ei-logo-icon', 'ei-logo-hint');
     if (r.logo) {
         const prev = document.getElementById('ei-logo-preview');
         prev.src = r.logo; prev.style.display = 'block';
@@ -472,7 +479,7 @@ async function openEditRestaurant(client_id, branch_id = '__default__') {
         document.getElementById('ei-logo-box').classList.add('upload-success');
     }
     // Banner upload box
-    resetUploadBox('ei-banner-box','🌄','Click karo ya drag karo','ei-banner-preview','ei-banner-icon','ei-banner-hint');
+    resetUploadBox('ei-banner-box', '🌄', 'Click karo ya drag karo', 'ei-banner-preview', 'ei-banner-icon', 'ei-banner-hint');
     if (r.banner) {
         const prev = document.getElementById('ei-banner-preview');
         prev.src = r.banner; prev.style.display = 'block';
@@ -483,16 +490,16 @@ async function openEditRestaurant(client_id, branch_id = '__default__') {
     // Mind file upload box
     const mindPath = currentEditData.targets || '';
     document.getElementById('ei-mind').value = mindPath;
-    resetUploadBox('ei-mind-box','🧠','targets.mind file upload karo',null,'ei-mind-icon','ei-mind-hint');
+    resetUploadBox('ei-mind-box', '🧠', 'targets.mind file upload karo', null, 'ei-mind-icon', 'ei-mind-hint');
     if (mindPath) {
         document.getElementById('ei-mind-hint').textContent = '✓ ' + mindPath.split('/').pop();
         document.getElementById('ei-mind-box').classList.add('upload-success');
     }
 
     // Drag-drop init (safe to call multiple times)
-    initUploadDragDrop('ei-logo-box','ei-logo-file');
-    initUploadDragDrop('ei-banner-box','ei-banner-file');
-    initUploadDragDrop('ei-mind-box','ei-mind-file');
+    initUploadDragDrop('ei-logo-box', 'ei-logo-file');
+    initUploadDragDrop('ei-banner-box', 'ei-banner-file');
+    initUploadDragDrop('ei-mind-box', 'ei-mind-file');
 
     // Reset to info tab
     document.querySelectorAll('.json-tab').forEach(b => b.classList.remove('active'));
@@ -504,7 +511,7 @@ async function openEditRestaurant(client_id, branch_id = '__default__') {
 
     // Branch selector populate karo
     try {
-        const bRes  = await fetch(`/api/admin/restaurant/${client_id}/branches`, { credentials: 'include' });
+        const bRes = await fetch(`/api/admin/restaurant/${client_id}/branches`, { credentials: 'include' });
         const bData = await bRes.json();
         const branchSel = document.getElementById('edit-branch-select');
         if (bData.length > 1) {
@@ -520,7 +527,7 @@ async function openEditRestaurant(client_id, branch_id = '__default__') {
         } else {
             branchSel.style.display = 'none';
         }
-    } catch(e) {
+    } catch (e) {
         document.getElementById('edit-branch-select').style.display = 'none';
     }
 }
@@ -551,7 +558,7 @@ async function onEditBranchChange() {
             if (!res.ok) { toast('Branch data load nahi hua', 'error'); return; }
             data = await res.json();
             branchDataCache[newBranch] = JSON.parse(JSON.stringify(data));
-        } catch(e) { toast('Network error', 'error'); return; }
+        } catch (e) { toast('Network error', 'error'); return; }
     }
 
     currentEditData = data;
@@ -562,25 +569,25 @@ async function onEditBranchChange() {
 function _collectFormIntoEditData() {
     if (!currentEditData) return;
     const r = currentEditData.restaurant || (currentEditData.restaurant = {});
-    r.name         = document.getElementById('ei-name')?.value.trim() || r.name;
-    r.num_tables   = parseInt(document.getElementById('ei-tables')?.value) || r.num_tables;
-    r.tagline      = document.getElementById('ei-tagline')?.value.trim() ?? '';
-    r.description  = document.getElementById('ei-desc')?.value.trim() ?? '';
+    r.name = document.getElementById('ei-name')?.value.trim() || r.name;
+    r.num_tables = parseInt(document.getElementById('ei-tables')?.value) || r.num_tables;
+    r.tagline = document.getElementById('ei-tagline')?.value.trim() ?? '';
+    r.description = document.getElementById('ei-desc')?.value.trim() ?? '';
     r.cuisine_type = document.getElementById('ei-cuisine')?.value.trim() ?? '';
-    r.phone        = document.getElementById('ei-phone')?.value.trim() ?? '';
-    r.email        = document.getElementById('ei-email')?.value.trim() ?? '';
-    r.address      = document.getElementById('ei-address')?.value.trim() ?? '';
-    r.logo         = document.getElementById('ei-logo')?.value.trim() || r.logo;
-    r.banner       = document.getElementById('ei-banner')?.value.trim() || r.banner;
+    r.phone = document.getElementById('ei-phone')?.value.trim() ?? '';
+    r.email = document.getElementById('ei-email')?.value.trim() ?? '';
+    r.address = document.getElementById('ei-address')?.value.trim() ?? '';
+    r.logo = document.getElementById('ei-logo')?.value.trim() || r.logo;
+    r.banner = document.getElementById('ei-banner')?.value.trim() || r.banner;
     r.timings = {
-        lunch:  document.getElementById('ei-lunch')?.value.trim() ?? '',
+        lunch: document.getElementById('ei-lunch')?.value.trim() ?? '',
         dinner: document.getElementById('ei-dinner')?.value.trim() ?? '',
         closed: document.getElementById('ei-closed')?.value.trim() ?? '',
     };
     r.social = {
         instagram: document.getElementById('ei-instagram')?.value.trim() ?? '',
-        facebook:  document.getElementById('ei-facebook')?.value.trim() ?? '',
-        twitter:   document.getElementById('ei-twitter')?.value.trim() ?? '',
+        facebook: document.getElementById('ei-facebook')?.value.trim() ?? '',
+        twitter: document.getElementById('ei-twitter')?.value.trim() ?? '',
     };
     currentEditData.restaurant = r;
 
@@ -588,20 +595,20 @@ function _collectFormIntoEditData() {
     if (mindVal) currentEditData.targets = mindVal;
 
     const selectedFeatures = ['basic'];
-    ['ordering','analytics','ar_menu'].forEach(f => {
+    ['ordering', 'analytics', 'ar_menu'].forEach(f => {
         const cb = document.getElementById(`feat-${f}`);
         if (cb && cb.checked) selectedFeatures.push(f);
     });
     currentEditData.subscription = { features: selectedFeatures };
 
     currentEditData.theme = {
-        primary_color:   document.getElementById('et-primary')?.value.trim() || '',
+        primary_color: document.getElementById('et-primary')?.value.trim() || '',
         secondary_color: document.getElementById('et-secondary')?.value.trim() || '',
-        accent_color:    document.getElementById('et-accent')?.value.trim() || '',
-        text_color:      document.getElementById('et-text')?.value.trim() || '',
-        background:      document.getElementById('et-bg')?.value.trim() || '',
-        font_primary:    document.getElementById('et-font-primary')?.value || 'Playfair Display',
-        font_secondary:  document.getElementById('et-font-secondary')?.value || 'Poppins',
+        accent_color: document.getElementById('et-accent')?.value.trim() || '',
+        text_color: document.getElementById('et-text')?.value.trim() || '',
+        background: document.getElementById('et-bg')?.value.trim() || '',
+        font_primary: document.getElementById('et-font-primary')?.value || 'Playfair Display',
+        font_secondary: document.getElementById('et-font-secondary')?.value || 'Poppins',
     };
 }
 
@@ -609,26 +616,26 @@ function _collectFormIntoEditData() {
 function _fillFormFromEditData() {
     if (!currentEditData) return;
     const r = currentEditData.restaurant || {};
-    document.getElementById('ei-name').value      = r.name || '';
-    document.getElementById('ei-tables').value    = r.num_tables || 6;
-    document.getElementById('ei-tagline').value   = r.tagline || '';
-    document.getElementById('ei-desc').value      = r.description || '';
-    document.getElementById('ei-cuisine').value   = r.cuisine_type || '';
-    document.getElementById('ei-phone').value     = r.phone || '';
-    document.getElementById('ei-email').value     = r.email || '';
-    document.getElementById('ei-address').value   = r.address || '';
-    document.getElementById('ei-logo').value      = r.logo || '';
-    document.getElementById('ei-banner').value    = r.banner || '';
-    document.getElementById('ei-lunch').value     = r.timings?.lunch || '';
-    document.getElementById('ei-dinner').value    = r.timings?.dinner || '';
-    document.getElementById('ei-closed').value    = r.timings?.closed || '';
+    document.getElementById('ei-name').value = r.name || '';
+    document.getElementById('ei-tables').value = r.num_tables || 6;
+    document.getElementById('ei-tagline').value = r.tagline || '';
+    document.getElementById('ei-desc').value = r.description || '';
+    document.getElementById('ei-cuisine').value = r.cuisine_type || '';
+    document.getElementById('ei-phone').value = r.phone || '';
+    document.getElementById('ei-email').value = r.email || '';
+    document.getElementById('ei-address').value = r.address || '';
+    document.getElementById('ei-logo').value = r.logo || '';
+    document.getElementById('ei-banner').value = r.banner || '';
+    document.getElementById('ei-lunch').value = r.timings?.lunch || '';
+    document.getElementById('ei-dinner').value = r.timings?.dinner || '';
+    document.getElementById('ei-closed').value = r.timings?.closed || '';
     document.getElementById('ei-instagram').value = r.social?.instagram || '';
-    document.getElementById('ei-facebook').value  = r.social?.facebook || '';
-    document.getElementById('ei-twitter').value   = r.social?.twitter || '';
+    document.getElementById('ei-facebook').value = r.social?.facebook || '';
+    document.getElementById('ei-twitter').value = r.social?.twitter || '';
 
     // Features
     const activeFeatures = currentEditData.subscription?.features || ['basic'];
-    ['ordering','analytics','ar_menu'].forEach(f => {
+    ['ordering', 'analytics', 'ar_menu'].forEach(f => {
         const cb = document.getElementById(`feat-${f}`);
         if (cb) cb.checked = activeFeatures.includes(f);
     });
@@ -638,14 +645,14 @@ function _fillFormFromEditData() {
     const setColor = (id, val) => {
         const el = document.getElementById(id);
         if (el) el.value = val || '';
-        try { document.getElementById(id+'-picker').value = val || '#000000'; } catch(e){}
+        try { document.getElementById(id + '-picker').value = val || '#000000'; } catch (e) { }
     };
-    setColor('et-primary',   t.primary_color);
+    setColor('et-primary', t.primary_color);
     setColor('et-secondary', t.secondary_color);
-    setColor('et-accent',    t.accent_color);
-    setColor('et-text',      t.text_color);
-    setColor('et-bg',        t.background);
-    document.getElementById('et-font-primary').value   = t.font_primary   || 'Playfair Display';
+    setColor('et-accent', t.accent_color);
+    setColor('et-text', t.text_color);
+    setColor('et-bg', t.background);
+    document.getElementById('et-font-primary').value = t.font_primary || 'Playfair Display';
     document.getElementById('et-font-secondary').value = t.font_secondary || 'Poppins';
 
     // Items list refresh karo agar items tab khula ho
@@ -666,7 +673,7 @@ async function saveRestaurant() {
     const branch_id = document.getElementById('edit-branch-select')?.value || '__default__';
     const res = await fetch(`/api/admin/restaurant/${currentEditClientId}/json?branch_id=${branch_id}`, {
         method: 'PUT',
-        headers: {'Content-Type':'application/json'},
+        headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({ data: currentEditData })
     });
@@ -697,7 +704,7 @@ async function deleteRestaurant(client_id, name) {
         // Dono zips ek saath download karo
         const downloads = [
             { folder: 'static', label: 'Images/Assets' },
-            { folder: 'private', label: 'GLB Models'   },
+            { folder: 'private', label: 'GLB Models' },
         ];
 
         for (const { folder, label } of downloads) {
@@ -715,7 +722,7 @@ async function deleteRestaurant(client_id, name) {
                         await new Promise(r => setTimeout(r, 600));
                     }
                 }
-            } catch(e) {
+            } catch (e) {
                 console.warn(`${label} download failed:`, e);
             }
         }
@@ -810,7 +817,7 @@ function renderItemsList() {
 function openAddItem() {
     currentEditItemIndex = -1;
     document.getElementById('dish-modal-title').textContent = 'Dish Add Karo';
-    ['di-name','di-price','di-category','di-desc','di-ingredients','di-image','di-model'].forEach(id => document.getElementById(id).value = '');
+    ['di-name', 'di-price', 'di-category', 'di-desc', 'di-ingredients', 'di-image', 'di-model'].forEach(id => document.getElementById(id).value = '');
     document.getElementById('di-position').value = '0 0 0';
     document.getElementById('di-scale').value = '2 2 2';
     document.getElementById('di-rotation').value = '0 0 0';
@@ -826,10 +833,10 @@ function openAddItem() {
     // Reset upload boxes
     document.getElementById('di-image').value = '';
     document.getElementById('di-model').value = '';
-    resetUploadBox('di-image-box','🍽️','Dish ki photo upload karo (.jpg, .png, .webp)','di-image-preview','di-image-icon','di-image-hint');
-    resetUploadBox('di-model-box','📦','GLB model file upload karo',null,'di-model-icon','di-model-hint');
-    initUploadDragDrop('di-image-box','di-image-file');
-    initUploadDragDrop('di-model-box','di-model-file');
+    resetUploadBox('di-image-box', '🍽️', 'Dish ki photo upload karo (.jpg, .png, .webp)', 'di-image-preview', 'di-image-icon', 'di-image-hint');
+    resetUploadBox('di-model-box', '📦', 'GLB model file upload karo', null, 'di-model-icon', 'di-model-hint');
+    initUploadDragDrop('di-image-box', 'di-image-file');
+    initUploadDragDrop('di-model-box', 'di-model-file');
     initGlbEditor('');
     openModal('modal-dish');
 }
@@ -838,16 +845,16 @@ function openEditItem(index) {
     currentEditItemIndex = index;
     const item = currentEditData.items[index];
     document.getElementById('dish-modal-title').textContent = 'Dish Edit Karo';
-    document.getElementById('di-name').value        = item.name || '';
-    document.getElementById('di-price').value       = item.price || '';
-    document.getElementById('di-category').value    = item.category || '';
-    document.getElementById('di-desc').value        = item.description || '';
+    document.getElementById('di-name').value = item.name || '';
+    document.getElementById('di-price').value = item.price || '';
+    document.getElementById('di-category').value = item.category || '';
+    document.getElementById('di-desc').value = item.description || '';
     document.getElementById('di-ingredients').value = item.ingredients || '';
-    document.getElementById('di-image').value       = item.image || '';
-    document.getElementById('di-model').value       = item.model || '';
+    document.getElementById('di-image').value = item.image || '';
+    document.getElementById('di-model').value = item.model || '';
 
     // Image upload box populate
-    resetUploadBox('di-image-box','🍽️','Dish ki photo upload karo (.jpg, .png, .webp)','di-image-preview','di-image-icon','di-image-hint');
+    resetUploadBox('di-image-box', '🍽️', 'Dish ki photo upload karo (.jpg, .png, .webp)', 'di-image-preview', 'di-image-icon', 'di-image-hint');
     if (item.image) {
         const prev = document.getElementById('di-image-preview');
         prev.src = item.image; prev.style.display = 'block';
@@ -856,20 +863,20 @@ function openEditItem(index) {
         document.getElementById('di-image-box').classList.add('upload-success');
     }
     // Model upload box populate
-    resetUploadBox('di-model-box','📦','GLB model file upload karo',null,'di-model-icon','di-model-hint');
+    resetUploadBox('di-model-box', '📦', 'GLB model file upload karo', null, 'di-model-icon', 'di-model-hint');
     if (item.model) {
         document.getElementById('di-model-hint').textContent = '✓ ' + item.model.split('/').pop();
         document.getElementById('di-model-box').classList.add('upload-success');
     }
-    initUploadDragDrop('di-image-box','di-image-file');
-    initUploadDragDrop('di-model-box','di-model-file');
-    document.getElementById('di-position').value    = item.position || '0 0 0';
-    document.getElementById('di-scale').value       = item.scale || '2 2 2';
-    document.getElementById('di-rotation').value    = item.rotation || '0 0 0';
+    initUploadDragDrop('di-image-box', 'di-image-file');
+    initUploadDragDrop('di-model-box', 'di-model-file');
+    document.getElementById('di-position').value = item.position || '0 0 0';
+    document.getElementById('di-scale').value = item.scale || '2 2 2';
+    document.getElementById('di-rotation').value = item.rotation || '0 0 0';
     document.getElementById('di-rotatespeed').value = item.rotate_speed || 10000;
-    document.getElementById('di-veg').value         = String(item.veg ?? true);
-    document.getElementById('di-autorotate').value  = String(item.auto_rotate ?? true);
-    document.getElementById('di-featured').value    = String(item.featured ?? true);
+    document.getElementById('di-veg').value = String(item.veg ?? true);
+    document.getElementById('di-autorotate').value = String(item.auto_rotate ?? true);
+    document.getElementById('di-featured').value = String(item.featured ?? true);
     // Sizes
     if (item.sizes && item.sizes.length > 0) {
         document.getElementById('di-multisize').checked = true;
@@ -893,7 +900,7 @@ function openEditItem(index) {
 function toggleSizeMode() {
     const on = document.getElementById('di-multisize').checked;
     document.getElementById('di-price-single').style.display = on ? 'none' : '';
-    document.getElementById('di-price-multi').style.display  = on ? '' : 'none';
+    document.getElementById('di-price-multi').style.display = on ? '' : 'none';
     if (on && document.getElementById('di-sizes-list').children.length === 0) {
         addSizeRow(); addSizeRow();
     }
@@ -932,20 +939,20 @@ function saveDish() {
         priceField = { price: document.getElementById('di-price').value.trim() };
     }
     const item = {
-        name:        document.getElementById('di-name').value.trim(),
+        name: document.getElementById('di-name').value.trim(),
         ...priceField,
-        category:    document.getElementById('di-category').value.trim(),
+        category: document.getElementById('di-category').value.trim(),
         description: document.getElementById('di-desc').value.trim(),
         ingredients: document.getElementById('di-ingredients').value.trim(),
-        image:       document.getElementById('di-image').value.trim(),
-        model:       document.getElementById('di-model').value.trim(),
-        position:    document.getElementById('di-position').value.trim(),
-        scale:       document.getElementById('di-scale').value.trim(),
-        rotation:    document.getElementById('di-rotation').value.trim(),
+        image: document.getElementById('di-image').value.trim(),
+        model: document.getElementById('di-model').value.trim(),
+        position: document.getElementById('di-position').value.trim(),
+        scale: document.getElementById('di-scale').value.trim(),
+        rotation: document.getElementById('di-rotation').value.trim(),
         rotate_speed: parseInt(document.getElementById('di-rotatespeed').value) || 10000,
-        veg:         document.getElementById('di-veg').value === 'true',
+        veg: document.getElementById('di-veg').value === 'true',
         auto_rotate: document.getElementById('di-autorotate').value === 'true',
-        featured:    document.getElementById('di-featured').value === 'true',
+        featured: document.getElementById('di-featured').value === 'true',
     };
     if (!item.name) { toast('Dish name required', 'error'); return; }
     if (!currentEditData.items) currentEditData.items = [];
@@ -1006,7 +1013,7 @@ async function loadStaff() {
     try {
         const bRes = await fetch(`/api/admin/restaurant/${client_id}/branches`, { credentials: 'include' });
         if (bRes.ok) { (await bRes.json()).forEach(b => { branchNameMap[b.branch_id] = b.name; }); }
-    } catch(e) {}
+    } catch (e) { }
 
     const res = await fetch(`/api/admin/staff/${client_id}`);
     const staff = await res.json();
@@ -1042,7 +1049,7 @@ async function onStaffRestChange(clientId) {
     if (!branchFilter) return;
     if (!clientId) { branchFilter.style.display = 'none'; return; }
     try {
-        const res  = await fetch(`/api/admin/restaurant/${clientId}/branches`, { credentials: 'include' });
+        const res = await fetch(`/api/admin/restaurant/${clientId}/branches`, { credentials: 'include' });
         const data = await res.json();
         if (data.length <= 1) {
             branchFilter.style.display = 'none';
@@ -1051,7 +1058,7 @@ async function onStaffRestChange(clientId) {
                 data.map(b => `<option value="${b.branch_id}">${b.name} (${b.branch_id})</option>`).join('');
             branchFilter.style.display = '';
         }
-    } catch(e) {
+    } catch (e) {
         branchFilter.style.display = 'none';
     }
 }
@@ -1059,7 +1066,7 @@ async function onStaffRestChange(clientId) {
 function openAddStaff() {
     const client_id = document.getElementById('staff-rest-select').value;
     if (!client_id) { toast('Pehle restaurant select karo', 'error'); return; }
-    ['ns-name','ns-username','ns-password'].forEach(id => document.getElementById(id).value = '');
+    ['ns-name', 'ns-username', 'ns-password'].forEach(id => document.getElementById(id).value = '');
     document.getElementById('ns-role').value = 'waiter';
     openModal('modal-add-staff');
 }
@@ -1067,15 +1074,15 @@ function openAddStaff() {
 async function createStaff() {
     const client_id = document.getElementById('staff-rest-select').value;
     const body = {
-        name:      document.getElementById('ns-name').value.trim(),
-        username:  document.getElementById('ns-username').value.trim().toLowerCase(),
-        password:  document.getElementById('ns-password').value,
-        role:      document.getElementById('ns-role').value,
+        name: document.getElementById('ns-name').value.trim(),
+        username: document.getElementById('ns-username').value.trim().toLowerCase(),
+        password: document.getElementById('ns-password').value,
+        role: document.getElementById('ns-role').value,
         branch_id: document.getElementById('ns-branch')?.value || '__default__',
     };
     if (!body.name || !body.username || !body.password) { toast('Sab fields required', 'error'); return; }
     const res = await fetch(`/api/admin/staff/${client_id}`, {
-        method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
     });
     const d = await res.json();
     if (res.ok) { toast(`'${body.name}' added!`, 'success'); closeModal('modal-add-staff'); loadStaff(); }
@@ -1092,7 +1099,7 @@ async function changePassword() {
     const password = document.getElementById('cp-password').value;
     if (!password) { toast('Password required', 'error'); return; }
     const res = await fetch(`/api/admin/staff/${currentPasswordStaffId}/password`, {
-        method:'PATCH', headers:{'Content-Type':'application/json'},
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ new_password: password })
     });
     if (res.ok) { toast('Password updated!', 'success'); closeModal('modal-change-pass'); }
@@ -1100,7 +1107,7 @@ async function changePassword() {
 }
 
 async function toggleStaff(staff_id) {
-    const res = await fetch(`/api/admin/staff/${staff_id}/toggle`, { method:'PATCH' });
+    const res = await fetch(`/api/admin/staff/${staff_id}/toggle`, { method: 'PATCH' });
     const d = await res.json();
     if (res.ok) { toast(d.is_active ? 'Staff activated' : 'Staff deactivated'); loadStaff(); }
     else { toast('Failed', 'error'); }
@@ -1115,7 +1122,7 @@ async function deleteStaff(staff_id, name) {
         danger: true,
     });
     if (!ok) return;
-    const res = await fetch(`/api/admin/staff/${staff_id}`, { method:'DELETE' });
+    const res = await fetch(`/api/admin/staff/${staff_id}`, { method: 'DELETE' });
     if (res.ok) { toast(`'${name}' deleted`); loadStaff(); }
     else { toast('Delete failed', 'error'); }
 }
@@ -1124,19 +1131,19 @@ async function deleteStaff(staff_id, name) {
 // ADMIN MANAGEMENT
 // ════════════════════════════════
 function openAddAdmin() {
-    ['na-name','na-username','na-password'].forEach(id => document.getElementById(id).value = '');
+    ['na-name', 'na-username', 'na-password'].forEach(id => document.getElementById(id).value = '');
     openModal('modal-add-admin');
 }
 
 async function createAdmin() {
     const body = {
-        name:     document.getElementById('na-name').value.trim(),
+        name: document.getElementById('na-name').value.trim(),
         username: document.getElementById('na-username').value.trim().toLowerCase(),
         password: document.getElementById('na-password').value,
     };
     if (!body.name || !body.username || !body.password) { toast('Sab fields required', 'error'); return; }
     const res = await fetch('/api/admin/create', {
-        method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
     });
     const d = await res.json();
     if (res.ok) { toast(`Admin '${body.name}' add ho gaya!`, 'success'); closeModal('modal-add-admin'); }
@@ -1152,7 +1159,7 @@ async function changeAdminPassword() {
     const password = document.getElementById('ap-password').value;
     if (!password) { toast('Password required', 'error'); return; }
     const res = await fetch('/api/admin/password', {
-        method:'PATCH', headers:{'Content-Type':'application/json'},
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ new_password: password })
     });
     if (res.ok) { toast('Password update ho gaya!', 'success'); closeModal('modal-admin-pass'); }
@@ -1163,7 +1170,7 @@ async function changeAdminPassword() {
 // LOGOUT
 // ════════════════════════════════
 async function doLogout() {
-    await fetch('/api/auth/logout', { method:'POST' });
+    await fetch('/api/auth/logout', { method: 'POST' });
     const isAdminSubdomain = window.location.hostname === 'admin.zentable.in';
     window.location.replace(isAdminSubdomain ? '/' : '/admin/login');
 }
@@ -1185,7 +1192,7 @@ function setDishPeriod(period, btn) {
     }
 }
 
-async function loadTopDishes(period='alltime') {
+async function loadTopDishes(period = 'alltime') {
     const dishEl = document.getElementById('overall-dishes');
     dishEl.innerHTML = '<div class="loading">Loading...</div>';
     const res = await fetch(`/api/admin/overview?period=${period}`);
@@ -1202,9 +1209,9 @@ function renderTopDishes(dishes) {
     const maxQty = dishes[0].qty;
     dishEl.innerHTML = dishes.map((item, i) => `
         <div class="dish-row">
-            <div class="dish-rank">#${i+1}</div>
+            <div class="dish-rank">#${i + 1}</div>
             <div class="dish-name">${item.name}</div>
-            <div class="dish-bar-wrap"><div class="dish-bar" style="width:${Math.round(item.qty/maxQty*100)}%"></div></div>
+            <div class="dish-bar-wrap"><div class="dish-bar" style="width:${Math.round(item.qty / maxQty * 100)}%"></div></div>
             <div class="dish-qty">${item.qty}x</div>
             <div class="dish-rev">₹${item.revenue.toLocaleString()}</div>
         </div>
@@ -1305,20 +1312,13 @@ function clearRestaurantDrill() {
     document.querySelectorAll('.rest-row').forEach(r => r.classList.remove('row-selected'));
     loadTopDishes('alltime');
 }
+
 // ── QR Generator (Admin — Branded) ──
-async function downloadAllQRs(clientId) {
-    const SCALE = 4; // high quality for print
-
-    const res = await fetch(`/api/menu/${clientId}`);
-    const data = await res.json();
-    const rest = data.restaurant;
-    const theme = data.theme;
-    const numTables = rest.num_tables || 6;
-    const primary   = theme.primary_color   || '#6C63FF';
+async function _generateBranchQRBlobs(clientId, branchId, numTables, rest, theme) {
+    const primary = theme.primary_color || '#6C63FF';
     const secondary = theme.secondary_color || '#1a1a1a';
+    const SCALE = 4;
 
-    // Logo load
-    // Local dev mein R2 URL ko local path se replace karo — R2 requests save hongi
     function resolveLogoUrl(url) {
         if (!url) return url;
         const R2_BASE = 'https://assets.zentable.in/';
@@ -1333,16 +1333,17 @@ async function downloadAllQRs(clientId) {
         logoImg = await new Promise(res => {
             const img = new Image();
             img.crossOrigin = 'anonymous';
-            img.onload  = () => res(img);
+            img.onload = () => res(img);
             img.onerror = () => res(null);
             img.src = resolveLogoUrl(rest.logo);
         });
     }
 
-    const zip = new JSZip();
-
+    const blobs = [];
     for (let n = 1; n <= numTables; n++) {
-        const url = `${window.location.origin}/${clientId}/table/${n}/ar-menu`;
+        const url = branchId && branchId !== '__default__'
+            ? `${window.location.origin}/${clientId}/table/${n}/ar-menu?branch_id=${branchId}`
+            : `${window.location.origin}/${clientId}/table/${n}/ar-menu`;
 
         const blob = await new Promise(resolve => {
             const wrap = document.createElement('div');
@@ -1354,41 +1355,35 @@ async function downloadAllQRs(clientId) {
 
             setTimeout(() => {
                 const qrEl = wrap.querySelector('canvas') || wrap.querySelector('img');
-
-                // Layout constants (pre-scale)
-                const pad      = 28;
-                const barH     = 8;
+                const pad = 28;
+                const barH = 8;
                 const logoSize = logoImg ? 70 : 0;
-                const logoGap  = logoImg ? logoSize + 14 : 0;
-                const nameH    = 28;
-                const tableH   = 36;
-                const gap      = 10;
-                const totalH   = barH + pad + logoGap + nameH + gap + tableH + gap + qrSize + pad + barH;
-                const totalW   = qrSize + pad * 2;
+                const logoGap = logoImg ? logoSize + 14 : 0;
+                const nameH = 28;
+                const tableH = 36;
+                const gap = 10;
+                const totalH = barH + pad + logoGap + nameH + gap + tableH + gap + qrSize + pad + barH;
+                const totalW = qrSize + pad * 2;
 
                 const canvas = document.createElement('canvas');
-                canvas.width  = totalW * SCALE;
+                canvas.width = totalW * SCALE;
                 canvas.height = totalH * SCALE;
                 const ctx = canvas.getContext('2d');
                 ctx.scale(SCALE, SCALE);
 
-                // White bg
                 ctx.fillStyle = '#ffffff';
                 ctx.fillRect(0, 0, totalW, totalH);
-
-                // Top bar
                 ctx.fillStyle = primary;
                 ctx.fillRect(0, 0, totalW, barH);
 
                 let y = barH + pad;
 
-                // Logo — circular clip
                 if (logoImg) {
                     const lx = (totalW - logoSize) / 2;
                     const ly = y;
                     ctx.save();
                     ctx.beginPath();
-                    ctx.arc(lx + logoSize/2, ly + logoSize/2, logoSize/2, 0, Math.PI*2);
+                    ctx.arc(lx + logoSize / 2, ly + logoSize / 2, logoSize / 2, 0, Math.PI * 2);
                     ctx.closePath();
                     ctx.clip();
                     ctx.drawImage(logoImg, lx, ly, logoSize, logoSize);
@@ -1396,32 +1391,25 @@ async function downloadAllQRs(clientId) {
                     y += logoSize + 14;
                 }
 
-                // Restaurant name
                 ctx.fillStyle = secondary;
                 ctx.font = `600 15px Arial`;
                 ctx.textAlign = 'center';
                 ctx.fillText(rest.name, totalW / 2, y + 20);
                 y += nameH + gap;
 
-                // Table number
                 ctx.fillStyle = primary;
                 ctx.font = `bold 24px Arial`;
                 ctx.fillText(`Table ${n}`, totalW / 2, y + 28);
                 y += tableH + gap;
 
-                // QR
                 const drawQR = (src) => {
                     const img = new Image();
-                    img.crossOrigin = 'anonymous';  // canvas taint se bachao
+                    img.crossOrigin = 'anonymous';
                     img.onload = () => {
                         ctx.drawImage(img, pad, y, qrSize, qrSize);
-
-                        // ZenTable logo QR center mein
-                        const ztR      = qrSize * 0.07;
-                        const ztCx     = pad + qrSize / 2;
-                        const ztCy     = y + qrSize / 2;
-
-                        // White circle bg
+                        const ztR = qrSize * 0.07;
+                        const ztCx = pad + qrSize / 2;
+                        const ztCy = y + qrSize / 2;
                         ctx.fillStyle = '#F5F0E8';
                         ctx.beginPath();
                         ctx.arc(ztCx, ztCy, ztR + 5, 0, Math.PI * 2);
@@ -1429,7 +1417,6 @@ async function downloadAllQRs(clientId) {
 
                         const finalize = () => {
                             y += qrSize + pad;
-                            // Bottom bar
                             ctx.fillStyle = primary;
                             ctx.fillRect(0, totalH - barH, totalW, barH);
                             canvas.toBlob(blob => {
@@ -1439,15 +1426,14 @@ async function downloadAllQRs(clientId) {
                         };
 
                         const ztLogo = new Image();
-                        ztLogo.crossOrigin = 'anonymous';  // local static file bhi — browser cache issue se bachao
+                        ztLogo.crossOrigin = 'anonymous';
                         ztLogo.onload = () => {
-                            const iw = ztLogo.naturalWidth;
-                            const ih = ztLogo.naturalHeight;
+                            const iw = ztLogo.naturalWidth, ih = ztLogo.naturalHeight;
                             const aspect = iw / ih;
                             const diam = ztR * 2;
-                            let dw = aspect > 1 ? diam : diam * aspect;
-                            let dh = aspect > 1 ? diam / aspect : diam;
-                            ctx.drawImage(ztLogo, ztCx - dw/2, ztCy - dh/2 + 3, dw, dh);
+                            const dw = aspect > 1 ? diam : diam * aspect;
+                            const dh = aspect > 1 ? diam / aspect : diam;
+                            ctx.drawImage(ztLogo, ztCx - dw / 2, ztCy - dh / 2 + 3, dw, dh);
                             finalize();
                         };
                         ztLogo.onerror = finalize;
@@ -1461,11 +1447,107 @@ async function downloadAllQRs(clientId) {
             }, 150);
         });
 
-        zip.file(`${clientId}_table_${n}.png`, blob);
+        blobs.push({ filename: `table_${n}.png`, blob });
         await new Promise(r => setTimeout(r, 100));
     }
+    return blobs;
+}
 
-    // Generate zip aur download
+function _showQRBranchModal(clientId, branches) {
+    const existing = document.getElementById('_qr-branch-modal');
+    if (existing) existing.remove();
+
+    const branchesEncoded = encodeURIComponent(JSON.stringify(branches)).replace(/'/g, "%27");
+
+    const btns = branches.map(b =>
+        `<button onclick="_qrPickBranch('${clientId}','${b.branch_id}','${b.name.replace(/'/g, "\\'")}')"
+            style="width:100%;padding:10px 14px;margin-bottom:8px;border-radius:8px;
+                   border:1px solid var(--border);background:rgba(255,255,255,0.04);
+                   color:var(--text);font-size:0.85rem;cursor:pointer;text-align:left;">
+            ${b.name} <span style="opacity:0.45;font-size:0.72rem;">(${b.branch_id})</span>
+        </button>`
+    ).join('');
+
+    const overlay = document.createElement('div');
+    overlay.id = '_qr-branch-modal';
+    overlay.style.cssText = `position:fixed;inset:0;z-index:99999;
+        background:rgba(0,0,0,0.55);backdrop-filter:blur(3px);
+        display:flex;align-items:center;justify-content:center;`;
+    overlay.innerHTML = `
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;
+                    padding:28px 28px 20px;max-width:380px;width:90%;
+                    box-shadow:0 24px 60px rgba(0,0,0,0.5);">
+            <div style="font-size:1rem;font-weight:600;color:var(--text);margin-bottom:6px;">⬇ QR Codes Download</div>
+            <div style="font-size:0.82rem;color:var(--muted);margin-bottom:16px;">Kaunsi branch ke QR download karne hain?</div>
+            ${btns}
+            <button onclick="_qrPickAll('${clientId}',decodeURIComponent('${branchesEncoded}'))"
+                style="width:100%;padding:10px 14px;margin-bottom:8px;border-radius:8px;
+                       border:1px solid rgba(108,99,255,0.4);background:rgba(108,99,255,0.08);
+                       color:#a89cff;font-size:0.85rem;cursor:pointer;text-align:left;">
+                📦 Saari Branches &nbsp;<span style="opacity:0.55;font-size:0.72rem;">(ek ZIP, alag folders)</span>
+            </button>
+            <button onclick="document.getElementById('_qr-branch-modal').remove()"
+                style="width:100%;padding:8px;border-radius:8px;border:1px solid var(--border);
+                       background:transparent;color:var(--muted);font-size:0.82rem;cursor:pointer;margin-top:2px;">
+                Cancel
+            </button>
+        </div>`;
+    document.body.appendChild(overlay);
+    overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+}
+
+window._qrPickBranch = async function (clientId, branchId, branchName) {
+    document.getElementById('_qr-branch-modal')?.remove();
+    toast('QR codes generate ho rahe hain...', '');
+    const qs = branchId && branchId !== '__default__' ? `?branch_id=${branchId}` : '';
+    const res = await fetch(`/api/admin/restaurant/${clientId}/json${qs}`, { credentials: 'include' });
+    const data = await res.json();
+    const blobs = await _generateBranchQRBlobs(clientId, branchId, data.restaurant.num_tables || 6, data.restaurant, data.theme);
+    const zip = new JSZip();
+    blobs.forEach(({ filename, blob }) => zip.file(`${clientId}_${filename}`, blob));
+    const zipBlob = await zip.generateAsync({ type: 'blob' });
+    const link = document.createElement('a');
+    const suffix = branchId && branchId !== '__default__' ? `_${branchId}` : '';
+    link.download = `${clientId}${suffix}_qr_codes.zip`;
+    link.href = URL.createObjectURL(zipBlob);
+    link.click();
+    URL.revokeObjectURL(link.href);
+};
+
+window._qrPickAll = async function (clientId, branchesJson) {
+    document.getElementById('_qr-branch-modal')?.remove();
+    toast('Saari branches ke QR generate ho rahe hain...', '');
+    const branches = JSON.parse(branchesJson);
+    const masterZip = new JSZip();
+    for (const b of branches) {
+        const qs = b.branch_id && b.branch_id !== '__default__' ? `?branch_id=${b.branch_id}` : '';
+        const res = await fetch(`/api/admin/restaurant/${clientId}/json${qs}`, { credentials: 'include' });
+        const data = await res.json();
+        const blobs = await _generateBranchQRBlobs(clientId, b.branch_id, data.restaurant.num_tables || 6, data.restaurant, data.theme);
+        const folder = masterZip.folder(b.name || b.branch_id);
+        blobs.forEach(({ filename, blob }) => folder.file(filename, blob));
+    }
+    const zipBlob = await masterZip.generateAsync({ type: 'blob' });
+    const link = document.createElement('a');
+    link.download = `${clientId}_all_branches_qr.zip`;
+    link.href = URL.createObjectURL(zipBlob);
+    link.click();
+    URL.revokeObjectURL(link.href);
+};
+
+async function downloadAllQRs(clientId) {
+    const branches = _qrBranchesMap[clientId] || [];
+    if (branches.length > 1) {
+        _showQRBranchModal(clientId, branches);
+        return;
+    }
+    // Single branch ya no info — seedha default
+    toast('QR codes generate ho rahe hain...', '');
+    const res = await fetch(`/api/admin/restaurant/${clientId}/json`, { credentials: 'include' });
+    const data = await res.json();
+    const blobs = await _generateBranchQRBlobs(clientId, '__default__', data.restaurant.num_tables || 6, data.restaurant, data.theme);
+    const zip = new JSZip();
+    blobs.forEach(({ filename, blob }) => zip.file(`${clientId}_${filename}`, blob));
     const zipBlob = await zip.generateAsync({ type: 'blob' });
     const link = document.createElement('a');
     link.download = `${clientId}_qr_codes.zip`;
@@ -1500,21 +1582,21 @@ function togglePass(inputId, btnId) {
         get: () => typeof currentEditClientId !== 'undefined' ? currentEditClientId : null
     });
 
-    let _S    = null;   // scene state
-    let _orbit = { active:false, lastX:0, lastY:0, rotX:0.3, rotY:0.4, zoom:5 };
-    let _loaded = { three:false, gltf:false };
+    let _S = null;   // scene state
+    let _orbit = { active: false, lastX: 0, lastY: 0, rotX: 0.3, rotY: 0.4, zoom: 5 };
+    let _loaded = { three: false, gltf: false };
 
     // Slider range limits per axis group
     const RANGES = {
-        p: { min:-5,   max:5,   step:0.05 },
-        s: { min:0.05, max:10,  step:0.05 },
-        r: { min:-180, max:180, step:1    }
+        p: { min: -5, max: 5, step: 0.05 },
+        s: { min: 0.05, max: 10, step: 0.05 },
+        r: { min: -180, max: 180, step: 1 }
     };
 
     // ── Public entry ──
     window.initGlbEditor = function (modelPath) {
         const section = document.getElementById('glb-editor-section');
-        const badge   = document.getElementById('glb-model-badge');
+        const badge = document.getElementById('glb-model-badge');
 
         if (!modelPath || modelPath.toLowerCase() === 'none' || !modelPath.trim()) {
             section.style.display = 'none';
@@ -1553,7 +1635,7 @@ function togglePass(inputId, btnId) {
     function _buildScene() {
         _destroyScene();
         const canvas = document.getElementById('glb-canvas');
-        canvas.width  = canvas.clientWidth  || 180;
+        canvas.width = canvas.clientWidth || 180;
         canvas.height = canvas.clientHeight || 320;
 
         const THREE = window.THREE;
@@ -1574,19 +1656,19 @@ function togglePass(inputId, btnId) {
         const camera = new THREE.PerspectiveCamera(
             45, canvas.width / canvas.height, 0.01, 500
         );
-        const renderer = new THREE.WebGLRenderer({ canvas, antialias:true });
+        const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         renderer.setSize(canvas.width, canvas.height, false);
         renderer.outputEncoding = THREE.sRGBEncoding;
         renderer.physicallyCorrectLights = true;
 
-        _orbit = { active:false, lastX:0, lastY:0, rotX:0.3, rotY:0.4, zoom:5 };
+        _orbit = { active: false, lastX: 0, lastY: 0, rotX: 0.3, rotY: 0.4, zoom: 5 };
         _attachOrbit(canvas, camera);
 
-        const animId = { v:null };
+        const animId = { v: null };
         (function loop() { animId.v = requestAnimationFrame(loop); _updateCamera(camera); renderer.render(scene, camera); })();
 
-        _S = { THREE, scene, camera, renderer, animId, model:null };
+        _S = { THREE, scene, camera, renderer, animId, model: null };
     }
 
     // ── Fetch signed URL then load GLB ──
@@ -1617,10 +1699,10 @@ function togglePass(inputId, btnId) {
             const model = gltf.scene;
 
             // Normalize to ~2-unit sphere
-            const box    = new THREE.Box3().setFromObject(model);
+            const box = new THREE.Box3().setFromObject(model);
             const center = box.getCenter(new THREE.Vector3());
-            const size   = box.getSize(new THREE.Vector3());
-            const norm   = 2 / (Math.max(size.x, size.y, size.z) || 1);
+            const size = box.getSize(new THREE.Vector3());
+            const norm = 2 / (Math.max(size.x, size.y, size.z) || 1);
             model.position.sub(center.multiplyScalar(norm));
             model.userData.normScale = norm;
 
@@ -1637,46 +1719,46 @@ function togglePass(inputId, btnId) {
     // ── Apply xyz inputs → Three.js model ──
     function _applyTransform() {
         if (!_S || !_S.model) return;
-        const m    = _S.model;
+        const m = _S.model;
         const norm = m.userData.normScale || 1;
-        const DEG  = Math.PI / 180;
+        const DEG = Math.PI / 180;
         m.position.set(_n('glb-px'), _n('glb-py'), _n('glb-pz'));
-        m.scale.set(_n('glb-sx')*norm, _n('glb-sy')*norm, _n('glb-sz')*norm);
-        m.rotation.set(_n('glb-rx')*DEG, _n('glb-ry')*DEG, _n('glb-rz')*DEG);
+        m.scale.set(_n('glb-sx') * norm, _n('glb-sy') * norm, _n('glb-sz') * norm);
+        m.rotation.set(_n('glb-rx') * DEG, _n('glb-ry') * DEG, _n('glb-rz') * DEG);
     }
 
     // ── Sync sliders ↔ numboxes → model ──
     window.glbSlider = function (axis) {
         // slider moved → copy to numbox
-        const sv = document.getElementById('glb-'+axis+'-s').value;
-        document.getElementById('glb-'+axis).value = sv;
+        const sv = document.getElementById('glb-' + axis + '-s').value;
+        document.getElementById('glb-' + axis).value = sv;
         _handleUniform(axis, sv);
         _applyTransform();
     };
     window.glbNumbox = function (axis) {
         // numbox typed → copy to slider (clamped)
-        let v = parseFloat(document.getElementById('glb-'+axis).value) || 0;
-        const s = document.getElementById('glb-'+axis+'-s');
+        let v = parseFloat(document.getElementById('glb-' + axis).value) || 0;
+        const s = document.getElementById('glb-' + axis + '-s');
         v = Math.max(parseFloat(s.min), Math.min(parseFloat(s.max), v));
         s.value = v;
-        document.getElementById('glb-'+axis).value = v;
+        document.getElementById('glb-' + axis).value = v;
         _handleUniform(axis, v);
         _applyTransform();
     };
 
     function _handleUniform(axis, val) {
         if (!document.getElementById('glb-uniform').checked) return;
-        if (!['sx','sy','sz'].includes(axis)) return;
-        ['sx','sy','sz'].forEach(a => {
-            document.getElementById('glb-'+a).value   = val;
-            document.getElementById('glb-'+a+'-s').value = val;
+        if (!['sx', 'sy', 'sz'].includes(axis)) return;
+        ['sx', 'sy', 'sz'].forEach(a => {
+            document.getElementById('glb-' + a).value = val;
+            document.getElementById('glb-' + a + '-s').value = val;
         });
     }
 
     // ── Sync from di-position/scale/rotation text fields → inputs+sliders ──
     function _syncInputsFromFields() {
         const pos = _p3(document.getElementById('di-position')?.value, '0 0 0');
-        const scl = _p3(document.getElementById('di-scale')?.value,    '1 1 1');
+        const scl = _p3(document.getElementById('di-scale')?.value, '1 1 1');
         const rot = _p3(document.getElementById('di-rotation')?.value, '0 0 0');
 
         _setAxis('px', pos[0]); _setAxis('py', pos[1]); _setAxis('pz', pos[2]);
@@ -1685,8 +1767,8 @@ function togglePass(inputId, btnId) {
     }
 
     function _setAxis(axis, val) {
-        const num = document.getElementById('glb-'+axis);
-        const sld = document.getElementById('glb-'+axis+'-s');
+        const num = document.getElementById('glb-' + axis);
+        const sld = document.getElementById('glb-' + axis + '-s');
         if (num) num.value = val;
         if (sld) {
             const clamped = Math.max(parseFloat(sld.min), Math.min(parseFloat(sld.max), val));
@@ -1698,57 +1780,57 @@ function togglePass(inputId, btnId) {
     window.glbApplyToFields = function () {
         const f = id => document.getElementById(id)?.value || 0;
         _field('di-position', `${f('glb-px')} ${f('glb-py')} ${f('glb-pz')}`);
-        _field('di-scale',    `${f('glb-sx')} ${f('glb-sy')} ${f('glb-sz')}`);
+        _field('di-scale', `${f('glb-sx')} ${f('glb-sy')} ${f('glb-sz')}`);
         _field('di-rotation', `${f('glb-rx')} ${f('glb-ry')} ${f('glb-rz')}`);
         const msg = document.getElementById('glb-applied-msg');
-        if (msg) { msg.style.display='block'; setTimeout(()=>msg.style.display='none', 3000); }
+        if (msg) { msg.style.display = 'block'; setTimeout(() => msg.style.display = 'none', 3000); }
     };
 
     // ── Reset to defaults ──
     window.glbReset = function () {
-        ['px','py','pz'].forEach(a => _setAxis(a, 0));
-        ['sx','sy','sz'].forEach(a => _setAxis(a, 1));
-        ['rx','ry','rz'].forEach(a => _setAxis(a, 0));
+        ['px', 'py', 'pz'].forEach(a => _setAxis(a, 0));
+        ['sx', 'sy', 'sz'].forEach(a => _setAxis(a, 1));
+        ['rx', 'ry', 'rz'].forEach(a => _setAxis(a, 0));
         _applyTransform();
     };
 
     // ── Orbit (mouse + touch) ──
     function _attachOrbit(canvas, camera) {
         canvas.addEventListener('mousedown', e => {
-            _orbit.active=true; _orbit.lastX=e.clientX; _orbit.lastY=e.clientY;
-            canvas.style.cursor='grabbing';
+            _orbit.active = true; _orbit.lastX = e.clientX; _orbit.lastY = e.clientY;
+            canvas.style.cursor = 'grabbing';
         });
-        window.addEventListener('mouseup', () => { _orbit.active=false; canvas.style.cursor='grab'; });
+        window.addEventListener('mouseup', () => { _orbit.active = false; canvas.style.cursor = 'grab'; });
         window.addEventListener('mousemove', e => {
             if (!_orbit.active) return;
-            _orbit.rotY += (e.clientX-_orbit.lastX)*0.008;
-            _orbit.rotX += (e.clientY-_orbit.lastY)*0.008;
-            _orbit.rotX  = Math.max(-1.4, Math.min(1.4, _orbit.rotX));
-            _orbit.lastX=e.clientX; _orbit.lastY=e.clientY;
+            _orbit.rotY += (e.clientX - _orbit.lastX) * 0.008;
+            _orbit.rotX += (e.clientY - _orbit.lastY) * 0.008;
+            _orbit.rotX = Math.max(-1.4, Math.min(1.4, _orbit.rotX));
+            _orbit.lastX = e.clientX; _orbit.lastY = e.clientY;
         });
         canvas.addEventListener('wheel', e => {
             e.preventDefault();
-            _orbit.zoom = Math.max(0.5, Math.min(25, _orbit.zoom+e.deltaY*0.012));
-        }, {passive:false});
-        let t0=null;
-        canvas.addEventListener('touchstart',  e => { _orbit.active=true;  t0=e.touches[0]; });
-        canvas.addEventListener('touchend',    () => { _orbit.active=false; t0=null; });
-        canvas.addEventListener('touchmove',   e => {
-            if (!_orbit.active||!t0) return;
-            _orbit.rotY+=(e.touches[0].clientX-t0.clientX)*0.01;
-            _orbit.rotX+=(e.touches[0].clientY-t0.clientY)*0.01;
-            _orbit.rotX =Math.max(-1.4,Math.min(1.4,_orbit.rotX));
-            t0=e.touches[0]; e.preventDefault();
-        }, {passive:false});
+            _orbit.zoom = Math.max(0.5, Math.min(25, _orbit.zoom + e.deltaY * 0.012));
+        }, { passive: false });
+        let t0 = null;
+        canvas.addEventListener('touchstart', e => { _orbit.active = true; t0 = e.touches[0]; });
+        canvas.addEventListener('touchend', () => { _orbit.active = false; t0 = null; });
+        canvas.addEventListener('touchmove', e => {
+            if (!_orbit.active || !t0) return;
+            _orbit.rotY += (e.touches[0].clientX - t0.clientX) * 0.01;
+            _orbit.rotX += (e.touches[0].clientY - t0.clientY) * 0.01;
+            _orbit.rotX = Math.max(-1.4, Math.min(1.4, _orbit.rotX));
+            t0 = e.touches[0]; e.preventDefault();
+        }, { passive: false });
     }
     function _updateCamera(camera) {
-        const r=_orbit.zoom;
+        const r = _orbit.zoom;
         camera.position.set(
-            r*Math.sin(_orbit.rotY)*Math.cos(_orbit.rotX),
-            r*Math.sin(_orbit.rotX),
-            r*Math.cos(_orbit.rotY)*Math.cos(_orbit.rotX)
+            r * Math.sin(_orbit.rotY) * Math.cos(_orbit.rotX),
+            r * Math.sin(_orbit.rotX),
+            r * Math.cos(_orbit.rotY) * Math.cos(_orbit.rotX)
         );
-        camera.lookAt(0,0,0);
+        camera.lookAt(0, 0, 0);
     }
 
     // ── Cleanup ──
@@ -1759,27 +1841,27 @@ function togglePass(inputId, btnId) {
         _S = null;
     }
     document.addEventListener('click', e => {
-        if (e.target.id==='modal-dish' ||
-           (e.target.classList.contains('modal-close') && e.target.closest('#modal-dish'))) {
+        if (e.target.id === 'modal-dish' ||
+            (e.target.classList.contains('modal-close') && e.target.closest('#modal-dish'))) {
             _destroyScene();
         }
     });
 
     // ── Helpers ──
-    function _n(id)        { return parseFloat(document.getElementById(id)?.value) || 0; }
-    function _field(id,v)  { const el=document.getElementById(id); if(el) el.value=v; }
-    function _p3(str, fb)  { const p=(str||fb).trim().split(/\s+/).map(Number); while(p.length<3)p.push(0); return p; }
+    function _n(id) { return parseFloat(document.getElementById(id)?.value) || 0; }
+    function _field(id, v) { const el = document.getElementById(id); if (el) el.value = v; }
+    function _p3(str, fb) { const p = (str || fb).trim().split(/\s+/).map(Number); while (p.length < 3) p.push(0); return p; }
     function _showOverlay(msg) {
-        const ov=document.getElementById('glb-loader-overlay');
-        const sp=document.getElementById('glb-loader-spinner');
-        const tx=document.getElementById('glb-loader-text');
-        if (!ov) return; ov.style.display='flex';
-        if (sp) sp.style.display=/fail|nahi|error/i.test(msg)?'none':'block';
-        if (tx) tx.textContent=msg;
+        const ov = document.getElementById('glb-loader-overlay');
+        const sp = document.getElementById('glb-loader-spinner');
+        const tx = document.getElementById('glb-loader-text');
+        if (!ov) return; ov.style.display = 'flex';
+        if (sp) sp.style.display = /fail|nahi|error/i.test(msg) ? 'none' : 'block';
+        if (tx) tx.textContent = msg;
     }
     function _hideOverlay() {
-        const ov=document.getElementById('glb-loader-overlay');
-        if (ov) ov.style.display='none';
+        const ov = document.getElementById('glb-loader-overlay');
+        if (ov) ov.style.display = 'none';
     }
 
 })();
@@ -1789,10 +1871,10 @@ async function updateRestCardMeta(client_id) {
     if (!sel) return;
     const branch_id = sel.value;
 
-    const tablesEl   = document.getElementById(`rm-tables-${client_id}`);
-    const ordersEl   = document.getElementById(`rm-orders-${client_id}`);
-    const revEl      = document.getElementById(`rm-rev-${client_id}`);
-    const staffEl    = document.getElementById(`rm-staff-${client_id}`);
+    const tablesEl = document.getElementById(`rm-tables-${client_id}`);
+    const ordersEl = document.getElementById(`rm-orders-${client_id}`);
+    const revEl = document.getElementById(`rm-rev-${client_id}`);
+    const staffEl = document.getElementById(`rm-staff-${client_id}`);
     const featuresEl = document.getElementById(`rm-features-${client_id}`);
 
     try {
@@ -1817,9 +1899,9 @@ async function updateRestCardMeta(client_id) {
                     .then(r => r.ok ? r.json() : []),
             ]);
 
-            const defaultData  = allBranchData.find((_, i) => branchList[i]?.branch_id === '__default__') || allBranchData[0] || {};
-            const totalTables  = allBranchData.reduce((sum, d) => sum + (d?.restaurant?.num_tables || 0), 0) || r?.num_tables || 0;
-            const totalOrders  = allAnalytics.reduce((sum, a) => sum + (a.today?.orders  || 0), 0);
+            const defaultData = allBranchData.find((_, i) => branchList[i]?.branch_id === '__default__') || allBranchData[0] || {};
+            const totalTables = allBranchData.reduce((sum, d) => sum + (d?.restaurant?.num_tables || 0), 0) || r?.num_tables || 0;
+            const totalOrders = allAnalytics.reduce((sum, a) => sum + (a.today?.orders || 0), 0);
             const totalRevenue = allAnalytics.reduce((sum, a) => sum + (a.today?.revenue || 0), 0);
 
             // DEBUG — browser console mein dekho, baad mein hata dena
@@ -1831,8 +1913,8 @@ async function updateRestCardMeta(client_id) {
             if (tablesWrapEl) tablesWrapEl.style.display = 'none';
             if (tablesEl) tablesEl.textContent = totalTables || '—';
             if (ordersEl) ordersEl.textContent = `${totalOrders} orders`;
-            if (revEl)    revEl.textContent    = `₹${totalRevenue.toLocaleString()}`;
-            if (staffEl)  staffEl.textContent  = Array.isArray(sRes) ? sRes.length : '—';
+            if (revEl) revEl.textContent = `₹${totalRevenue.toLocaleString()}`;
+            if (staffEl) staffEl.textContent = Array.isArray(sRes) ? sRes.length : '—';
 
             if (featuresEl) {
                 const features = defaultData?.subscription?.features || ['basic'];
@@ -1858,7 +1940,7 @@ async function updateRestCardMeta(client_id) {
         if (tablesWrapEl2) tablesWrapEl2.style.display = '';
         if (tablesEl) tablesEl.textContent = cData?.restaurant?.num_tables || '—';
         if (ordersEl) ordersEl.textContent = `${t.orders || 0} orders`;
-        if (revEl)    revEl.textContent    = `₹${(t.revenue || 0).toLocaleString()}`;
+        if (revEl) revEl.textContent = `₹${(t.revenue || 0).toLocaleString()}`;
 
         if (staffEl) {
             const branchStaff = sData.filter(s => (s.branch_id || '__default__') === branch_id);
@@ -1871,6 +1953,6 @@ async function updateRestCardMeta(client_id) {
                 `<span style="font-size:0.6rem;padding:2px 7px;border-radius:3px;background:rgba(108,99,255,0.12);color:var(--primary);border:1px solid var(--border);font-family:var(--font-m)">${f}</span>`
             ).join('');
         }
-    } catch(e) {}
+    } catch (e) { }
 }
 
