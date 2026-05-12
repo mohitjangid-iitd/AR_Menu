@@ -20,7 +20,7 @@
 
 <div id="top-controls">
     <!-- Left: Home -->
-    <a href="/{{ client_id }}{% if table_no %}/table/{{ table_no }}{% endif %}" class="control-btn-wrap">
+    <a href="/{{ client_id }}{% if table_no %}/table/{{ table_no }}{% endif %}{% if branch_id and branch_id != '__default__' %}?branch_id={{ branch_id }}{% endif %}" class="control-btn-wrap">
         <div class="control-btn">
             <svg viewBox="0 0 24 24">
                 <path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V9.5z" fill="url(#btnGrad)" fill-opacity="0.12"/>
@@ -33,7 +33,7 @@
 
     <!-- Right: Menu, Screenshot, Share -->
     <div style="display:flex; gap:14px; align-items:flex-start;">
-        <a href="/{{ client_id }}{% if table_no %}/table/{{ table_no }}{% endif %}/menu" class="control-btn-wrap" id="menu-btn">
+        <a href="/{{ client_id }}{% if table_no %}/table/{{ table_no }}{% endif %}/menu{% if branch_id and branch_id != '__default__' %}?branch_id={{ branch_id }}{% endif %}" class="control-btn-wrap" id="menu-btn">
             <div class="control-btn">
                 <svg viewBox="0 0 24 24">
                     <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/>
@@ -104,6 +104,7 @@
 <script>
     const clientId = "{{ client_id }}";
     const tableNo = {{ table_no if table_no else 'null' }};
+    const branchId = "{{ branch_id | default('__default__') }}";
 </script>
 
 <!-- Static JS -->

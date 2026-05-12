@@ -7,7 +7,7 @@ GET /glb/{token}           — signed token se GLB file serve
 
 import copy
 import os
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import JSONResponse, FileResponse, RedirectResponse
 
 from helpers import get_client_data
@@ -18,8 +18,8 @@ router = APIRouter()
 
 
 @router.get("/api/menu/{client_id}")
-async def get_menu_api(client_id: str):
-    data = get_client_data(client_id)
+async def get_menu_api(client_id: str, branch_id: str = Query(default="__default__")):
+    data = get_client_data(client_id, branch_id=branch_id)
     if not data:
         raise HTTPException(status_code=404, detail="Data not found")
 

@@ -114,7 +114,8 @@ drawLoader();
 // LOAD MENU
 // ======================
 async function loadMenu() {
-    const res = await fetch(`/api/menu/${clientId}`);
+    const branchQuery = (typeof branchId !== 'undefined' && branchId && branchId !== '__default__') ? `?branch_id=${branchId}` : '';
+    const res = await fetch(`/api/menu/${clientId}${branchQuery}`);
     const data = await res.json();
     const carousel = document.getElementById("carousel-wrapper");
 

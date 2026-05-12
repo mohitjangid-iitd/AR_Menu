@@ -28,7 +28,7 @@ if not DATABASE_URL:
 # Adjust minconn/maxconn based on your server's pg_max_connections
 _pool = psycopg2.pool.ThreadedConnectionPool(
     minconn=1,
-    maxconn=5,
+    maxconn=50,
     dsn=DATABASE_URL,
     connect_timeout=10
 )
@@ -352,7 +352,7 @@ def init_db():
 
     conn.commit()
     conn.close()
-    print("✅ Database initialized")
+    print("[OK] Database initialized")
 
 
 # ════════════════════════════════

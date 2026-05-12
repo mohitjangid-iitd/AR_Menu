@@ -36,14 +36,15 @@
 
 <!-- Banner -->
 <div class="banner">
-    <a href="/{{ client_id }}{% if table_no %}/table/{{ table_no }}{% endif %}" class="back-btn"><i class="fas fa-arrow-left"></i></a>
+    <a href="/{{ client_id }}{% if table_no %}/table/{{ table_no }}{% endif %}{% if branch_id and branch_id != '__default__' %}?branch_id={{ branch_id }}{% endif %}" class="back-btn"><i class="fas fa-arrow-left"></i></a>
     {% if 'ar_menu' in features %}
-    <a href="/{{ client_id }}{% if table_no %}/table/{{ table_no }}{% endif %}/ar-menu" class="ar-btn"><i class="fas fa-camera"></i> View in AR</a>
+    <a href="/{{ client_id }}{% if table_no %}/table/{{ table_no }}{% endif %}/ar-menu{% if branch_id and branch_id != '__default__' %}?branch_id={{ branch_id }}{% endif %}" class="ar-btn"><i class="fas fa-camera"></i> View in AR</a>
     {% else %}
     <a href="#" class="ar-btn ar-btn-locked" onclick="showArLocked(); return false;"><i class="fas fa-camera"></i> View in AR</a>
     {% endif %}
     <img src="{{ data.restaurant.logo }}" alt="logo" class="banner-logo">
     <h1>{{ data.restaurant.name }}</h1>
+    {% if branch_name %}<p style="font-size:0.75rem; opacity:0.65; margin:-4px 0 2px; letter-spacing:0.08em; text-transform:uppercase;">📍 {{ branch_name }}</p>{% endif %}
     <p>{{ data.restaurant.tagline }}</p>
 </div>
 
@@ -213,6 +214,7 @@
 <script>
     const TABLE_NO = {{ table_no if table_no else 'null' }};
     const CLIENT_ID = "{{ client_id }}";
+    const BRANCH_ID = "{{ branch_id | default('__default__') }}";
 </script>
 
 <!-- Static JS -->
@@ -345,7 +347,8 @@ async function callWaiter() {
     btn.disabled = true;
 
     try {
-        const res = await fetch(`/api/table/${CLIENT_ID}/${TABLE_NO}/call`, { method: 'POST' });
+        const branchQuery = (typeof BRANCH_ID !== 'undefined' && BRANCH_ID && BRANCH_ID !== '__default__') ? `?branch_id=${BRANCH_ID}` : '';
+        const res = await fetch(`/api/table/${CLIENT_ID}/${TABLE_NO}/call${branchQuery}`, { method: 'POST' });
         if (res.ok) {
             _cwCooldown = true;
             const cooldownMs = 30000;

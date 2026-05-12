@@ -108,7 +108,9 @@ async function loadTables() {
             ready: 'Ready', done: 'Done', billed: 'Billed', paid: 'Paid'
         };
 
-        grid.innerHTML = Array.from({ length: numTables }, (_, i) => {
+        const count = summary.length ? Math.max(...summary.map(t => t.table_no)) : numTables;
+
+        grid.innerHTML = Array.from({ length: count }, (_, i) => {
             const n = i + 1;
             const t = map[n];
             const ds = t ? t.display_status : 'inactive';

@@ -332,9 +332,13 @@ async function loadTables() {
 }
 
 function downloadTableQR(tableNo) {
-    _renderTableQRBlob(tableNo).then(blob => {
+    const branch = getTabBranch('tables')
+        || (allBranches[0] && (allBranches[0].branch_id || allBranches[0].id))
+        || branchId;
+    _renderTableQRBlob(tableNo, branch).then(blob => {
         const link = document.createElement('a');
-        link.download = 'table_' + tableNo + '_qr.png';
+        const branchSuffix = (branch && branch !== '__default__') ? `_${branch}` : '';
+        link.download = `table_${tableNo}${branchSuffix}_qr.png`;
         link.href = URL.createObjectURL(blob);
         link.click();
         URL.revokeObjectURL(link.href);
@@ -363,20 +367,31 @@ async function closeAll() {
 
 // ── Download All QR (ZIP) ──
 async function downloadAllQRs() {
-    const count = parseInt(document.getElementById('oi-num-tables')?.value) || numTables;
+    const branch = getTabBranch('tables')
+        || (allBranches[0] && (allBranches[0].branch_id || allBranches[0].id))
+        || branchId;
+    const branchObj = allBranches.find(b => (b.branch_id || b.id) === branch);
+    const branchCfg = branchObj ? getBranchConfig(branchObj) : null;
+    const count = branchCfg?.restaurant?.num_tables
+        || parseInt(document.getElementById('oi-num-tables')?.value)
+        || numTables;
+    const branchName = branchObj
+        ? getBranchName(branchObj).toLowerCase().replace(/\s+/g, '_')
+        : (branch && branch !== '__default__' ? branch : 'main');
+
     const btn = document.getElementById('dl-all-qr-btn');
     if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...'; }
 
     try {
         const zip = new JSZip();
         for (let n = 1; n <= count; n++) {
-            const blob = await _renderTableQRBlob(n);
+            const blob = await _renderTableQRBlob(n, branch);
             zip.file(`table_${n}_qr.png`, blob);
             await new Promise(r => setTimeout(r, 100));
         }
         const zipBlob = await zip.generateAsync({ type: 'blob' });
         const link = document.createElement('a');
-        link.download = `${clientId}_qr_codes.zip`;
+        link.download = `${clientId}_${branchName}_qr_codes.zip`;
         link.href = URL.createObjectURL(zipBlob);
         link.click();
         URL.revokeObjectURL(link.href);
@@ -389,7 +404,7 @@ async function downloadAllQRs() {
 }
 
 // ── Single QR → Blob (shared by single + bulk download) ──
-function _renderTableQRBlob(tableNo) {
+function _renderTableQRBlob(tableNo, branchOverride) {
     return new Promise(resolve => {
         const SCALE  = 4;
         const qrSize = 280;
@@ -398,7 +413,9 @@ function _renderTableQRBlob(tableNo) {
         const W = qrSize + pad * 2;
         const H = textH + qrSize + pad * 2;
 
-        const url = `${window.location.origin}/${clientId}/table/${tableNo}/ar-menu`;
+        const branch = branchOverride || getTabBranch('tables') || branchId;
+        const bParam = (branch && branch !== '__default__') ? `?branch_id=${branch}` : '';
+        const url = `${window.location.origin}/${clientId}/table/${tableNo}/ar-menu${bParam}`;
 
         const wrap = document.createElement('div');
         wrap.style.cssText = 'position:fixed;left:-9999px;top:-9999px';

@@ -40,48 +40,68 @@ def _block_on_admin_subdomain(request: Request):
 # ════════════════════════════════
 
 @router.get("/{client_id}", response_class=HTMLResponse)
-async def restaurant_home(request: Request, client_id: str):
+async def restaurant_home(request: Request, client_id: str, branch_id: Optional[str] = "__default__"):
     _block_on_admin_subdomain(request)
-    data = get_client_data(client_id)
+    data = get_client_data(client_id, branch_id)
     if not data:
         raise HTTPException(status_code=404, detail="Restaurant not found")
     if not is_restaurant_active(data):
         return closed_response(request, data, client_id)
+    
+    branch_name = None
+    if branch_id and branch_id != "__default__":
+        branch_name = data.get("restaurant", {}).get("name")
+        default_data = get_client_data(client_id)
+        if default_data:
+            data["restaurant"]["name"] = default_data["restaurant"]["name"]
+
     return templates.TemplateResponse("home.html", {
         "request": request, "client_id": client_id, "data": data, "table_no": None,
+        "branch_id": branch_id,
+        "branch_name": branch_name,  # ← add
         "features": data.get("subscription", {}).get("features", ["basic"]),
     })
 
 
 @router.get("/{client_id}/menu", response_class=HTMLResponse)
-async def menu(request: Request, client_id: str):
+async def menu(request: Request, client_id: str, branch_id: Optional[str] = "__default__"):
     _block_on_admin_subdomain(request)
-    data = get_client_data(client_id)
+    data = get_client_data(client_id, branch_id)
     if not data:
         raise HTTPException(status_code=404, detail="Restaurant not found")
     if not is_restaurant_active(data):
         return closed_response(request, data, client_id)
+    branch_name = None
+    if branch_id and branch_id != "__default__":
+        branch_name = data.get("restaurant", {}).get("name")
+        default_data = get_client_data(client_id)
+        if default_data:
+            data["restaurant"]["name"] = default_data["restaurant"]["name"]
     return templates.TemplateResponse("menu.html", {
         "request": request, "client_id": client_id, "data": data, "table_no": None,
+        "branch_id": branch_id,
+        "branch_name": branch_name,
         "features": data.get("subscription", {}).get("features", ["basic"]),
     })
 
 
 @router.get("/{client_id}/ar-menu", response_class=HTMLResponse)
-async def ar_menu(request: Request, client_id: str):
+async def ar_menu(request: Request, client_id: str, branch_id: Optional[str] = "__default__"):
     _block_on_admin_subdomain(request)
-    data = get_client_data(client_id)
+    data = get_client_data(client_id, branch_id)
     if not data:
         raise HTTPException(status_code=404, detail="Restaurant not found")
     if not is_restaurant_active(data):
         return closed_response(request, data, client_id)
     features = data.get("subscription", {}).get("features", [])
     if "ar_menu" not in features:
-        return RedirectResponse(url=f"/{client_id}/menu")
+        qs = f"?branch_id={branch_id}" if branch_id != "__default__" else ""
+        return RedirectResponse(url=f"/{client_id}/menu{qs}")
     mind_url = r2_public_url(f"{client_id}/targets.mind") if USE_R2 \
                else f"/static/assets/{client_id}/targets.mind"
     return templates.TemplateResponse("ar_menu.html", {
         "request": request, "client_id": client_id, "table_no": None,
+        "branch_id": branch_id,
         "mind_url": mind_url,
     })
 
@@ -90,7 +110,7 @@ async def ar_menu(request: Request, client_id: str):
 async def table_home(request: Request, client_id: str, table_no: int,
                      branch_id: Optional[str] = "__default__"):
     _block_on_admin_subdomain(request)
-    data = get_client_data(client_id)
+    data = get_client_data(client_id, branch_id)
     if not data:
         raise HTTPException(status_code=404, detail="Restaurant not found")
     if not is_restaurant_active(data):
@@ -98,9 +118,16 @@ async def table_home(request: Request, client_id: str, table_no: int,
     table = get_table_status(client_id, table_no, branch_id)
     if not table or table["status"] == "inactive":
         raise HTTPException(status_code=403, detail="Table not active. Please ask staff.")
+    branch_name = None
+    if branch_id and branch_id != "__default__":
+        branch_name = data.get("restaurant", {}).get("name")
+        default_data = get_client_data(client_id)
+        if default_data:
+            data["restaurant"]["name"] = default_data["restaurant"]["name"]
     return templates.TemplateResponse("home.html", {
         "request": request, "client_id": client_id, "data": data,
         "table_no": table_no, "branch_id": branch_id,
+        "branch_name": branch_name,
     })
 
 
@@ -108,7 +135,7 @@ async def table_home(request: Request, client_id: str, table_no: int,
 async def table_menu(request: Request, client_id: str, table_no: int,
                      branch_id: Optional[str] = "__default__"):
     _block_on_admin_subdomain(request)
-    data = get_client_data(client_id)
+    data = get_client_data(client_id, branch_id)
     if not data:
         raise HTTPException(status_code=404, detail="Restaurant not found")
     if not is_restaurant_active(data):
@@ -116,9 +143,16 @@ async def table_menu(request: Request, client_id: str, table_no: int,
     table = get_table_status(client_id, table_no, branch_id)
     if not table or table["status"] == "inactive":
         raise HTTPException(status_code=403, detail="Table not active. Please ask staff.")
+    branch_name = None
+    if branch_id and branch_id != "__default__":
+        branch_name = data.get("restaurant", {}).get("name")
+        default_data = get_client_data(client_id)
+        if default_data:
+            data["restaurant"]["name"] = default_data["restaurant"]["name"]
     return templates.TemplateResponse("menu.html", {
         "request": request, "client_id": client_id, "data": data,
         "table_no": table_no, "branch_id": branch_id,
+        "branch_name": branch_name,
         "features": data.get("subscription", {}).get("features", ["basic"]),
     })
 
@@ -127,14 +161,15 @@ async def table_menu(request: Request, client_id: str, table_no: int,
 async def table_ar_menu(request: Request, client_id: str, table_no: int,
                         branch_id: Optional[str] = "__default__"):
     _block_on_admin_subdomain(request)
-    data = get_client_data(client_id)
+    data = get_client_data(client_id, branch_id)
     if not data:
         raise HTTPException(status_code=404, detail="Restaurant not found")
     if not is_restaurant_active(data):
         return closed_response(request, data, client_id)
     features = data.get("subscription", {}).get("features", [])
     if "ar_menu" not in features:
-        return RedirectResponse(url=f"/{client_id}/table/{table_no}/menu")
+        qs = f"?branch_id={branch_id}" if branch_id != "__default__" else ""
+        return RedirectResponse(url=f"/{client_id}/table/{table_no}/menu{qs}")
     table = get_table_status(client_id, table_no, branch_id)
     if not table or table["status"] == "inactive":
         raise HTTPException(status_code=403, detail="Table not active. Please ask staff.")

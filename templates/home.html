@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
     <link rel="icon" type="image/x-icon" href="/static/assets/zentable/favicon.ico" />
-  <link rel="icon" type="image/png" sizes="32x32" href="/static/assets/zentable/favicon_32.png" />
-  <link rel="icon" type="image/png" sizes="16x16" href="/static/assets/zentable/favicon_16.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/assets/zentable/favicon_32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/static/assets/zentable/favicon_16.png" />
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ data.restaurant.name }} - {{ data.restaurant.tagline }}</title>
@@ -42,9 +42,12 @@
     <section class="hero">
         <img src="{{ data.restaurant.logo }}" alt="{{ data.restaurant.name }} Logo" class="hero-logo">
         <h1>{{ data.restaurant.name }}</h1>
+        {% if branch_name %}
+        <p style="font-size:0.75rem; opacity:0.65; margin:-6px 0 4px; letter-spacing:0.08em; text-transform:uppercase; font-family:var(--font-secondary);">📍 {{ branch_name }}</p>
+        {% endif %}
         <p>{{ data.restaurant.tagline }}</p>
         {% if 'ar_menu' in features %}
-        <a href="/{{ client_id }}{% if table_no %}/table/{{ table_no }}{% endif %}/ar-menu" class="cta-btn">
+        <a href="/{{ client_id }}{% if table_no %}/table/{{ table_no }}{% endif %}/ar-menu{% if branch_id and branch_id != '__default__' %}?branch_id={{ branch_id }}{% endif %}" class="cta-btn">
             <i class="fas fa-camera"></i> Experience in AR
         </a>
         {% else %}
@@ -76,7 +79,7 @@
             </div>
 
             <div style="margin-top: 60px;">
-                <a href="/{{ client_id }}{% if table_no %}/table/{{ table_no }}{% endif %}/menu" class="cta-btn">
+                <a href="/{{ client_id }}{% if table_no %}/table/{{ table_no }}{% endif %}/menu{% if branch_id and branch_id != '__default__' %}?branch_id={{ branch_id }}{% endif %}" class="cta-btn">
                     <i class="fas fa-list"></i> View Full Menu
                 </a>
             </div>
@@ -128,7 +131,7 @@
                 <div class="contact-item">
                     <i class="fas fa-envelope"></i>
                     <h3>Email</h3>
-                    <p><a href="/cdn-cgi/l/email-protection#2e55550e4a4f5a4f005c4b5d5a4f5b5c4f405a004b434f47420e5353">{{ data.restaurant.email }}</a></p>
+                    <p><a href="mailto:{{ data.restaurant.email }}">{{ data.restaurant.email }}</a></p>
                 </div>
 
                 <div class="contact-item">
@@ -184,12 +187,11 @@
     }
     </script>
 
-
-<div style="text-align:center;padding:10px;font-size:0.72rem;color:rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;gap:6px;">
-    Powered by
-    <img src="/static/assets/zentable/logo_dark_512.png" alt="{{ site.name }}" style="width:13px;height:13px;object-fit:contain;opacity:0.5;vertical-align:middle;" />
-    <span>{{ site.name }}</span>
-</div>
+    <div style="text-align:center;padding:10px;font-size:0.72rem;color:rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;gap:6px;">
+        Powered by
+        <img src="/static/assets/zentable/logo_dark_512.png" alt="{{ site.name }}" style="width:13px;height:13px;object-fit:contain;opacity:0.5;vertical-align:middle;" />
+        <span>{{ site.name }}</span>
+    </div>
 
 </body>
 </html>

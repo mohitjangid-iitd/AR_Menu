@@ -311,7 +311,8 @@ async function placeOrder() {
     });
     var total = items.reduce(function(s, i) { return s + i.qty * i.price; }, 0);
 
-    var res = await fetch('/api/order/' + CLIENT_ID + '/' + TABLE_NO, {
+    var branchQuery = (typeof BRANCH_ID !== 'undefined' && BRANCH_ID && BRANCH_ID !== '__default__') ? '?branch_id=' + BRANCH_ID : '';
+    var res = await fetch('/api/order/' + CLIENT_ID + '/' + TABLE_NO + branchQuery, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ items: items, total: total })
