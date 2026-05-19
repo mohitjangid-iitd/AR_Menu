@@ -1,3 +1,20 @@
+// Global Fetch Interceptor to handle 401 Unauthorized (Expired Cookie)
+const originalFetch = window.fetch;
+window.fetch = async function(...args) {
+    const response = await originalFetch.apply(this, args);
+    if (response.status === 401) {
+        const clone = response.clone();
+        try {
+            const data = await clone.json();
+            if (data.detail === "Invalid or expired token" || data.detail === "Login required") {
+                alert("Aapka session expire ho gaya hai. Kripya dobara login karein.");
+                window.location.href = window.location.pathname.startsWith('/admin') ? '/admin/login' : '/login';
+            }
+        } catch (e) { }
+    }
+    return response;
+};
+
 // clientId, menuItems, waiterQtys, pendingBillId — HTML template mein inject hote hain
 
 // ════════════════════════════════
@@ -1049,3 +1066,4 @@ function toggleCancelledSection() {
     window._showCancelledInPaid = !window._showCancelledInPaid;
     loadOrders();
 }
+
