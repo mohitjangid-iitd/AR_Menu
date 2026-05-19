@@ -42,6 +42,7 @@ Export:
 """
 
 import os
+import uuid
 import bcrypt
 import shutil
 import tempfile
@@ -573,7 +574,16 @@ async def api_upload_asset(
             detail=f"File bahut badi hai. Max {rule['max_mb']}MB allowed."
         )
 
-    safe_name = rule.get("fixed_name") or os.path.basename(original_name).replace(" ", "_")
+    base_name = os.path.basename(original_name).replace(" ", "_")
+    ext_part  = os.path.splitext(base_name)
+
+    # Dish images: unique UUID prefix taaki alag dishes ki files conflict na karein
+    if type == "image" and not rule.get("fixed_name"):
+        uid       = uuid.uuid4().hex[:8]
+        safe_name = f"{ext_part[0]}_{uid}{ext_part[1]}"
+    else:
+        safe_name = rule.get("fixed_name") or base_name
+
     folder    = os.path.join(rule["folder"], client_id)
     if not USE_R2:
         os.makedirs(folder, exist_ok=True)
@@ -581,25 +591,33 @@ async def api_upload_asset(
     save_path = os.path.join(folder, safe_name)
     r2_key    = f"{client_id}/{safe_name}"
 
-    # ── Purani file trash mein move karo (mind except) ──
+    # ── Purani file (old_path) trash mein move karo (mind except) ──
+    # Note: r2_key ab naya unique naam hai — existing file overwrite nahi hogi.
+    # Sirf old_path wali file trash mein jaani chahiye (agar different path ho).
     if type != "mind":
-        trash_target = r2_key if USE_R2 else save_path
-        move_to_trash(client_id, trash_target, type)
-
         if old_path and old_path.strip().lower() not in ("", "none"):
-            old_path = old_path.strip().lstrip("/")
+            old_path_clean = old_path.strip()
             if USE_R2:
-                old_key = old_path
-                for prefix in ("static/assets/", "private/assets/"):
-                    if old_path.startswith(prefix):
-                        old_key = old_path[len(prefix):]
-                        break
-                if old_key != r2_key:
+                # R2 public URL ya relative path dono handle karo
+                old_key = old_path_clean
+                # Full https:// URL se key nikalo
+                from r2 import R2_PUBLIC_URL
+                if R2_PUBLIC_URL and old_key.startswith(R2_PUBLIC_URL):
+                    old_key = old_key[len(R2_PUBLIC_URL):].lstrip("/")
+                else:
+                    # local-style path prefix strip karo
+                    old_key = old_key.lstrip("/")
+                    for prefix in ("static/assets/", "private/assets/"):
+                        if old_key.startswith(prefix):
+                            old_key = old_key[len(prefix):]
+                            break
+                # Sirf tab trash karo agar genuinely different file hai
+                if old_key and old_key != r2_key and not old_key.startswith("http"):
                     move_to_trash(client_id, old_key, type)
             else:
-                old_full = os.path.join("private/assets", old_path) if type == "model" \
-                           else old_path
-                if os.path.abspath(old_full) != os.path.abspath(save_path):
+                old_full = os.path.join("private/assets", old_path_clean.lstrip("/")) if type == "model" \
+                           else old_path_clean.lstrip("/")
+                if os.path.abspath(old_full) != os.path.abspath(save_path) and os.path.exists(old_full):
                     move_to_trash(client_id, old_full, type)
 
     # ── File save ──
@@ -967,8 +985,6 @@ zentable.in
     threading.Thread(target=_send_rejection_email, daemon=True).start()
 
     return {"message": "Request rejected"}
-
-
 
 
 # ════════════════════════════════

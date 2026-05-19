@@ -17,6 +17,7 @@ Upload:
 """
 
 import os
+import uuid
 from typing import Optional
 from fastapi import APIRouter, HTTPException, Cookie, UploadFile, File, Form
 from fastapi.responses import JSONResponse
@@ -34,7 +35,7 @@ from database import (
     seed_tables,
 )
 from helpers import require_auth, get_client_data
-from r2 import USE_R2, r2_upload, r2_public_url
+from r2 import USE_R2, r2_upload, r2_public_url, R2_PUBLIC_URL
 from trash_utils import move_to_trash
 
 router = APIRouter()
@@ -103,7 +104,12 @@ async def owner_save_json(client_id: str, body: SaveRestaurantRequest,
     data = body.data
     # Owner theme aur subscription nahi badal sakta
     data["subscription"] = existing.get("subscription", {})
-    data["theme"]        = existing.get("theme", {})
+    
+    e_theme = existing_branch.get("theme")
+    if e_theme:
+        data["theme"] = e_theme if isinstance(e_theme, dict) else _json.loads(e_theme)
+    else:
+        data["theme"] = {}
     save_restaurant_json(client_id, data, branch_id=target_branch)
     # Sirf is branch ke tables seed karo
     num = data.get("restaurant", {}).get("num_tables")
@@ -226,7 +232,16 @@ async def owner_upload_asset(
             detail=f"File bahut badi hai. Max {rule['max_mb']}MB allowed."
         )
 
-    safe_name = os.path.basename(original_name).replace(" ", "_")
+    base_name = os.path.basename(original_name).replace(" ", "_")
+    ext_part  = os.path.splitext(base_name)
+
+    # Dish images: unique UUID prefix taaki alag dishes ki files conflict na karein
+    if type == "image":
+        uid       = uuid.uuid4().hex[:8]
+        safe_name = f"{ext_part[0]}_{uid}{ext_part[1]}"
+    else:
+        safe_name = base_name
+
     folder    = os.path.join(rule["folder"], client_id)
     if not USE_R2:
         os.makedirs(folder, exist_ok=True)
@@ -234,23 +249,28 @@ async def owner_upload_asset(
     save_path = os.path.join(folder, safe_name)
     r2_key    = f"{client_id}/{safe_name}"
 
-    # ── Purani file trash mein move karo ──
-    trash_target = r2_key if USE_R2 else save_path
-    move_to_trash(client_id, trash_target, type)
-
+    # ── Sirf old_path wali file trash mein jaani chahiye ──
+    # Note: safe_name ab unique UUID wala hai — existing file overwrite nahi hogi.
     if old_path and old_path.strip().lower() not in ("", "none"):
-        old_path = old_path.strip().lstrip("/")
+        old_path_clean = old_path.strip()
         if USE_R2:
-            old_key = old_path
-            for prefix in ("static/assets/", "private/assets/"):
-                if old_path.startswith(prefix):
-                    old_key = old_path[len(prefix):]
-                    break
-            if old_key != r2_key:
+            old_key = old_path_clean
+            # Full R2 public URL se key extract karo
+            if R2_PUBLIC_URL and old_key.startswith(R2_PUBLIC_URL):
+                old_key = old_key[len(R2_PUBLIC_URL):].lstrip("/")
+            else:
+                old_key = old_key.lstrip("/")
+                for prefix in ("static/assets/", "private/assets/"):
+                    if old_key.startswith(prefix):
+                        old_key = old_key[len(prefix):]
+                        break
+            # Sirf tab trash karo agar genuinely different file hai (not a full URL still)
+            if old_key and old_key != r2_key and not old_key.startswith("http"):
                 move_to_trash(client_id, old_key, type)
         else:
-            if os.path.abspath(old_path) != os.path.abspath(save_path):
-                move_to_trash(client_id, old_path, type)
+            old_full = old_path_clean.lstrip("/")
+            if os.path.abspath(old_full) != os.path.abspath(save_path) and os.path.exists(old_full):
+                move_to_trash(client_id, old_full, type)
 
     # ── File save ──
     if USE_R2:
