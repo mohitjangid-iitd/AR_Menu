@@ -1,3 +1,20 @@
+// Global Fetch Interceptor to handle 401 Unauthorized (Expired Cookie)
+const originalFetch = window.fetch;
+window.fetch = async function(...args) {
+    const response = await originalFetch.apply(this, args);
+    if (response.status === 401) {
+        const clone = response.clone();
+        try {
+            const data = await clone.json();
+            if (data.detail === "Invalid or expired token" || data.detail === "Login required") {
+                alert("Aapka session expire ho gaya hai. Kripya dobara login karein.");
+                window.location.href = window.location.pathname.startsWith('/admin') ? '/admin/login' : '/login';
+            }
+        } catch (e) { }
+    }
+    return response;
+};
+
 // clientId — HTML template mein inject hota hai
 
 // Read CSS vars after render
@@ -981,6 +998,40 @@ async function deleteOwnerDish(index) {
     if (ok) { toast('🗑 Dish deleted'); renderOwnerDishes(); }
 }
 
+window.ownerBulkAddDishes = async function(dishes) {
+    if (!ownerRestData) return;
+    if (!ownerRestData.items) ownerRestData.items = [];
+    
+    dishes.forEach(d => {
+        const item = {
+            name: d.name || 'New Dish',
+            category: d.category || '',
+            description: d.description || '',
+            image: d.image || '',
+            model: d.glb || '',
+            veg: d.veg !== false,
+            featured: false,
+            auto_rotate: true,
+            rotate_speed: 10000,
+            position: '0 0 0',
+            scale: '2 2 2',
+            rotation: '0 0 0'
+        };
+        if (d.sizes && d.sizes.length > 0) {
+            item.sizes = d.sizes;
+        } else {
+            item.price = d.price || '';
+        }
+        ownerRestData.items.push(item);
+    });
+
+    const ok = await pushOwnerRestData();
+    if (ok) {
+        toast('✅ Dishes saved!');
+        renderOwnerDishes();
+    }
+};
+
 // ── Restaurant Info ──
 function populateInfoFields() {
     const r = ownerRestData?.restaurant || {};
@@ -1160,3 +1211,4 @@ function resetOwnerUploadBox(boxId, previewId, hintId, iconId) {
     if (hintId)  { const h = document.getElementById(hintId); if (h) h.textContent = 'Click to upload'; }
     if (iconId)  { const ic = document.getElementById(iconId); if (ic) ic.style.display = ''; }
 }
+

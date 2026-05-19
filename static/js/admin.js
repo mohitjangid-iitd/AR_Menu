@@ -1,3 +1,20 @@
+// Global Fetch Interceptor to handle 401 Unauthorized (Expired Cookie)
+const originalFetch = window.fetch;
+window.fetch = async function(...args) {
+    const response = await originalFetch.apply(this, args);
+    if (response.status === 401) {
+        const clone = response.clone();
+        try {
+            const data = await clone.json();
+            if (data.detail === "Invalid or expired token" || data.detail === "Login required") {
+                alert("Aapka session expire ho gaya hai. Kripya dobara login karein.");
+                window.location.href = window.location.pathname.startsWith('/admin') ? '/admin/login' : '/login';
+            }
+        } catch (e) { }
+    }
+    return response;
+};
+
 // ════════════════════════════════
 // CUSTOM CONFIRM MODAL
 // ════════════════════════════════
@@ -980,6 +997,37 @@ async function deleteItem(index) {
     toast('Dish removed (Save Changes dabao to commit)');
 }
 
+window.addDishesToMenuBulk = function(dishes) {
+    if (!currentEditData) return;
+    if (!currentEditData.items) currentEditData.items = [];
+    
+    dishes.forEach(d => {
+        const item = {
+            name: d.name || 'New Dish',
+            category: d.category || '',
+            description: d.description || '',
+            image: d.image || '',
+            model: d.glb || '',
+            veg: d.veg !== false,
+            featured: false,
+            auto_rotate: true,
+            rotate_speed: 10000,
+            position: '0 0 0',
+            scale: '2 2 2',
+            rotation: '0 0 0'
+        };
+        if (d.sizes && d.sizes.length > 0) {
+            item.sizes = d.sizes;
+        } else {
+            item.price = d.price || '';
+        }
+        currentEditData.items.push(item);
+    });
+    
+    renderItemsList();
+    toast(`✅ ${dishes.length} dishes added (Save Changes dabao to commit)`, 'success');
+};
+
 // ════════════════════════════════
 // STAFF
 // ════════════════════════════════
@@ -1955,4 +2003,5 @@ async function updateRestCardMeta(client_id) {
         }
     } catch (e) { }
 }
+
 
