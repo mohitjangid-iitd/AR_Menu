@@ -9,28 +9,30 @@ A **multi-tenant restaurant management platform** with AR menus, real-time order
 ## Features
 
 ### For Customers
-- **AR Menu** — Scan QR codes to view dishes as 3D models in augmented reality
+- **AR Menu** — Scan branch-specific QR codes to view dishes as 3D models in augmented reality
 - **Interactive Controls** — Rotate and explore dishes before ordering
-- **Digital Menu** — Clean, fast, mobile-friendly menu browsing
+- **Digital Menu** — Clean, fast, mobile-friendly branch-aware menu browsing
+- **Branch Awareness** — Dynamic layout and data adjustments on public pages (`home`, `menu`, `ar_menu`) based on the selected branch
 
 ### For Restaurant Staff
-- **Waiter** — Table management, order placement, billing, payments
-- **Kitchen** — Live order queue, mark items ready
-- **Counter** — Table activation/deactivation, payment collection
-- **Owner** — Analytics, QR generator, staff management, order history, full menu control (add/edit/delete items, categories), restaurant info management (name, logo, banner, social links, contact, tables), AI-powered photo-to-menu import, platform help bot, **Multi-Branch Support**, **Self-Signup with Admin Approval**
+- **Waiter** — Table management, order placement, billing, payments (branch-isolated)
+- **Kitchen** — Live order queue, mark items ready (branch-isolated)
+- **Counter** — Table activation/deactivation, payment collection (branch-isolated)
+- **Owner** — Analytics, branch-specific QR generator, staff management, order history, full menu control (add/edit/delete items, categories), restaurant info management, AI-powered **bulk photo-to-menu import** (parse and save entire menus in one action), platform help bot, **Multi-Branch Support**, **Self-Signup with Admin Approval**
+- **Session Protection** — Automatic mid-session expiry detection (`401` handler) across all staff portals that prompts a graceful redirect to login, preventing broken UI states
 
 ### For Platform Admins (ZenTable)
 > Accessible at [admin.zentable.in](https://admin.zentable.in)
 
 - **Admin Panel** — Manage all restaurants from one place
 - **Per-restaurant stats** — Revenue, orders, top dishes
-- **Menu management** — Add/edit/delete items and categories for any restaurant
+- **Menu management** — Add/edit/delete items and categories for any restaurant (supports bulk imports)
 - **Photo to menu** — AI-powered menu extraction from image, for any restaurant
 - **3D model management** — Upload/manage `.glb` models per dish (owners cannot upload GLBs)
-- **Staff management** — Create, edit, deactivate staff accounts across all restaurants
+- **Staff management** — Create, edit, deactivate staff accounts across all restaurants and branches
 - **Restaurant onboarding** — Instant setup via admin panel; activate, deactivate, or delete restaurants, **Approve Owner Signups**
 - **Blogging Platform** — Built-in blogging system for ZenTable platform and connected restaurants
-- **File management** — Upload images/models, trash + restore system
+- **File management & Storage Security** — Upload images/models with automatic **collision prevention** (unique 8-character `_uid` prefix appended to uploaded images) and secure **trash + restore system** (intelligent key parsing to avoid deleting active assets)
 - **DB export** — Full PostgreSQL export as ZIP
 
 ---
