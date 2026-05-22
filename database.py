@@ -1102,7 +1102,14 @@ def get_all_restaurants_info():
     raw  = conn._conn.cursor()
     today = date.today().isoformat()
 
-    raw.execute("SELECT client_id, config FROM restaurants WHERE branch_id='__default__' ORDER BY client_id")
+    # subscriptions table LEFT JOIN — naya billing system
+    raw.execute("""
+        SELECT r.client_id, r.config, s.status, s.plan_key, s.final_price, s.period
+        FROM restaurants r
+        LEFT JOIN subscriptions s ON s.client_id = r.client_id
+        WHERE r.branch_id = '__default__'
+        ORDER BY r.client_id
+    """)
     rows = raw.fetchall()
 
     restaurants = []
@@ -1133,16 +1140,20 @@ def get_all_restaurants_info():
         alltime_revenue = raw.fetchone()[0]
 
         restaurants.append({
-            "client_id":      client_id,
-            "name":           rinfo.get("name", client_id),
-            "cuisine_type":   rinfo.get("cuisine_type", ""),
-            "phone":          rinfo.get("phone", ""),
-            "num_tables":     rinfo.get("num_tables", 0),
-            "staff_count":    staff_count,
-            "today_orders":   today_orders,
-            "today_revenue":  today_revenue,
+            "client_id":       client_id,
+            "name":            rinfo.get("name", client_id),
+            "cuisine_type":    rinfo.get("cuisine_type", ""),
+            "phone":           rinfo.get("phone", ""),
+            "num_tables":      rinfo.get("num_tables", 0),
+            "staff_count":     staff_count,
+            "today_orders":    today_orders,
+            "today_revenue":   today_revenue,
             "alltime_revenue": alltime_revenue,
-            "features":       rdata.get("subscription", {}).get("features", ["basic"]),
+            # Naya billing system — subscriptions table se
+            "sub_status":  row[2] or "trial",
+            "sub_plan":    row[3] or "basic",
+            "sub_price":   int(row[4]) if row[4] else 0,
+            "sub_period":  row[5] or "monthly",
         })
 
     conn.close()
@@ -1237,9 +1248,14 @@ def get_top_dishes_overall(limit=10, period='alltime'):
 def save_restaurant_json(client_id: str, data: dict, branch_id: str = "__default__"):
     """
     Restaurant config DB mein save karo (upsert).
-    theme sirf branch_id='__default__' wali row pe store hoti hai — shared across brand.
+    - theme  → alag column mein jaati hai (sirf __default__ row pe)
+    - subscription → bilkul nahi jaayegi config mein (subscriptions table mein manage hoti hai)
+    Caller ka original dict mutate nahi hoga (dict comprehension use kiya hai).
     """
-    theme = data.pop("theme", None)  # theme alag column mein jaayegi
+    # Caller ka dict mutate na ho — deepcopy jaisa effect
+    theme        = data.get("theme", None)
+    config_clean = {k: v for k, v in data.items() if k not in ("theme", "subscription")}
+
     conn = get_db()
     if theme is not None:
         conn.execute("""
@@ -1247,14 +1263,17 @@ def save_restaurant_json(client_id: str, data: dict, branch_id: str = "__default
             VALUES (%s, %s, %s::jsonb, %s::jsonb, NOW())
             ON CONFLICT (client_id, branch_id)
             DO UPDATE SET config = EXCLUDED.config, theme = EXCLUDED.theme, updated_at = NOW()
-        """, (client_id, branch_id, json.dumps(data, ensure_ascii=False), json.dumps(theme, ensure_ascii=False)))
+        """, (client_id, branch_id,
+              json.dumps(config_clean, ensure_ascii=False),
+              json.dumps(theme,        ensure_ascii=False)))
     else:
         conn.execute("""
             INSERT INTO restaurants (client_id, branch_id, config, updated_at)
             VALUES (%s, %s, %s::jsonb, NOW())
             ON CONFLICT (client_id, branch_id)
             DO UPDATE SET config = EXCLUDED.config, updated_at = NOW()
-        """, (client_id, branch_id, json.dumps(data, ensure_ascii=False)))
+        """, (client_id, branch_id,
+              json.dumps(config_clean, ensure_ascii=False)))
     conn.commit()
     conn.close()
 
@@ -1270,13 +1289,18 @@ def get_restaurant_branches(client_id: str) -> list:
     return [dict(r) for r in rows]
 
 def delete_restaurant_full(client_id: str):
-    """Poora restaurant delete — DB se sab"""
+    """Poora restaurant delete — DB se sab (billing tables bhi)"""
     conn = get_db()
     conn.execute("DELETE FROM orders WHERE client_id=%s", (client_id,))
     conn.execute("DELETE FROM bills WHERE client_id=%s", (client_id,))
     conn.execute("DELETE FROM tables WHERE client_id=%s", (client_id,))
     conn.execute("DELETE FROM staff WHERE client_id=%s", (client_id,))
     conn.execute("DELETE FROM restaurants WHERE client_id=%s", (client_id,))
+    # Billing system cleanup
+    conn.execute("DELETE FROM subscription_addons WHERE client_id=%s", (client_id,))
+    conn.execute("DELETE FROM payment_history WHERE client_id=%s", (client_id,))
+    conn.execute("DELETE FROM email_log WHERE client_id=%s", (client_id,))
+    conn.execute("DELETE FROM subscriptions WHERE client_id=%s", (client_id,))
     conn.commit()
     conn.close()
 

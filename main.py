@@ -9,7 +9,7 @@ from fastapi.staticfiles import StaticFiles
 from site_config import SITE_CONFIG
 from database import get_db,init_db, seed_tables, get_all_restaurants_info, get_all_site_settings
 from r2 import USE_R2, r2_public_url, IS_PROD
-from helpers import get_client_data
+from helpers import get_client_data, is_restaurant_active, has_feature
 from trash_utils import purge_expired_trash
 
 from routers.menu import router as menu_router
@@ -23,7 +23,9 @@ from routers.chatbot import router as chatbot_router
 from routers.help_chat import router as help_chat_router
 from routers.image_to_menu import router as image_to_menu_router
 from routers.blog import router as blog_router
+from routers.billing import router as billing_router
 from blog_db import init_blog_tables, get_published_posts as get_blog_posts
+from billing_db import init_billing_tables, run_daily_billing_cron
 from templates_env import templates
 
 # ════════════════════════════════
@@ -48,6 +50,7 @@ def _keep_neon_alive():
 @asynccontextmanager
 async def lifespan(app):
     init_db()
+    init_billing_tables()
     init_blog_tables()
     purge_expired_trash()
     for r in get_all_restaurants_info():
@@ -69,6 +72,8 @@ async def lifespan(app):
     # Neon ko jaagta rakhne wala thread
     t = threading.Thread(target=_keep_neon_alive, daemon=True)
     t.start()
+
+    run_daily_billing_cron()
 
     yield
 
@@ -121,12 +126,12 @@ async def sitemap(request: Request):
     try:
         for r in get_all_restaurants_info():
             rdata = get_client_data(r["client_id"])
-            if not rdata or not rdata.get("subscription", {}).get("active", True):
+            if not rdata or not is_restaurant_active(r["client_id"]):
                 continue
             cid = r["client_id"]
             urls.append(f"{base_url}/{cid}")
             urls.append(f"{base_url}/{cid}/menu")
-            if "ar_menu" in rdata.get("subscription", {}).get("features", []):
+            if has_feature(r["client_id"], "ar_menu"):
                 urls.append(f"{base_url}/{cid}/ar-menu")
         for post in get_blog_posts(limit=200):
             urls.append(f"{base_url}/blog/{post['slug']}")
@@ -171,6 +176,7 @@ app.include_router(chatbot_router)
 app.include_router(help_chat_router)
 app.include_router(image_to_menu_router)
 app.include_router(blog_router)
+app.include_router(billing_router)
 app.include_router(pages_router)
 
 if __name__ == "__main__":

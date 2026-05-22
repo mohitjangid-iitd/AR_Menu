@@ -65,20 +65,41 @@ def get_client_data(client_id: str, branch_id: str = "__default__"):
     return config
 
 
-def has_feature(data: dict, feature: str) -> bool:
-    """Restaurant ke liye feature enabled hai ya nahi"""
-    features = data.get("subscription", {}).get("features", ["basic"])
-    return feature in features
+def has_feature(client_id: str, feature: str) -> bool:
+    """
+    Restaurant ke liye feature enabled hai ya nahi.
+    Naya system: billing_db.has_feature() se check hoga — subscriptions table se.
+    Trial/demo mein sab features on hote hain.
+    """
+    # Feature key mapping to align codebase checks with DB plan feature keys
+    mapping = {
+        "analytics": "owner_analytics",
+        "ordering": "qr_ordering",
+        "chatbot": "ai_chatbot",
+        "image_to_menu": "ai_menu_import",
+    }
+    db_feature = mapping.get(feature, feature)
+    from billing_db import has_feature as _billing_has_feature
+    return _billing_has_feature(client_id, db_feature)
 
 
-def require_feature(data: dict, feature: str):
+def require_feature(client_id: str, feature: str):
     """Feature nahi hai toh 403"""
-    if not has_feature(data, feature):
+    if not has_feature(client_id, feature):
         raise HTTPException(status_code=403, detail=f"Feature '{feature}' not available")
 
 
-def is_restaurant_active(data: dict) -> bool:
-    return data.get("subscription", {}).get("active", True)
+def is_restaurant_active(client_id: str) -> bool:
+    """
+    Restaurant active hai ya nahi — subscriptions.status se check karo.
+    expired = inactive, baaki sab = active.
+    Agar subscription nahi hai toh active maano (naye restaurants ke liye).
+    """
+    from billing_db import get_subscription
+    sub = get_subscription(client_id)
+    if not sub:
+        return True   # subscription nahi hai — default active
+    return sub["status"] != "expired"
 
 
 def closed_response(request, data, client_id):

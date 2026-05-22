@@ -28,6 +28,7 @@ from google import genai
 from google.genai import types
 
 from auth import decode_token
+from helpers import require_feature
 
 load_dotenv()
 router = APIRouter()
@@ -294,6 +295,9 @@ async def owner_image_to_menu(
     # ── 3. Ownership verify — owner sirf apna restaurant access kar sake ──
     if payload.get("client_id") != client_id:
         raise HTTPException(status_code=403, detail="Aap sirf apne restaurant ka menu scan kar sakte ho")
+
+    # ── 3.5. Feature check ──
+    require_feature(client_id, "image_to_menu")
 
     # ── 4. Extract ──
     return await _handle_image_to_menu(image)

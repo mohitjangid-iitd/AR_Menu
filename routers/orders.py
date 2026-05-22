@@ -75,7 +75,7 @@ async def api_place_order(client_id: str, table_no: int, body: PlaceOrderRequest
     data = get_client_data(client_id)
     if not data:
         raise HTTPException(status_code=404, detail="Restaurant not found")
-    require_feature(data, "ordering")
+    require_feature(client_id, "ordering")
     table = get_table_status(client_id, table_no, branch_id)
     if not table or table["status"] == "inactive":
         raise HTTPException(status_code=403, detail="Table not active")

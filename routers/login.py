@@ -16,7 +16,7 @@ from pydantic import BaseModel
 from templates_env import templates
 
 from auth import login_staff, login_admin, login_owner, get_redirect_url
-from helpers import get_client_data, get_current_user
+from helpers import get_client_data, get_current_user, is_restaurant_active
 from r2 import IS_PROD
 from site_config import SITE_CONFIG
 from database import create_signup_request
@@ -149,8 +149,7 @@ async def api_signup(body: SignupRequest):
 async def api_login(body: LoginRequest, response: Response):
     if body.client_id:
         # ── Staff login (waiter / kitchen / counter) ──
-        rdata = get_client_data(body.client_id)
-        if rdata and not rdata.get("subscription", {}).get("active", True):
+        if not is_restaurant_active(body.client_id):
             raise HTTPException(
                 status_code=403,
                 detail="Subscription expired. Please contact your administrator."

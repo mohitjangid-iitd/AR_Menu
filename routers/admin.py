@@ -126,6 +126,12 @@ class CreateRestaurantRequest(BaseModel):
     instagram: str = ""
     facebook: str = ""
     twitter: str = ""
+    # Billing fields
+    sub_status: str = "trial"        # demo | trial | active
+    sub_plan: str = "basic"          # basic | pro | elite
+    sub_period: str = "monthly"      # monthly | halfyearly | yearly
+    sub_discount_percent: int = 0
+    sub_discount_flat: int = 0
 
 class CreateStaffRequest(BaseModel):
     username: str
@@ -194,7 +200,8 @@ async def api_admin_overview(period: str = "alltime", auth_token: Optional[str] 
             continue
         seen.add(cid)
         rdata = get_client_data(cid) or {}
-        r["active"] = rdata.get("subscription", {}).get("active", True)
+        # sub_status se active determine karo
+        r["active"] = r.get("sub_status", "trial") not in ("expired",)
         # Branches list attach karo
         branches = get_restaurant_branches(cid)
         r["branches"] = [
@@ -225,8 +232,8 @@ async def api_analytics(client_id: str, branch_id: str = None):  # ← add karo
     data = get_client_data(client_id)
     if not data:
         raise HTTPException(status_code=404, detail="Restaurant not found")
-    require_feature(data, "analytics")
-    return get_analytics(client_id, branch_id=branch_id)  # ← pass karo
+    require_feature(client_id, "analytics")
+    return get_analytics(client_id, branch_id=branch_id)
 
 
 @router.get("/api/admin/restaurant/{client_id}/analytics")
@@ -291,7 +298,6 @@ async def api_create_restaurant(body: CreateRestaurantRequest,
             "background": "#ffffff", "font_primary": "Playfair Display",
             "font_secondary": "Poppins",
         },
-        "subscription": {"features": ["basic"]},
         "items": [],
     }
 
@@ -304,6 +310,16 @@ async def api_create_restaurant(body: CreateRestaurantRequest,
 
     save_restaurant_json(client_id, data)
     seed_tables(client_id, body.num_tables)
+    # Naya billing system — subscription create karo
+    from billing_db import create_subscription
+    create_subscription(
+        client_id        = client_id,
+        status           = body.sub_status,
+        plan_key         = body.sub_plan,
+        period           = body.sub_period,
+        discount_percent = body.sub_discount_percent,
+        discount_flat    = body.sub_discount_flat,
+    )
     return {"message": f"Restaurant {client_id} created", "client_id": client_id}
 
 
@@ -333,17 +349,26 @@ async def api_delete_restaurant(client_id: str, auth_token: Optional[str] = Cook
 
 @router.patch("/api/admin/restaurant/{client_id}/toggle")
 async def api_toggle_restaurant(client_id: str, auth_token: Optional[str] = Cookie(None)):
+    """
+    Restaurant ko enable/disable karo.
+    Naya system: restaurants table mein ek is_active column nahi hai —
+    disable karna = subscriptions.status = 'expired' set karna
+    enable karna = subscriptions.status = 'active' (agar subscription hai) ya 'trial'
+    """
     require_auth(auth_token, ["admin"])
-    data = get_client_data(client_id)
-    if not data:
+    if not get_client_data(client_id):
         raise HTTPException(status_code=404, detail="Restaurant not found")
-    current   = data.get("subscription", {}).get("active", True)
-    new_state = not current
-    if "subscription" not in data:
-        data["subscription"] = {"features": ["basic"]}
-    data["subscription"]["active"] = new_state
-    save_restaurant_json(client_id, data)
-    return {"active": new_state}
+    from billing_db import get_subscription, update_subscription
+    sub = get_subscription(client_id)
+    if not sub:
+        raise HTTPException(status_code=404, detail="Subscription not found — pehle billing tab se subscription banao")
+    # Toggle: expired <-> active
+    if sub["status"] == "expired":
+        new_status = "active"
+    else:
+        new_status = "expired"
+    update_subscription(client_id, {"status": new_status})
+    return {"active": new_status != "expired", "status": new_status}
 
 
 # ════════════════════════════════
@@ -859,7 +884,6 @@ async def api_approve_signup(req_id: int, body: ApproveSignupRequest,
             "background":    "#ffffff", "font_primary": "Playfair Display",
             "font_secondary": "Poppins",
         },
-        "subscription": {"active": True, "features": ["basic", "ordering", "analytics"]},
         "items": [],
     }
 
@@ -872,6 +896,10 @@ async def api_approve_signup(req_id: int, body: ApproveSignupRequest,
 
     save_restaurant_json(client_id, restaurant_data)
     seed_tables(client_id, body.num_tables)
+
+    # Naya billing system — trial subscription create karo
+    from billing_db import create_subscription
+    create_subscription(client_id=client_id, status="trial", plan_key="basic")
 
     # Owner account banao
     ok = create_owner(

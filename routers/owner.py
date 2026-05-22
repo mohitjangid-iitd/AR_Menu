@@ -102,9 +102,8 @@ async def owner_save_json(client_id: str, body: SaveRestaurantRequest,
     import json as _json
     existing = existing_branch["config"] if isinstance(existing_branch["config"], dict) else _json.loads(existing_branch["config"])
     data = body.data
-    # Owner theme aur subscription nahi badal sakta
-    data["subscription"] = existing.get("subscription", {})
-    
+    # Owner theme nahi badal sakta — existing theme preserve karo
+    # subscription: naya system — subscriptions table mein hai, config mein nahi
     e_theme = existing_branch.get("theme")
     if e_theme:
         data["theme"] = e_theme if isinstance(e_theme, dict) else _json.loads(e_theme)
