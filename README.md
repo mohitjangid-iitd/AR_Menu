@@ -33,6 +33,7 @@ A **multi-tenant restaurant management platform** with AR menus, real-time order
 - **Restaurant onboarding** — Instant setup via admin panel; activate, deactivate, or delete restaurants, **Approve Owner Signups**
 - **Blogging Platform** — Built-in blogging system for ZenTable platform and connected restaurants
 - **File management & Storage Security** — Upload images/models with automatic **collision prevention** (unique 8-character `_uid` prefix appended to uploaded images) and secure **trash + restore system** (intelligent key parsing to avoid deleting active assets)
+- **Subscription & Add-ons Manager** — Dynamic configuration editor within the Billings tab to live-edit pricing, taglines, active feature checklists, and inline customized feature tags for global plans (Basic, Pro, Elite) and add-ons.
 - **DB export** — Full PostgreSQL export as ZIP
 
 ---
@@ -58,6 +59,7 @@ A **multi-tenant restaurant management platform** with AR menus, real-time order
 zentable/
 ├── main.py                      # App init, lifespan, static mount, utility routes
 ├── database.py                  # PostgreSQL setup + all DB functions (psycopg2)
+├── billing_db.py                # Subscription & Add-ons database operations (PostgreSQL)
 ├── blog_db.py                   # Blog database operations (SQLite/PostgreSQL)
 ├── auth.py                      # JWT logic — create/verify token, login functions
 ├── helpers.py                   # Shared helpers — get_client_data, require_auth, etc.
@@ -80,6 +82,7 @@ zentable/
 │   ├── orders.py                # Orders + Bills API
 │   ├── login.py                 # Login/logout routes
 │   ├── admin.py                 # All admin routes
+│   ├── billing.py               # Subscription plans & add-ons manager API
 │   ├── owner.py                 # Owner operations & branch management
 │   ├── blog.py                  # Blogging platform routes
 │   ├── chatbot.py               # Chatbot logic
@@ -233,6 +236,9 @@ Config structure stored in the DB:
     "features": ["basic", "ordering", "analytics", "ar_menu"]
   }
 }
+
+> [!NOTE]
+> **Dynamic Feature Gating & Locking**: Feature access is checked in real-time by querying the restaurant's subscription status against global database records (`billing_plans` & `billing_addons`). APIs are dynamically locked/unlocked via backend decorators (`require_feature`), and front-end interface components adjust automatically.
 ```
 
 ---
