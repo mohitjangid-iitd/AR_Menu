@@ -875,12 +875,12 @@
           <div class="addon-card-body">
             <div class="addon-card-header-row">
               <div class="addon-icon-wrap">
-                {% if addon.key == 'ar_menu' %}🕶️{% elif addon.key == 'kitchen_tab' %}🍳{% elif addon.key == 'attendance' %}📅{% else %}🔌{% endif %}
+                {% if addon.key == 'ar_menu' %}🕶️{% elif addon.key == 'kitchen_tab' %}🖥️{% elif addon.key == 'attendance' %}📅{% else %}🔌{% endif %}
               </div>
               <div class="addon-price-block">
                 {% if addon.one_time_only %}
                 <div class="addon-price-amount">₹{{ "{:,}".format(addon.one_time_price) }}</div>
-                <div class="addon-price-type one-time">One-time purchase</div>
+                <div class="addon-price-type one-time">Software · One-time</div>
                 {% else %}
                 <div class="addon-price-amount">₹{{ "{:,}".format(addon.monthly_price) }}<span>/mo</span></div>
                 <div class="addon-price-type">Recurring</div>
@@ -892,10 +892,10 @@
           </div>
           <div class="addon-card-footer">
             {% if addon.one_time_only %}
-            <span class="addon-footer-label">Includes hardware setup</span>
-            <span class="addon-footer-val addon-footer-val--included">✓ Included</span>
+            <span class="addon-footer-label">Hardware not included · Quoted per unit</span>
+            <span class="addon-footer-val addon-footer-val--note">Contact us →</span>
             {% elif addon.one_time_price > 0 %}
-            <span class="addon-footer-label">Setup/Hardware:</span>
+            <span class="addon-footer-label">Setup charge:</span>
             <span class="addon-footer-val">₹{{ "{:,}".format(addon.one_time_price) }} <small>(one-time)</small></span>
             {% else %}
             <span class="addon-footer-label">No setup cost</span>
