@@ -374,12 +374,19 @@ def get_site_setting(key: str, default=None):
 
 def set_site_setting(key: str, value):
     """Site-level setting save karo"""
+    import json as _json
+    if isinstance(value, bool):
+        store_val = str(value).lower()
+    elif isinstance(value, (list, dict)):
+        store_val = _json.dumps(value, ensure_ascii=False)
+    else:
+        store_val = str(value)
     conn = get_db()
     conn.execute("""
         INSERT INTO site_settings (key, value, updated_at)
         VALUES (%s, %s, NOW())
         ON CONFLICT (key) DO UPDATE SET value=EXCLUDED.value, updated_at=NOW()
-    """, (key, str(value).lower() if isinstance(value, bool) else str(value)))
+    """, (key, store_val))
     conn.commit()
     conn.close()
 

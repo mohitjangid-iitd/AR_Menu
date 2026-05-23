@@ -19,7 +19,7 @@ from billing_db import (
     # payments
     confirm_payment, get_payment_history, generate_reference_id,
     # pricing
-    calc_price, PERIOD_MULTIPLIER,
+    calc_price, PERIOD_MONTHS,
     # cron
     run_daily_billing_cron,
 )
@@ -292,7 +292,7 @@ async def api_preview_price(
         "addon_total":   addon_total,
         "grand_total":   plan_prices["final_price"] + addon_total,
         "period":        period,
-        "multiplier":    PERIOD_MULTIPLIER.get(period, 1),
+        "multiplier":    PERIOD_MONTHS.get(period, 1),
     }
 
 

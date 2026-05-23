@@ -42,8 +42,8 @@ A **multi-tenant restaurant management platform** with AR menus, real-time order
 
 | Layer | Technology |
 |---|---|
-| Backend | Python — FastAPI |
-| Database | PostgreSQL (psycopg2, ThreadedConnectionPool) |
+| Backend | Python — FastAPI (with background keep-alive threads) |
+| Database | PostgreSQL (psycopg2, ThreadedConnectionPool, Neon DB keep-alive support) |
 | Restaurant Config | PostgreSQL `restaurants` table (JSONB) |
 | Frontend | HTML, CSS, Vanilla JS (Jinja2 templates) |
 | AR | MindAR + Three.js r128 |
@@ -149,6 +149,7 @@ IS_PROD=false
 GEMINI_API_KEY=your-gemini-api-key
 SMTP_USER=your-smtp-user
 SMTP_PASS=your-smtp-password
+ZENTABLE_UPI_ID=your-upi-id-here
 
 # R2 (optional — local storage when USE_R2=false)
 USE_R2=false

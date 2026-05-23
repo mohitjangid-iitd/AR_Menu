@@ -25,7 +25,7 @@ from routers.image_to_menu import router as image_to_menu_router
 from routers.blog import router as blog_router
 from routers.billing import router as billing_router
 from blog_db import init_blog_tables, get_published_posts as get_blog_posts
-from billing_db import init_billing_tables, run_daily_billing_cron
+from billing_db import init_billing_tables, run_daily_billing_cron, get_all_plans, get_all_addons
 from templates_env import templates
 
 # ════════════════════════════════
@@ -64,10 +64,21 @@ async def lifespan(app):
                 num = branch_config.get("restaurant", {}).get("num_tables") \
                       or rdata["restaurant"]["num_tables"]
                 seed_tables(r["client_id"], num, branch["branch_id"])
+    import json as _json
     templates.env.globals["static_v"] = lambda path: \
         int(os.path.getmtime(f"static/{path}")) if os.path.exists(f"static/{path}") else 0
     templates.env.globals["site"] = SITE_CONFIG
-    templates.env.globals["site_settings"] = get_all_site_settings()
+    _ss = get_all_site_settings()
+    templates.env.globals["site_settings"] = _ss
+    # fromjson filter — template mein use kar sakte hain
+    templates.env.filters["fromjson"] = lambda s: _json.loads(s) if isinstance(s, str) else s
+    # billing_plans — landing page pricing ke liye (live fetch)
+    try:
+        templates.env.globals["billing_plans"] = get_all_plans()
+        templates.env.globals["billing_addons"] = get_all_addons()
+    except Exception:
+        templates.env.globals["billing_plans"] = []
+        templates.env.globals["billing_addons"] = []
 
     # Neon ko jaagta rakhne wala thread
     t = threading.Thread(target=_keep_neon_alive, daemon=True)
@@ -158,7 +169,9 @@ async def landing(request: Request):
             "request": request, "site": SITE_CONFIG,
         })
     return templates.TemplateResponse("landing.html", {
-        "request": request, "config": SITE_CONFIG
+        "request": request, "config": SITE_CONFIG,
+        "billing_plans": get_all_plans(),
+        "billing_addons": get_all_addons(),
     })
 
 @app.get("/.well-known/appspecific/com.chrome.devtools.json")

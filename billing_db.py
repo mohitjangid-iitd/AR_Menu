@@ -358,27 +358,46 @@ def update_addon(key: str, fields: dict):
 # PRICE CALCULATOR
 # ════════════════════════════════
 
-PERIOD_MULTIPLIER = {
+# Kitne months ka billing period hai
+PERIOD_MONTHS = {
     "monthly":    1,
-    "halfyearly": 5,
-    "yearly":     10,
+    "halfyearly": 6,
+    "yearly":     12,
+}
+
+# Platform-level period discounts (half-yearly 15%, yearly 30%)
+PERIOD_DISCOUNT = {
+    "monthly":    0,
+    "halfyearly": 15,
+    "yearly":     30,
 }
 
 def calc_price(monthly_price: int, period: str,
                discount_percent: int = 0, discount_flat: int = 0) -> dict:
     """
     Final price calculate karo.
-    Returns: {base_price, discount_percent, discount_flat, final_price}
+    Period discount (platform-level) + admin discount stack hote hain.
+    Returns: {base_price, period_months, discount_percent, discount_flat, final_price, monthly_effective}
     """
-    multiplier = PERIOD_MULTIPLIER.get(period, 1)
-    base       = monthly_price * multiplier
-    after_flat = max(0, base - discount_flat)
-    after_pct  = max(0, round(after_flat * (1 - discount_percent / 100)))
+    months         = PERIOD_MONTHS.get(period, 1)
+    period_disc    = PERIOD_DISCOUNT.get(period, 0)
+    base           = monthly_price * months              # bina kisi discount ke total
+
+    # Period discount pehle apply karo
+    after_period   = max(0, round(base * (1 - period_disc / 100)))
+    # Flat discount
+    after_flat     = max(0, after_period - discount_flat)
+    # Admin % discount uske baad
+    after_pct      = max(0, round(after_flat * (1 - discount_percent / 100)))
+
     return {
-        "base_price":       base,
-        "discount_percent": discount_percent,
-        "discount_flat":    discount_flat,
-        "final_price":      after_pct,
+        "base_price":        base,
+        "period_months":     months,
+        "period_discount":   period_disc,
+        "discount_percent":  discount_percent,
+        "discount_flat":     discount_flat,
+        "final_price":       after_pct,
+        "monthly_effective": round(after_pct / months) if months else after_pct,
     }
 
 
@@ -436,8 +455,7 @@ def create_subscription(
         plan          = get_plan(plan_key)
         monthly_price = plan["monthly_price"] if plan else 0
         prices        = calc_price(monthly_price, period, discount_percent, discount_flat)
-        period_days   = {"monthly": 30, "halfyearly": 180, "yearly": 365}
-        days          = period_days.get(period, 30) * months
+        days          = PERIOD_MONTHS.get(period, 1) * 30 * months
         end           = now + timedelta(days=days)
         current_period_ends_at = end.strftime("%Y-%m-%d")
         grace_ends_at          = (end + timedelta(days=1)).strftime("%Y-%m-%d")
@@ -590,8 +608,7 @@ def confirm_payment(
     if not sub:
         return {"payment_id": payment_id, "error": "Subscription not found"}
 
-    period_days = {"monthly": 30, "halfyearly": 180, "yearly": 365}
-    days        = period_days.get(period, 30)
+    days = PERIOD_MONTHS.get(period, 1) * 30   # 1mo=30d, 6mo=180d, 12mo=365d approx
 
     # max(today, current_period_ends_at) — early renewal protected
     if sub["current_period_ends_at"]:
