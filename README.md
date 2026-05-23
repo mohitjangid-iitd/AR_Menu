@@ -231,11 +231,7 @@ Config structure stored in the DB:
       "auto_rotate": true,
       "rotate_speed": 8000
     }
-  ],
-  "subscription": {
-    "active": true,
-    "features": ["basic", "ordering", "analytics", "ar_menu"]
-  }
+  ]
 }
 
 > [!NOTE]
