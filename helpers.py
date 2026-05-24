@@ -89,6 +89,59 @@ def require_feature(client_id: str, feature: str):
         raise HTTPException(status_code=403, detail=f"Feature '{feature}' not available")
 
 
+def require_feature_decorator(feature_key: str):
+    """
+    Route pe feature gate lagao — decorator version.
+
+    Usage:
+        @router.get("/owner/analytics")
+        @require_feature_decorator("owner_analytics")
+        async def analytics(request: Request):
+            ...
+
+    - Trial / Demo: sab milta hai (has_feature handles this)
+    - Active: sirf plan + addon check
+    - Expired: 403
+    """
+    from functools import wraps
+
+    def decorator(func):
+        @wraps(func)
+        async def wrapper(*args, **kwargs):
+            # Request ko args ya kwargs se nikalo
+            request = kwargs.get("request")
+            if request is None:
+                for arg in args:
+                    if hasattr(arg, "cookies"):
+                        request = arg
+                        break
+
+            if request is None:
+                raise HTTPException(status_code=500, detail="Request object not found")
+
+            token = request.cookies.get("auth_token")
+            user  = decode_token(token) if token else None
+            if not user:
+                raise HTTPException(status_code=401, detail="Login required")
+
+            client_id = user.get("client_id")
+            if not client_id:
+                raise HTTPException(status_code=400, detail="client_id missing in token")
+
+            if not has_feature(client_id, feature_key):
+                raise HTTPException(
+                    status_code=403,
+                    detail={
+                        "locked":      True,
+                        "feature_key": feature_key,
+                        "message":     "Yeh feature aapke plan mein nahi hai. Upgrade karein.",
+                    }
+                )
+            return await func(*args, **kwargs)
+        return wrapper
+    return decorator
+
+
 def is_restaurant_active(client_id: str) -> bool:
     """
     Restaurant active hai ya nahi — subscriptions.status se check karo.

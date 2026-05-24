@@ -235,7 +235,21 @@ function switchTab(name, btn) {
     document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     document.getElementById('tab-' + name).classList.add('active');
-    btn.classList.add('active');
+    
+    let targetBtn = btn;
+    if (!targetBtn) {
+        // If btn is null/undefined, try to find the button in tab-nav
+        const buttons = document.querySelectorAll('.tab-nav .tab-btn');
+        for (const b of buttons) {
+            const onclickAttr = b.getAttribute('onclick');
+            if (onclickAttr && onclickAttr.includes(`switchTab('${name}'`)) {
+                targetBtn = b;
+                break;
+            }
+        }
+    }
+    if (targetBtn) targetBtn.classList.add('active');
+    
     if (name === 'restaurants') renderRestGrid();
     if (name === 'staff') populateStaffRestSelect();
 }

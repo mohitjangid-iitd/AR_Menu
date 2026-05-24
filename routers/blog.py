@@ -32,7 +32,7 @@ from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from pydantic import BaseModel
 from typing import Optional
 
-from helpers import get_current_user, get_client_data
+from helpers import get_current_user, get_client_data, has_feature
 from database import get_site_setting
 from templates_env import templates
 from blog_db import (
@@ -241,6 +241,10 @@ async def blogger_management(request: Request, client_id: str):
         return RedirectResponse(url=f"/login?next=/{client_id}/staff/blog")
 
     role = user.get("role")
+
+    # Feature gate — blog feature check (admin always allowed)
+    if role != "admin" and not has_feature(client_id, "blog"):
+        raise HTTPException(status_code=403, detail="Blog feature not available in your plan")
 
     # site settings check
     if role == "blogger" and not get_site_setting("blog_blogger_enabled", True):

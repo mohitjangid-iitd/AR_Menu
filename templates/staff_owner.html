@@ -685,6 +685,20 @@
 <script src="/static/js/chatbot.js?v={{ static_v('js/chatbot.js') }}"></script>
 {% endif %}
 
+<!-- Feature Gate -->
+<script src="/static/js/feature_gate.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+    // Owner Analytics gate
+    await FeatureGate.gate('owner_analytics', 'tab-analytics');
+    
+    // Chatbot gate (if widget exists)
+    if (document.getElementById('chatbot-widget')) {
+        await FeatureGate.gate('ai_chatbot', 'chatbot-widget');
+    }
+});
+</script>
+
 <!-- ══ Custom Dropdown — native select replace ══
      Native browser dropdown hamesha OS font size use karta hai.
      Yeh custom dropdown poori tarah CSS se control hota hai. -->

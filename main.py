@@ -25,7 +25,7 @@ from routers.image_to_menu import router as image_to_menu_router
 from routers.blog import router as blog_router
 from routers.billing import router as billing_router
 from blog_db import init_blog_tables, get_published_posts as get_blog_posts
-from billing_db import init_billing_tables, run_daily_billing_cron, get_all_plans, get_all_addons
+from billing_db import init_billing_tables, sync_plan_features, run_daily_billing_cron, get_all_plans, get_all_addons
 from templates_env import templates
 
 # ════════════════════════════════
@@ -51,6 +51,7 @@ def _keep_neon_alive():
 async def lifespan(app):
     init_db()
     init_billing_tables()
+    sync_plan_features()    # Naye features DB mein add karo (safe, idempotent)
     init_blog_tables()
     purge_expired_trash()
     for r in get_all_restaurants_info():

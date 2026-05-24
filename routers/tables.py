@@ -20,7 +20,7 @@ from database import (
     get_table_orders_detail,
     create_waiter_call, get_active_calls, resolve_waiter_call,
 )
-from helpers import get_client_data, require_auth
+from helpers import get_client_data, require_auth, require_feature
 
 router = APIRouter()
 
@@ -32,6 +32,8 @@ async def api_activate_table(client_id: str, table_no: int,
     if not get_client_data(client_id):
         raise HTTPException(status_code=404, detail="Restaurant not found")
     branch_id = user["branch_id"] or "__default__"
+    if branch_id != "__default__":
+        require_feature(client_id, "multi_branch")
     activate_table(client_id, table_no, branch_id)
     return {"message": f"Table {table_no} activated"}
 
@@ -42,6 +44,8 @@ async def api_activate_all_tables(client_id: str,
                                    auth_token: Optional[str] = Cookie(None)):
     user = require_auth(auth_token, ["counter", "owner", "admin"], client_id)
     effective_branch = branch_id or user.get("branch_id") or "__default__"
+    if effective_branch != "__default__":
+        require_feature(client_id, "multi_branch")
     activate_all_tables(client_id, effective_branch)
     return {"message": "All tables activated"}
 

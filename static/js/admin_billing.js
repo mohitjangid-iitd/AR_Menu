@@ -155,12 +155,25 @@ const Billing = (() => {
 
         try {
             const res  = await fetch(`/api/billing/subscriptions/${clientId}`, { credentials: 'include' });
+            if (!res.ok) {
+                if (res.status === 404) {
+                    document.getElementById('bm-body').innerHTML = `
+                        <div class="empty" style="padding:32px;text-align:center;">
+                            <div style="margin-bottom:16px;color:var(--muted);">Is restaurant ki koi active subscription nahi hai.</div>
+                            <button class="btn btn-primary" onclick="Billing.closeModal(); Billing.createForRestaurant('${clientId}')">
+                                + Create Subscription
+                            </button>
+                        </div>`;
+                    return;
+                }
+                throw new Error(await res.text());
+            }
             const data = await res.json();
             _activeSub = data;
             _renderModal(data);
         } catch (e) {
             document.getElementById('bm-body').innerHTML =
-                '<div class="empty">Load failed</div>';
+                '<div class="empty">Load failed — ' + e.message + '</div>';
         }
     }
 
@@ -408,14 +421,33 @@ const Billing = (() => {
             // QR generate karo — qrcodejs library se (CDN)
             const qrEl = document.getElementById('bpm-qr');
             qrEl.innerHTML = '';
-            if (data.upi_string && window.QRCode) {
+            
+            const renderQR = () => {
+                qrEl.innerHTML = '';
                 new QRCode(qrEl, {
                     text: data.upi_string,
                     width: 160, height: 160,
                     colorDark: '#fff', colorLight: '#1a1a2e',
                 });
-            } else {
-                qrEl.innerHTML = '<div style="font-size:0.75rem;color:var(--muted);">QRCode.js load nahi hua</div>';
+            };
+
+            if (data.upi_string) {
+                if (window.QRCode) {
+                    renderQR();
+                } else {
+                    qrEl.innerHTML = '<div style="font-size:0.75rem;color:var(--muted);">QR Code loading...</div>';
+                    // Find or wait for the script to load
+                    const script = document.querySelector('script[src*="qrcode.min.js"]');
+                    if (script) {
+                        script.addEventListener('load', renderQR);
+                    } else {
+                        // In case script tag wasn't created yet or we need to add it
+                        const s = document.createElement('script');
+                        s.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
+                        s.onload = renderQR;
+                        document.head.appendChild(s);
+                    }
+                }
             }
 
             // Sub ki period bhi set karo
@@ -757,18 +789,11 @@ const PlansEditor = (() => {
             }
             if (p.features && p.features.labels) {
                 Object.entries(p.features.labels).forEach(([fk, lbl]) => {
+                    allFeatureKeys.add(fk);
                     featureLabelsMap[fk] = lbl;
                 });
             }
         });
-
-        // Add typical default ones if they somehow aren't in there (safety fallback)
-        const standardFeatures = [
-            "website", "qr_ordering", "digital_menu", "staff_panel", "basic_pos", 
-            "ai_menu_import", "blog", "owner_analytics", "ai_chatbot", "multi_branch",
-            "centralized_reporting", "custom_integrations", "dedicated_support"
-        ];
-        standardFeatures.forEach(f => allFeatureKeys.add(f));
 
         // Render Plans
         plansGrid.innerHTML = _plans.map(p => {
@@ -825,16 +850,6 @@ const PlansEditor = (() => {
                                     </div>
                                 </div>`;
                             }).join('')}
-                        </div>
-
-                        <!-- Custom feature adder inline -->
-                        <div style="margin-top: 4px; padding: 8px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.04); border-radius: 6px; display: flex; flex-direction: column; gap: 6px;">
-                            <div style="font-size: 0.68rem; color: var(--primary); font-weight: 600; font-family: var(--font-m);">+ Add Custom Feature Tag</div>
-                            <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-                                <input type="text" id="add-feature-key-${key}" placeholder="key (e.g. chatbot)" style="flex: 1; min-width: 100px; font-size: 0.7rem; padding: 6px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07); border-radius: 4px; color: white; font-family: var(--font-m);">
-                                <input type="text" id="add-feature-label-${key}" placeholder="Label description" style="flex: 1.5; min-width: 120px; font-size: 0.7rem; padding: 6px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07); border-radius: 4px; color: white;">
-                                <button onclick="PlansEditor.addNewFeatureKeyToPlan('${key}')" class="btn btn-primary btn-sm" style="padding: 4px 8px; font-size: 0.65rem;">+ Add</button>
-                            </div>
                         </div>
                     </div>
 
@@ -897,38 +912,6 @@ const PlansEditor = (() => {
             </div>
             `;
         }).join('');
-    }
-
-    function addNewFeatureKeyToPlan(planKey) {
-        const keyInput   = document.getElementById(`add-feature-key-${planKey}`);
-        const labelInput = document.getElementById(`add-feature-label-${planKey}`);
-        if (!keyInput || !labelInput) return;
-
-        const fkey  = keyInput.value.trim().toLowerCase().replace(/[^a-z0-9_]+/g, '_');
-        const flbl  = labelInput.value.trim();
-
-        if (!fkey) { showToast('Invalid or empty feature key', 'error'); return; }
-        if (!flbl) { showToast('Please enter a description label', 'error'); return; }
-
-        const plan = _plans.find(p => p.key === planKey);
-        if (!plan) return;
-
-        // Ensure features structure is solid
-        if (!plan.features) plan.features = { included: [], labels: {} };
-        if (!plan.features.included) plan.features.included = [];
-        if (!plan.features.labels) plan.features.labels = {};
-
-        // Push to local data
-        if (!plan.features.included.includes(fkey)) {
-            plan.features.included.push(fkey);
-        }
-        plan.features.labels[fkey] = flbl;
-
-        // Reset inputs and re-render
-        keyInput.value = '';
-        labelInput.value = '';
-        showToast(`Added feature '${fkey}' to checklist!`, 'success');
-        render();
     }
 
     async function savePlan(key, btn) {
@@ -1018,24 +1001,25 @@ const PlansEditor = (() => {
         }
     }
 
-    // Proxy toast to existing admin panel function
-    function showToast(msg, type = '') {
-        if (window.toast) {
-            window.toast(msg, type);
-        } else {
-            alert(msg);
-        }
-    }
-
     return {
         toggleSubTab,
         load,
-        addNewFeatureKeyToPlan,
         savePlan,
         saveAddon
     };
 
 })();
+
+// ── Global helpers ──
+function showToast(msg, type = '') {
+    if (typeof toast === 'function') {
+        toast(msg, type);
+    } else if (typeof window.toast === 'function') {
+        window.toast(msg, type);
+    } else {
+        alert(msg);
+    }
+}
 
 // ── Global helpers for HTML onclick ──
 function loadBilling()              { Billing.load(); }

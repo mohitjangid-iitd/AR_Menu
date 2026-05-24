@@ -219,6 +219,8 @@ async def staff_kitchen(request: Request, client_id: str,
                         auth_token: Optional[str] = Cookie(None)):
     _block_on_admin_subdomain(request)
     user = require_auth(auth_token, ["kitchen", "owner", "admin"], client_id)
+    # Feature gate — kitchen_tab addon check
+    require_feature(client_id, "kitchen_tab")
     data = get_client_data(client_id)
     if not data:
         raise HTTPException(status_code=404, detail="Restaurant not found")

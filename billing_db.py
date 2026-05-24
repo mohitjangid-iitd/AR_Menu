@@ -270,6 +270,61 @@ def init_billing_tables():
     print("✅ Billing tables initialized")
 
 
+def sync_plan_features():
+    """
+    feature_registry.py mein naya feature add hua toh usse DB mein sync karo.
+
+    IMPORTANT:
+    - Sirf MISSING features add karta hai
+    - Admin ne jo plan toggles kiye — wo safe rehte hain
+    - Har deploy pe chalega — safe to run multiple times
+    """
+    from feature_registry import FEATURES, ADDON_FEATURES, DEFAULT_PLAN_MAP
+
+    conn = get_db()
+
+    for plan_key, plan_idx in [("basic", 0), ("pro", 1), ("elite", 2)]:
+        cur = conn.execute(
+            "SELECT features FROM billing_plans WHERE key=%s", (plan_key,)
+        )
+        row = cur.fetchone()
+        if not row:
+            continue
+
+        features = row["features"]
+        if isinstance(features, str):
+            features = json.loads(features)
+
+        included = features.get("included", [])
+        labels   = features.get("labels", {})
+        changed  = False
+
+        for key, label in FEATURES.items():
+            if key in ADDON_FEATURES:
+                continue  # Addon features plan mein nahi hote
+
+            if key not in labels:
+                # Naya feature — pehli baar add ho raha hai
+                labels[key] = label
+                defaults    = DEFAULT_PLAN_MAP.get(key, (False, False, False))
+                if defaults[plan_idx] and key not in included:
+                    included.append(key)
+                changed = True
+                print(f"  + {plan_key}: naya feature add hua — {key}")
+
+        if changed:
+            features["included"] = included
+            features["labels"]   = labels
+            conn.execute(
+                "UPDATE billing_plans SET features=%s::jsonb WHERE key=%s",
+                (json.dumps(features), plan_key)
+            )
+
+    conn.commit()
+    conn.close()
+    print("✅ sync_plan_features done")
+
+
 # ════════════════════════════════
 # PLANS
 # ════════════════════════════════

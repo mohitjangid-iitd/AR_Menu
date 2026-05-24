@@ -22,7 +22,10 @@ from billing_db import (
     calc_price, PERIOD_MONTHS,
     # cron
     run_daily_billing_cron,
+    # feature check
+    has_feature as _has_feature,
 )
+from feature_registry import FEATURES
 
 router = APIRouter(prefix="/api/billing", tags=["billing"])
 
@@ -37,6 +40,27 @@ def _require_admin(request: Request) -> dict:
     if not user or user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Admin only")
     return user
+
+
+# ════════════════════════════════
+# FEATURE CHECK — OWNER/STAFF
+# ════════════════════════════════
+
+@router.get("/features/me")
+async def api_my_features(request: Request):
+    """
+    Restaurant owner ko unke active features bataao.
+    FE isko call karke UI lock/unlock kare.
+    Admin auth nahi chahiye — owner bhi call kar sakta hai.
+    """
+    token     = request.cookies.get("auth_token")
+    user      = decode_token(token) if token else None
+    if not user:
+        raise HTTPException(status_code=401)
+
+    client_id = user.get("client_id")
+    result    = {key: _has_feature(client_id, key) for key in FEATURES}
+    return {"client_id": client_id, "features": result}
 
 
 # ════════════════════════════════
