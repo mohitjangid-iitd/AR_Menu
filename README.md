@@ -45,6 +45,11 @@ A **multi-tenant restaurant management platform** with AR menus, real-time order
 | Backend | Python — FastAPI (with background keep-alive threads) |
 | Database | PostgreSQL (psycopg2, ThreadedConnectionPool, Neon DB keep-alive support) |
 | Restaurant Config | PostgreSQL `restaurants` table (JSONB) |
+| Subscriptions & Add-ons | PostgreSQL `billing_plans`, `billing_addons`, `subscriptions`, `subscription_addons`, `payment_history`, `email_log` |
+| Blog Operations | PostgreSQL `blog_posts` table |
+| Trash & Auto-Purge | PostgreSQL `trash_meta` table |
+| Owner Signup & Approvals| PostgreSQL `owner_signup_requests`, `owners` tables |
+| Platform Configuration | PostgreSQL `site_settings` table |
 | Frontend | HTML, CSS, Vanilla JS (Jinja2 templates) |
 | AR | MindAR + Three.js r128 |
 | AI | Google Gemini API (Chatbot, Photo-to-Menu, Help Bot) |
@@ -60,7 +65,9 @@ zentable/
 ├── main.py                      # App init, lifespan, static mount, utility routes
 ├── database.py                  # PostgreSQL setup + all DB functions (psycopg2)
 ├── billing_db.py                # Subscription & Add-ons database operations (PostgreSQL)
-├── blog_db.py                   # Blog database operations (SQLite/PostgreSQL)
+├── blog_db.py                   # Blog database operations (PostgreSQL)
+├── feature_registry.py          # Key-label registry for feature gating (Basic, Pro, Elite)
+├── check_feature_gates.py       # Audit utility for restaurant feature access & subscription gates
 ├── auth.py                      # JWT logic — create/verify token, login functions
 ├── helpers.py                   # Shared helpers — get_client_data, require_auth, etc.
 ├── r2.py                        # Cloudflare R2 client + helper functions
@@ -269,6 +276,28 @@ Config structure stored in the DB:
 - Scale/position/rotation configurable per item in config
 
 Free model sources: Sketchfab, TurboSquid, CGTrader
+
+---
+
+## Testing
+
+ZenTable includes a robust suite of ~133 automated unit and behavioral tests. All database queries and external resources are mocked out, allowing tests to run entirely offline in milliseconds.
+
+To install test dependencies:
+```bash
+pip install pytest httpx
+```
+
+To execute the test suite:
+```bash
+# Run all tests
+SECRET_KEY=test pytest tests/ -v
+
+# Run tests with condensed output
+SECRET_KEY=test pytest tests/ -q
+```
+
+Refer to [PYTEST_GUIDE.md](file:///c:/Users/MOHIT/Desktop/AR%20Menu/Demo/tests/PYTEST_GUIDE.md) for full instructions, including writing smoke and behavioral tests.
 
 ---
 

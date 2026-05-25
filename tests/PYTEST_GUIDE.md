@@ -1,111 +1,249 @@
-# ZenTable — Tests
+# ZenTable — Pytest Master Guide (Pytest Ki Complete Guide) 🧪
 
-## Setup
+ZenTable ek fully-tested multi-tenant platform hai jismein **~166 automated unit & behavioral tests** likhe gaye hain. Ye tests fast, offline, aur completely secure hain kyunki ye main database (Neon PostgreSQL) ko touch nahi karte, balki use mock karte hain.
 
+---
+
+## 1. Setup & Environment Configurations
+
+Tests run karne se pehle ensure karein ki virtual environment (`.venv`) activated hai aur required dependencies installed hain.
+
+### Virtual Environment Setup & Dependencies
 ```bash
+# Virtual environment ko activate karein (Windows PowerShell)
+.venv\Scripts\Activate.ps1
+
+# Test libraries ko install karein (agar already nahi hain)
 pip install pytest httpx
 ```
 
----
-
-## Run Karo
-
-```bash
-# Saare tests
-SECRET_KEY=test pytest tests/ -v
-
-# Sirf ek file
-pytest tests/test_billing.py -v
-
-# Sirf ek class
-pytest tests/test_orders.py::TestPlaceOrder -v
-
-# Sirf ek test
-pytest tests/test_owner.py::TestStaffToggle::test_toggle_active_to_inactive -v
-
-# Short output
-pytest tests/ -q
-
-# Failures sirf
-pytest tests/ -v --tb=short
-```
+### Environment Variables
+Pytest run karte waqt `SECRET_KEY` env variable pass karna mandatory hai, warna JWT/auth module key error throw karega:
+- **Windows (PowerShell):** `$env:SECRET_KEY="test"; pytest tests/`
+- **Linux/macOS:** `SECRET_KEY=test pytest tests/`
 
 ---
 
-## Files aur Coverage
+## 2. Hum Kya Test Karte Hain Aur Kaise? (What to Test & How)
 
-| File | Kya cover hota hai | Tests |
-|------|--------------------|-------|
-| `conftest.py` | App setup, DB mocks, fixtures | — |
-| `test_smoke.py` | Har API — 500 nahi aana chahiye | ~20 |
-| `test_billing.py` | Feature locking, plan checks, billing APIs | ~25 |
-| `test_menu.py` | Menu fetch, GLB token, model_url | ~8 |
-| `test_orders.py` | Order CRUD, bill, status updates | ~22 |
-| `test_owner.py` | Staff CRUD, config save, theme lock | ~20 |
-| `test_tables.py` | Table activate/close, waiter call | ~18 |
-| `test_admin.py` | Admin APIs, site settings, restaurant mgmt | ~20 |
-
-**Total: ~133 tests**
-
----
-
-## Teen Levels of Testing
+ZenTable mein testing ko teen alag objectives ke liye split kiya gaya hai:
 
 ```
-Level 1 — Smoke        "Kya 500 nahi aata?"       test_smoke.py
-Level 2 — Behavioral   "Sahi kaam karta hai?"     baaki sab files
-Level 3 — Integration  "Real DB ke saath?"        abhi nahi (future)
+┌────────────────────────────────────────────────────────┐
+│                   ZenTable Test Suite                  │
+└───────────────────────────┬────────────────────────────┘
+                            ▼
+ ┌──────────────────────────────────────────────────────┐
+ │ Level 1: Smoke Tests (test_smoke.py)                 │
+ │ - Kya saare routes aur pages bina 500 error ke load  │
+ │   ho rahe hain?                                      │
+ └──────────────────────────┬───────────────────────────┘
+                            ▼
+ ┌──────────────────────────────────────────────────────┐
+ │ Level 2: Behavioral Tests (test_billing.py, etc.)    │
+ │ - Kya features exact roles ke according locked hain? │
+ │ - Kya incorrect passwords reject ho rahe hain?        │
+ └──────────────────────────┬───────────────────────────┘
+                            ▼
+ ┌──────────────────────────────────────────────────────┐
+ │ Level 3: Database Mocking & Isolation (conftest.py)  │
+ │ - PostgreSQL connections ko mock database cursor se  │
+ │   replace karna taaki real DB change na ho.          │
+ └──────────────────────────────────────────────────────┘
 ```
+
+### A. Smoke Tests (Kya 500 Error Nahi Aata?)
+`tests/test_smoke.py` mein har ek endpoint ko ping kiya jaata hai taaki ensure ho sake ki koi import crash ya missing parameter server-level syntax error (`500 Internal Server Error`) trigger nahi kar raha.
+
+### B. Behavioral Tests (Kya Functionality Sahi Hai?)
+Apne business logic aur route behaviors ko check karne ke liye:
+- **Role-based Authentication:** Waiter, Counter, Kitchen, Owner, aur Admin ki roles ki checking.
+- **Feature Gating:** Basic plan ka owner Pro features (jaise owner analytics ya multi-branch) ko access nahi kar paana chahiye unless addon/upgrade purchased ho.
+
+### C. Database Mocking & Isolation
+`tests/conftest.py` saare database functions (jaise Neon PostgreSQL query connections) ko intercept karke mock cursors and mock return values inject karta hai.
+> [!IMPORTANT]
+> Iska matlab hai ki test suit chalate waqt aapka actual live databases bilkul touch nahi hota aur aap test records ko bina database dependency ke verify kar sakte hain.
 
 ---
 
-## Ye Tests Neon DB Touch NAHI Karte
+## 3. Pytest Commands Cheatsheet (Pytest Kaise Run Karein?)
 
-Saara DB mock hai. Sirf ye chahiye:
-
-```bash
-SECRET_KEY=any-string pytest tests/ -v
-```
+| Run Objective | Windows (PowerShell) Command | Linux / macOS Command |
+| :--- | :--- | :--- |
+| **Saare 160+ Tests Run Karein** | `$env:SECRET_KEY="test"; .venv\Scripts\pytest tests/ -v` | `SECRET_KEY=test pytest tests/ -v` |
+| **Sirf Ek Specific File** | `$env:SECRET_KEY="test"; .venv\Scripts\pytest tests/test_billing.py -v` | `SECRET_KEY=test pytest tests/test_billing.py -v` |
+| **Sirf Ek Specific Class** | `$env:SECRET_KEY="test"; .venv\Scripts\pytest tests/test_orders.py::TestPlaceOrder -v` | `SECRET_KEY=test pytest tests/test_orders.py::TestPlaceOrder -v` |
+| **Sirf Ek Specific Test Function**| `$env:SECRET_KEY="test"; .venv\Scripts\pytest tests/test_owner.py::TestStaffToggle::test_toggle_active_to_inactive -v` | `SECRET_KEY=test pytest tests/test_owner.py::TestStaffToggle::test_toggle_active_to_inactive -v` |
+| **Search/Filter By Name (`-k`)** | `$env:SECRET_KEY="test"; .venv\Scripts\pytest tests/ -k "menu" -v` | `SECRET_KEY=test pytest tests/ -k "menu" -v` |
+| **Peechla Failed Test Dobara Run (`-lf`)** | `$env:SECRET_KEY="test"; .venv\Scripts\pytest tests/ -lf -v` | `SECRET_KEY=test pytest tests/ -lf -v` |
+| **Pehle Failure Par Stop Karein (`-x`)** | `$env:SECRET_KEY="test"; .venv\Scripts\pytest tests/ -x -v` | `SECRET_KEY=test pytest tests/ -x -v` |
+| **Quiet/Condensed Output (`-q`)** | `$env:SECRET_KEY="test"; .venv\Scripts\pytest tests/ -q` | `SECRET_KEY=test pytest tests/ -q` |
 
 ---
 
-## Naya Feature Add Kiya — Test Kaise Likhein
+## 4. Test Results aur Unke Visual Meanings (Pass, Fail, Error)
 
-### 1. Smoke test add karo (`test_smoke.py`)
+Pytest run karne par aapko terminal par teen tarah ke status milenge. Unka breakdown aur practical demonstration neeche diya gaya hai:
 
+```
+📊 PYTEST RESULTS AT A GLANCE:
+───────────────────────────────────────────────────────────
+   . (Passed)  ──> Sab kuch sahi hai, assertion matches.
+   F (Failed)  ──> Code chala par output galat aaya (Assertion failed).
+   E (Error)   ──> Code crash ho gaya ya test logic mein exception aayi.
+───────────────────────────────────────────────────────────
+```
+
+### 🔴 Scenario A: PASS (Status Code: Green `.`)
+**Kab hota hai?**
+Jab test code chala aur usne exactly wahi deliver kiya jo assert block ne demand kiya tha.
+
+**Code Example:**
 ```python
-class TestInventoryRoutes:
-    def test_inventory_no_auth(self, client):
-        r = client.get("/api/inventory/test_resto/items")
-        assert r.status_code not in (500,)
+def test_menu_endpoint(client):
+    # Public menu check: returns 200 OK
+    response = client.get("/test_resto/menu")
+    assert response.status_code == 200  # <--- PASS! (status 200 hi aaya)
 ```
-
-### 2. Behavioral test file banao (`test_inventory.py`)
-
-```python
-class TestInventoryGet:
-    def test_returns_items(self, owner_client):
-        with patch("routers.inventory.require_auth", return_value=MOCK_USER_OWNER), \
-             patch("routers.inventory.get_inventory_items", return_value=[...]):
-            r = owner_client.get("/api/inventory/test_resto/items")
-        assert r.status_code == 200
-
-    def test_feature_locked_on_basic(self, owner_client):
-        """Basic plan pe 403 aana chahiye"""
-        with patch("routers.inventory.require_auth", return_value=MOCK_USER_OWNER), \
-             patch("routers.inventory.require_feature",
-                   side_effect=HTTPException(403, "locked")):
-            r = owner_client.get("/api/inventory/test_resto/items")
-        assert r.status_code == 403
+**Terminal Output:**
+```text
+tests/test_menu.py::test_menu_endpoint PASSED    [ 100%]
 ```
 
 ---
 
-## Common Failures aur Fix
+### 🟡 Scenario B: FAIL (Status Code: Red `F`)
+**Kab hota hai?**
+Code successfully execute hua, koi python crashing/error nahi aayi, par jo value return hui wo assert block se match nahi hui.
 
-| Error | Reason | Fix |
-|-------|--------|-----|
-| `ModuleNotFoundError` | Root se nahi chala | `cd project && pytest tests/ -v` |
-| `KeyError: SECRET_KEY` | Env var nahi | `SECRET_KEY=test pytest tests/ -v` |
-| `assert 500 not in ...` | Route mein actual bug | `-v --tb=long` se dekho exact error |
-| Mock patch path galat | `routers.menu.get_client_data` sahi path nahi | Jahan function use hota hai wahan patch karo, jahan define hota hai nahi |
+**Code Example:**
+```python
+def test_locked_feature_access(client):
+    # Basic tier par locked route pe request mari
+    response = client.get("/api/owner/analytics")
+    
+    # Hum expect kar rahe the ki locking ki wajah se 403 Forbidden aayega
+    # Par humne galti se assert status 200 likh diya
+    assert response.status_code == 200  # <--- FAIL! (Actual output is 403)
+```
+
+**Terminal Output aur Assertion Error Tracing:**
+```text
+___________________________ test_locked_feature_access ___________________________
+
+client = <httpx.Client object at 0x00000188A3>
+
+    def test_locked_feature_access(client):
+        response = client.get("/api/owner/analytics")
+>       assert response.status_code == 200
+E       assert 403 == 200
+E        +  where 403 = <Response [403 Forbidden]>.status_code
+
+tests/test_owner.py:42: AssertionError
+=========================== 1 failed in 0.45s ===========================
+```
+> [!TIP]
+> **Fix Kaise Karein?** Terminal Traceback ko read karein. Line `E assert 403 == 200` saaf bata rahi hai ki actual value `403` aayi, par hum `200` expect kar rahe the. Logic fix karein ya test assertion ko `assert response.status_code == 403` par change karein.
+
+---
+
+### ❌ Scenario C: ERROR (Status Code: Red `E`)
+**Kab hota hai?**
+Test ka setup/teardown code hi crash ho gaya ya route logic ke andar exception raise ho gayi (jaise division by zero, syntax errors, missing imports, ya `NoneType has no attribute`).
+
+**Code Example:**
+```python
+def test_restaurant_stats(client):
+    # Galti se import galat path par ho gaya ya variable defined nahi hai
+    non_existent_helper.calculate() # <--- Pytest will raise NameError
+    
+    response = client.get("/api/admin/stats")
+    assert response.status_code == 200
+```
+
+**Terminal Output aur Exception Tracing:**
+```text
+___________________________ test_restaurant_stats ___________________________
+
+client = <httpx.Client object at 0x00000188B5>
+
+    def test_restaurant_stats(client):
+>       non_existent_helper.calculate()
+E       NameError: name 'non_existent_helper' is not defined
+
+tests/test_admin.py:10: NameError
+=========================== 1 error in 0.12s ===========================
+```
+> [!WARNING]
+> **Assertion Failure aur Error mein difference:**
+> - **Failure (F)** ka matlab hai platform run ho raha hai, par logic galat hai.
+> - **Error (E)** ka matlab hai platform or tests crash ho gaye hain.
+
+---
+
+## 5. Naya Test Kaise Likhein? (Step-by-Step Tutorial)
+
+Maan lijiye aapne ek naya feature develop kiya: `/api/owner/discount-coupon` (Staff can create custom coupons). Isko test karne ke liye do levels ke tests likhe jayenge:
+
+### Step 1: Smoke Test Likhein (`tests/test_smoke.py`)
+Ensure karein ki endpoint unauthenticated states mein 500 error na throw kare.
+```python
+class TestDiscountCouponSmoke:
+    def test_coupon_listing_no_auth(self, client):
+        # Unauthenticated request direct check
+        response = client.get("/api/owner/discount-coupon")
+        # 401 Unauthorized expected hai, par 500 internal server error nahi hona chahiye
+        assert response.status_code not in (500,)
+```
+
+### Step 2: Behavioral Test Likhein (`tests/test_owner.py`)
+Yahan Mocking dynamic DB and role protection verify karein.
+```python
+from unittest.mock import patch
+
+class TestDiscountCouponCreation:
+    
+    def test_successful_coupon_creation(self, owner_client):
+        """Owner dashboard par valid coupon create hona chahiye"""
+        mock_coupon_data = {"code": "FRESH10", "discount_pct": 10}
+        
+        # database calls aur session verification ko patch (mock) karein
+        with patch("routers.owner.place_new_coupon", return_value=True), \
+             patch("routers.owner.require_auth", return_value={"username": "chef_resto", "role": "owner"}):
+             
+            response = owner_client.post("/api/owner/discount-coupon", json=mock_coupon_data)
+            
+        # Check: Successful validation returns 200 OK
+        assert response.status_code == 200
+        assert response.json() == {"status": "success", "message": "Coupon created!"}
+
+    def test_feature_locked_for_basic_plan(self, owner_client):
+        """Basic Plan wale restaurant ke liye coupons lock hone chahiye (403 expected)"""
+        from fastapi import HTTPException
+        mock_coupon_data = {"code": "FRESH10", "discount_pct": 10}
+        
+        with patch("routers.owner.require_auth", return_value={"username": "chef_resto", "role": "owner"}), \
+             patch("routers.owner.require_feature", side_effect=HTTPException(status_code=403, detail="Feature locked")):
+             
+            response = owner_client.post("/api/owner/discount-coupon", json=mock_coupon_data)
+            
+        assert response.status_code == 403
+```
+
+---
+
+## 6. Common Failures aur Troubleshooting (Gotchas!)
+
+1. **`ModuleNotFoundError: No module named 'routers'`**
+   - **Reason:** Pytest ko root folder path nahi pata chala.
+   - **Fix:** Apne root directory (`Demo/`) par jaakar command ko execute karein: `.venv\Scripts\pytest tests/`
+
+2. **`KeyError: 'SECRET_KEY'`**
+   - **Reason:** Secret key define nahi ki test environment variables mein.
+   - **Fix:** Running command se pehle `$env:SECRET_KEY="test"` execute karein (ya terminal environment me configure karein).
+
+3. **`AttributeError / Mock issues`**
+   - **Reason:** Target path galat specify kiya mock module patch mein.
+   - **Rule of Thumb:** Hamesha us target file path ko patch karein jahan function **import aur call** ho raha hai, na ki us file ko jahan wo define hai. 
+   - *Example:* Agar `database.py` ka `get_db` function `routers/menu.py` mein use ho raha hai, to mock patch path `routers.menu.get_db` hoga, na ki `database.get_db`.
