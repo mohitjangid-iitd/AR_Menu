@@ -77,7 +77,6 @@ async def owner_get_json(client_id: str, branch_id: Optional[str] = None,
                           auth_token: Optional[str] = Cookie(None)):
     """Owner apna restaurant config padh sake"""
     require_auth(auth_token, client_id=client_id, allowed_roles=["owner", "admin"])
-    from database import get_restaurant_branches
     branches = get_restaurant_branches(client_id)
     target = branch_id or "__default__"
     for b in branches:
