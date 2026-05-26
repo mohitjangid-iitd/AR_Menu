@@ -24,6 +24,7 @@ from routers.help_chat import router as help_chat_router
 from routers.image_to_menu import router as image_to_menu_router
 from routers.blog import router as blog_router
 from routers.billing import router as billing_router
+from routers.customer_auth import router as customer_auth_router
 from blog_db import init_blog_tables, get_published_posts as get_blog_posts
 from billing_db import init_billing_tables, sync_plan_features, run_daily_billing_cron, get_all_plans, get_all_addons
 from templates_env import templates
@@ -191,6 +192,7 @@ app.include_router(help_chat_router)
 app.include_router(image_to_menu_router)
 app.include_router(blog_router)
 app.include_router(billing_router)
+app.include_router(customer_auth_router)
 app.include_router(pages_router)
 
 if __name__ == "__main__":

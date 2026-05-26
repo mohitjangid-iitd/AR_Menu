@@ -148,7 +148,7 @@ async function loadOrders() {
         fetch(`/api/orders/${clientId}?branch_id=${branchId}`).catch(() => null),
         fetch(`/api/tables/${clientId}/summary?branch_id=${branchId}`).catch(() => null)
     ]);
-    const all = await ordersRes.json();
+    const all = (await ordersRes.json()).filter(o => o.table_no !== 0 && o.source !== 'delivery');
     const summary = await summaryRes.json();
 
     const tMap = {};

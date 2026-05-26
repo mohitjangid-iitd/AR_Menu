@@ -41,6 +41,7 @@ class PlaceOrderRequest(BaseModel):
     source: Optional[str] = "customer"
     customer_name: Optional[str] = None
     customer_phone: Optional[str] = None
+    customer_address: Optional[str] = None
 
 class UpdateStatusRequest(BaseModel):
     status: str
@@ -76,15 +77,18 @@ async def api_place_order(client_id: str, table_no: int, body: PlaceOrderRequest
     if not data:
         raise HTTPException(status_code=404, detail="Restaurant not found")
     require_feature(client_id, "ordering")
-    table = get_table_status(client_id, table_no, branch_id)
-    if not table or table["status"] == "inactive":
-        raise HTTPException(status_code=403, detail="Table not active")
+    # Delivery orders ke liye table check skip karo (table_no=0 reserved)
+    if table_no != 0:
+        table = get_table_status(client_id, table_no, branch_id)
+        if not table or table["status"] == "inactive":
+            raise HTTPException(status_code=403, detail="Table not active")
     items    = [i.dict() for i in body.items]
     order_id = place_order(
         client_id, table_no, items, body.total,
         body.source or "customer",
         body.customer_name, body.customer_phone,
         branch_id,
+        customer_address=body.customer_address,
     )
     return {"order_id": order_id, "message": "Order placed successfully"}
 

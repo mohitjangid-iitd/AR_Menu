@@ -20,6 +20,7 @@ EXPIRY = {
     "counter": timedelta(hours=24),
     "admin":   timedelta(days=7),
     "blogger": timedelta(hours=24),
+    "customer": timedelta(days=30),
 }
 
 # ── Role → redirect path ──

@@ -36,6 +36,53 @@ def _block_on_admin_subdomain(request: Request):
         raise HTTPException(status_code=404)
 
 # ════════════════════════════════
+# CUSTOMER PAGES
+# ════════════════════════════════
+
+@router.get("/customer/profile", response_class=HTMLResponse)
+async def customer_profile(request: Request, next: Optional[str] = "/"):
+    """Customer phone + address fill karne ka page — pehli baar login ke baad"""
+    from auth import decode_token
+    token = request.cookies.get("customer_token")
+    if not token:
+        return RedirectResponse(url=f"/auth/google?next={next}")
+    payload = decode_token(token)
+    if not payload or payload.get("role") != "customer":
+        return RedirectResponse(url=f"/auth/google?next={next}")
+    from database import get_customer_by_id
+    customer = get_customer_by_id(payload["customer_id"])
+    if not customer:
+        return RedirectResponse(url=f"/auth/google?next={next}")
+    return templates.TemplateResponse("customer_profile.html", {
+        "request":  request,
+        "customer": customer,
+        "next":     next,
+        "site":     SITE_CONFIG,
+    })
+
+
+@router.get("/customer/orders", response_class=HTMLResponse)
+async def customer_orders_page(request: Request):
+    """Customer ki delivery order history"""
+    from auth import decode_token
+    token = request.cookies.get("customer_token")
+    if not token:
+        return RedirectResponse(url="/auth/google?next=/customer/orders")
+    payload = decode_token(token)
+    if not payload or payload.get("role") != "customer":
+        return RedirectResponse(url="/auth/google?next=/customer/orders")
+    from database import get_customer_by_id
+    customer = get_customer_by_id(payload["customer_id"])
+    if not customer:
+        return RedirectResponse(url="/auth/google?next=/customer/orders")
+    return templates.TemplateResponse("customer_orders.html", {
+        "request":  request,
+        "customer": customer,
+        "site":     SITE_CONFIG,
+    })
+
+
+# ════════════════════════════════
 # PUBLIC PAGES
 # ════════════════════════════════
 

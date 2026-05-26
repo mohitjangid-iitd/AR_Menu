@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Orders — {{ site.name }}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --primary:   {{ site.primary }};
+            --secondary: {{ site.secondary }};
+            --accent:    {{ site.accent }};
+            --bg:        {{ site.bg }};
+            --text:      {{ site.text }};
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 0 0 48px;
+        }
+
+        /* ── Header ── */
+        header {
+            background: var(--secondary);
+            color: white;
+            padding: 20px 20px 24px;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .header-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 14px;
+        }
+
+        .logo {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1rem;
+            font-weight: 700;
+            letter-spacing: -0.3px;
+            opacity: 0.9;
+        }
+
+        .logout-btn {
+            font-size: 0.78rem;
+            color: rgba(255,255,255,0.6);
+            background: none;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 20px;
+            padding: 5px 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: 'Inter', sans-serif;
+        }
+        .logout-btn:hover { color: white; border-color: rgba(255,255,255,0.5); }
+
+        .welcome {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.3rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+        .welcome small {
+            display: block;
+            font-size: 0.8rem;
+            font-weight: 400;
+            opacity: 0.6;
+            font-family: 'Inter', sans-serif;
+            margin-top: 2px;
+        }
+
+        /* ── Content ── */
+        .content { padding: 20px 16px; max-width: 600px; margin: 0 auto; }
+
+        /* ── Loading ── */
+        .loading {
+            text-align: center;
+            padding: 60px 0;
+            color: #aaa;
+            font-size: 0.9rem;
+        }
+
+        /* ── Empty ── */
+        .empty {
+            text-align: center;
+            padding: 60px 20px;
+        }
+        .empty-icon { font-size: 3rem; margin-bottom: 16px; }
+        .empty h3 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.1rem;
+            margin-bottom: 8px;
+            color: var(--secondary);
+        }
+        .empty p { font-size: 0.85rem; color: #999; }
+
+        /* ── Order card ── */
+        .order-card {
+            background: white;
+            border-radius: 14px;
+            padding: 18px;
+            margin-bottom: 12px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+            animation: fadeUp 0.3s ease both;
+        }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(8px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .order-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+
+        .order-meta { flex: 1; }
+
+        .restaurant-name {
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 600;
+            font-size: 0.95rem;
+            color: var(--secondary);
+            margin-bottom: 3px;
+        }
+
+        .order-date {
+            font-size: 0.75rem;
+            color: #aaa;
+        }
+
+        .status-badge {
+            font-size: 0.72rem;
+            font-weight: 600;
+            padding: 4px 10px;
+            border-radius: 20px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            flex-shrink: 0;
+        }
+
+        .status-pending   { background: #fff7e6; color: #d97706; }
+        .status-preparing { background: #eff6ff; color: #2563eb; }
+        .status-ready     { background: #f0fdf4; color: #16a34a; }
+        .status-done      { background: #f0fdf4; color: #16a34a; }
+        .status-cancelled { background: #fef2f2; color: #dc2626; }
+
+        /* ── Items ── */
+        .items-list { margin-bottom: 12px; }
+
+        .item-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 5px 0;
+            font-size: 0.85rem;
+            border-bottom: 1px dashed #f0f0f0;
+        }
+        .item-row:last-child { border-bottom: none; }
+
+        .item-name { color: #555; }
+        .item-name span { color: #aaa; font-size: 0.78rem; margin-left: 4px; }
+        .item-price { font-weight: 500; color: var(--secondary); }
+
+        /* ── Footer ── */
+        .order-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 10px;
+            border-top: 1px solid #f5f5f5;
+        }
+
+        .delivery-tag {
+            font-size: 0.75rem;
+            color: #888;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .order-total {
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 700;
+            font-size: 1rem;
+            color: var(--secondary);
+        }
+
+        /* ── Section title ── */
+        .section-title {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #aaa;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 12px;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="header-top">
+        <div class="logo">{{ site.name }}</div>
+        <button class="logout-btn" onclick="logout()">Logout</button>
+    </div>
+    <div class="welcome">
+        My Orders 📦
+        <small>{{ customer.name or 'Customer' }} · {{ customer.phone or '' }}</small>
+    </div>
+</header>
+
+<div class="content">
+    <div class="loading" id="loading">Loading orders...</div>
+    <div id="orders-container" style="display:none"></div>
+</div>
+
+<script>
+    async function loadOrders() {
+        try {
+            const res  = await fetch('/api/customer/orders');
+            const data = await res.json();
+            renderOrders(data.orders || []);
+        } catch(e) {
+            document.getElementById('loading').textContent = 'Failed to load orders.';
+        }
+    }
+
+    function renderOrders(orders) {
+        document.getElementById('loading').style.display = 'none';
+        const container = document.getElementById('orders-container');
+        container.style.display = 'block';
+
+        if (!orders.length) {
+            container.innerHTML = `
+                <div class="empty">
+                    <div class="empty-icon">🛵</div>
+                    <h3>No orders yet</h3>
+                    <p>Apne favourite restaurant ka menu open karo aur pehla order do!</p>
+                </div>`;
+            return;
+        }
+
+        container.innerHTML = `<div class="section-title">${orders.length} Order${orders.length > 1 ? 's' : ''}</div>` +
+            orders.map((o, i) => {
+                const items   = Array.isArray(o.items) ? o.items : JSON.parse(o.items || '[]');
+                const date    = new Date(o.created_at).toLocaleString('en-IN', {
+                    day: 'numeric', month: 'short', year: 'numeric',
+                    hour: '2-digit', minute: '2-digit'
+                });
+                const status  = o.status || 'pending';
+                const rname   = o.client_id || 'Restaurant';
+
+                const itemsHtml = items.map(it =>
+                    `<div class="item-row">
+                        <div class="item-name">${it.name} <span>×${it.qty}</span></div>
+                        <div class="item-price">₹${it.qty * it.price}</div>
+                    </div>`
+                ).join('');
+
+                return `
+                <div class="order-card" style="animation-delay:${i * 0.05}s">
+                    <div class="order-header">
+                        <div class="order-meta">
+                            <div class="restaurant-name">🍽 ${rname}</div>
+                            <div class="order-date">${date}</div>
+                        </div>
+                        <div class="status-badge status-${status}">${status}</div>
+                    </div>
+                    <div class="items-list">${itemsHtml}</div>
+                    <div class="order-footer">
+                        <div class="delivery-tag">🛵 Delivery · ${o.customer_address || ''}</div>
+                        <div class="order-total">₹${o.total}</div>
+                    </div>
+                </div>`;
+            }).join('');
+    }
+
+    function logout() {
+        window.location.href = '/auth/customer/logout?next=/';
+    }
+
+    loadOrders();
+</script>
+
+</body>
+</html>

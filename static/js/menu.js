@@ -16,6 +16,37 @@ function findCard(name) {
         .find(c => c.dataset.name === name) || null;
 }
 
+function savePlateToStorage() {
+    localStorage.setItem('zentable_plate_' + CLIENT_ID, JSON.stringify(plate));
+    localStorage.setItem('zentable_keymap_' + CLIENT_ID, JSON.stringify(keyMap));
+}
+
+function loadPlateFromStorage() {
+    try {
+        const storedPlate = localStorage.getItem('zentable_plate_' + CLIENT_ID);
+        const storedKeyMap = localStorage.getItem('zentable_keymap_' + CLIENT_ID);
+        if (storedPlate) {
+            Object.assign(plate, JSON.parse(storedPlate));
+        }
+        if (storedKeyMap) {
+            Object.assign(keyMap, JSON.parse(storedKeyMap));
+        }
+        if (Object.keys(plate).length > 0) {
+            Object.values(plate).forEach(item => {
+                const sizeLabel = item.displayName !== item.baseName
+                    ? item.displayName.replace(item.baseName + ' (', '').replace(')', '')
+                    : '';
+                updateCtrl(item.ddid, item.idx, item.baseName, sizeLabel, item.price, item.qty);
+                updateCardBadge(item.baseName);
+            });
+            renderDrawer();
+            updateTotals();
+        }
+    } catch (e) {
+        console.error("Failed to load plate from local storage:", e);
+    }
+}
+
 // ─────────────────────────────────────────
 // EVENT LISTENER
 // ─────────────────────────────────────────
@@ -124,6 +155,7 @@ function addItem(dishName, sizeLabel, sizePrice, ddid, idx) {
     updateCardBadge(dishName);
     renderDrawer();
     updateTotals();
+    savePlateToStorage();
 }
 
 // ─────────────────────────────────────────
@@ -143,6 +175,7 @@ function removeItem(dishName, sizeLabel, ddid, idx) {
     updateCardBadge(dishName);
     renderDrawer();
     updateTotals();
+    savePlateToStorage();
 }
 
 // ─────────────────────────────────────────
@@ -169,6 +202,7 @@ function drawerChangeQty(key, delta) {
     updateCardBadge(baseName);
     renderDrawer();
     updateTotals();
+    savePlateToStorage();
 }
 
 // ─────────────────────────────────────────
@@ -304,28 +338,144 @@ document.getElementById('tabs').addEventListener('click', function(e) {
 async function placeOrder() {
     var entries = Object.entries(plate);
     if (!entries.length) return;
-    if (!TABLE_NO) { alert('Please scan your table QR code to place an order.'); return; }
 
+    // Delivery flow — TABLE_NO nahi hai
+    if (!TABLE_NO) {
+        await handleDeliveryOrder();
+        return;
+    }
+
+    // Normal dine-in flow
+    await submitOrder({ table_no: TABLE_NO });
+}
+
+// ─────────────────────────────────────────
+// DELIVERY FLOW
+// ─────────────────────────────────────────
+async function handleDeliveryOrder() {
+    // Step 1 — customer logged in hai?
+    var me = await fetch('/api/customer/me').then(r => r.json());
+
+    if (!me.logged_in) {
+        // Login nahi hai — Google login pe bhejo, wapas is page pe aana
+        const searchSep = window.location.search ? '&' : '?';
+        const nextUrl = window.location.pathname + window.location.search + searchSep + 'trigger_delivery=true';
+        const next = encodeURIComponent(nextUrl);
+        window.location.href = '/auth/google?next=' + next;
+        return;
+    }
+
+    if (!me.profile_complete) {
+        // Phone/address missing — profile page pe bhejo
+        const searchSep = window.location.search ? '&' : '?';
+        const nextUrl = window.location.pathname + window.location.search + searchSep + 'trigger_delivery=true';
+        const next = encodeURIComponent(nextUrl);
+        window.location.href = '/customer/profile?next=' + next;
+        return;
+    }
+
+    // Step 2 — address confirm modal dikhao
+    showDeliveryConfirmModal(me);
+}
+
+function showDeliveryConfirmModal(customer) {
+    // Purana modal hatao agar hai
+    var old = document.getElementById('delivery-confirm-modal');
+    if (old) old.remove();
+
+    var modal = document.createElement('div');
+    modal.id = 'delivery-confirm-modal';
+    modal.style.cssText = [
+        'position:fixed', 'inset:0', 'z-index:1000',
+        'display:flex', 'align-items:center', 'justify-content:center',
+        'background:rgba(0,0,0,0.5)', 'padding:16px'
+    ].join(';');
+
+    modal.innerHTML = [
+        '<div style="background:white;border-radius:16px;padding:24px;width:100%;max-width:420px;box-shadow:0 8px 30px rgba(0,0,0,0.2)">',
+            '<h3 style="margin:0 0 4px;font-size:1.1rem">🛵 Confirm Delivery</h3>',
+            '<p style="margin:0 0 16px;font-size:0.85rem;color:#666">Details check karo aur order place karo</p>',
+
+            '<div style="background:#f8f8f8;border-radius:10px;padding:14px;margin-bottom:16px;font-size:0.9rem">',
+                '<div style="margin-bottom:6px"><b>👤 Name:</b> ' + customer.name + '</div>',
+                '<div style="margin-bottom:6px"><b>📞 Phone:</b> ' + customer.phone + '</div>',
+                '<div><b>📍 Address:</b> ' + customer.address + '</div>',
+            '</div>',
+
+            '<div style="display:flex;gap:8px;justify-content:flex-end">',
+                '<button onclick="changeDeliveryAddress()" style="padding:10px 16px;border:1px solid #ddd;border-radius:8px;background:white;cursor:pointer;font-size:0.9rem">',
+                    'Change Address',
+                '</button>',
+                '<button onclick="confirmDeliveryOrder()" style="padding:10px 20px;border:none;border-radius:8px;background:var(--secondary,#222);color:white;cursor:pointer;font-size:0.9rem;font-weight:600">',
+                    'Place Order →',
+                '</button>',
+            '</div>',
+        '</div>'
+    ].join('');
+
+    document.body.appendChild(modal);
+
+    // Bahar click pe band
+    modal.addEventListener('click', function(e) {
+        if (e.target === modal) modal.remove();
+    });
+}
+
+function changeDeliveryAddress() {
+    var modal = document.getElementById('delivery-confirm-modal');
+    if (modal) modal.remove();
+    const searchSep = window.location.search ? '&' : '?';
+    const nextUrl = window.location.pathname + window.location.search + searchSep + 'trigger_delivery=true';
+    const next = encodeURIComponent(nextUrl);
+    window.location.href = '/customer/profile?next=' + next;
+}
+
+async function confirmDeliveryOrder() {
+    var btn = document.querySelector('#delivery-confirm-modal button:last-child');
+    if (btn) { btn.disabled = true; btn.textContent = 'Placing...'; }
+
+    var me = await fetch('/api/customer/me').then(r => r.json());
+    await submitOrder({
+        table_no:         0,
+        source:           'delivery',
+        customer_address: me.address,
+        customer_name:    me.name,
+        customer_phone:   me.phone,
+    });
+
+    var modal = document.getElementById('delivery-confirm-modal');
+    if (modal) modal.remove();
+}
+
+// ─────────────────────────────────────────
+// SUBMIT ORDER — dine-in + delivery dono
+// ─────────────────────────────────────────
+async function submitOrder(extra) {
+    var entries = Object.entries(plate);
     var items = entries.map(function(e) {
         return { name: e[1].displayName, qty: e[1].qty, price: parsePrice(e[1].price) };
     });
     var total = items.reduce(function(s, i) { return s + i.qty * i.price; }, 0);
 
-    var branchQuery = (typeof BRANCH_ID !== 'undefined' && BRANCH_ID && BRANCH_ID !== '__default__') ? '?branch_id=' + BRANCH_ID : '';
-    var res = await fetch('/api/order/' + CLIENT_ID + '/' + TABLE_NO + branchQuery, {
-        method: 'POST',
+    var tableNo  = (extra.table_no !== undefined) ? extra.table_no : TABLE_NO;
+    var branchQ  = (typeof BRANCH_ID !== 'undefined' && BRANCH_ID && BRANCH_ID !== '__default__') ? '?branch_id=' + BRANCH_ID : '';
+    var body     = Object.assign({ items: items, total: total }, extra);
+
+    var res = await fetch('/api/order/' + CLIENT_ID + '/' + tableNo + branchQ, {
+        method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ items: items, total: total })
+        body:    JSON.stringify(body)
     });
 
     if (res.ok) {
+        // Cart reset
         Object.keys(plate).forEach(function(k) { delete plate[k]; });
         Object.keys(keyMap).forEach(function(k) { delete keyMap[k]; });
+        savePlateToStorage();
 
         // Sab cards reset
         document.querySelectorAll('.dish-card').forEach(function(card) {
             var ddid = card.dataset.ddid;
-            // Badge hatao
             var wrapper = document.getElementById('abw-' + ddid);
             if (wrapper) {
                 var badge = wrapper.querySelector('.size-total-badge');
@@ -333,7 +483,6 @@ async function placeOrder() {
                 var btn = wrapper.querySelector('.js-size-toggle');
                 if (btn) btn.style.cssText = '';
             }
-            // Dropdown ke sab ctrl reset
             var dd = document.getElementById(ddid);
             if (dd) {
                 dd.querySelectorAll('.size-row-ctrl').forEach(function(ctrl) {
@@ -356,13 +505,43 @@ async function placeOrder() {
         updateTotals();
         if (drawerOpen) toggleDrawer();
 
+        var isDelivery = extra.source === 'delivery';
         var msg = document.createElement('div');
-        msg.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--secondary);color:white;padding:20px 32px;border-radius:16px;font-size:1rem;font-weight:600;z-index:999;text-align:center;box-shadow:0 8px 30px rgba(0,0,0,0.3)';
-        msg.innerHTML = '✅ Order placed!<br><small style="opacity:0.7;font-weight:400">Table ' + TABLE_NO + '</small>';
+        msg.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--secondary);color:white;padding:20px 32px;border-radius:16px;font-size:1rem;font-weight:600;z-index:9999;text-align:center;box-shadow:0 8px 30px rgba(0,0,0,0.3)';
+        msg.innerHTML = isDelivery
+            ? '✅ Order placed!<br><small style="opacity:0.7;font-weight:400">🛵 Delivery on the way</small>'
+            : '✅ Order placed!<br><small style="opacity:0.7;font-weight:400">Table ' + TABLE_NO + '</small>';
         document.body.appendChild(msg);
         setTimeout(function() { msg.remove(); }, 2500);
     } else {
         var err = await res.json();
-        alert('❌ ' + (err.detail || 'Something went wrong'));
+        var errMsg = 'Something went wrong';
+        if (err.detail) {
+            if (typeof err.detail === 'string') {
+                errMsg = err.detail;
+            } else if (Array.isArray(err.detail)) {
+                errMsg = err.detail.map(function(d) { return d.msg; }).join(', ');
+            } else if (typeof err.detail === 'object') {
+                errMsg = JSON.stringify(err.detail);
+            }
+        }
+        alert('❌ ' + errMsg);
+    }
+}
+
+// Load cart on initialization
+loadPlateFromStorage();
+
+// Auto-trigger delivery modal if returning from auth/profile
+const urlParams = new URLSearchParams(window.location.search);
+if (urlParams.get('trigger_delivery') === 'true') {
+    // URL se trigger_delivery ko bina refresh clean karo
+    const cleanSearch = window.location.search.replace(/[?&]trigger_delivery=true/, '');
+    const cleanUrl = window.location.pathname + cleanSearch;
+    window.history.replaceState({}, document.title, cleanUrl);
+
+    if (Object.keys(plate).length > 0) {
+        if (!drawerOpen) toggleDrawer();
+        handleDeliveryOrder();
     }
 }

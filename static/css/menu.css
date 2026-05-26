@@ -261,15 +261,22 @@ body {
     color: var(--primary);
 }
 
+.add-btn-wrapper {
+    display: flex;
+    flex-direction: row-reverse;
+    align-items: center;
+    gap: 6px;
+}
+
 /* Add to plate button */
 .add-btn {
-    width: 32px;
-    height: 32px;
+    width: 36px;
+    height: 36px;
     border-radius: 50%;
     background: var(--primary);
     border: none;
     color: var(--secondary);
-    font-size: 1.3rem;
+    font-size: 1.45rem;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -608,12 +615,11 @@ body {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-width: 20px;
-    height: 20px;
+    min-width: 24px;
+    height: 24px;
     background: var(--secondary);
     color: white;
     border-radius: 50%;
-    font-size: 0.72rem;
+    font-size: 0.8rem;
     font-weight: 700;
-    margin-left: 5px;
 }

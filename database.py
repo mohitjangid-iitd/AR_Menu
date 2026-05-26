@@ -230,6 +230,22 @@ def init_db():
         )
     """)
 
+    # ── Customers (Google OAuth delivery users) ──
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS customers (
+            id         SERIAL PRIMARY KEY,
+            google_id  TEXT UNIQUE NOT NULL,
+            name       TEXT,
+            email      TEXT,
+            phone      TEXT,
+            address    TEXT,
+            created_at TIMESTAMP DEFAULT NOW()
+        )
+    """)
+
+    # Commit base tables first so they are not lost in case a migration fails and rolls back.
+    conn.commit()
+
     # ════════════════════════════════
     # MIGRATIONS — existing DBs ke liye safe ALTER TABLE
     # Naye fresh DBs pe ye no-op hain (IF NOT EXISTS)
@@ -238,15 +254,30 @@ def init_db():
     # orders
     try:
         cur.execute("ALTER TABLE orders ADD COLUMN IF NOT EXISTS source TEXT DEFAULT 'customer'")
+        conn.commit()
     except Exception:
         conn._conn.rollback()
     try:
         cur.execute("ALTER TABLE orders ADD COLUMN IF NOT EXISTS ready_items TEXT DEFAULT '[]'")
+        conn.commit()
     except Exception:
         conn._conn.rollback()
     try:
         cur.execute("ALTER TABLE orders ADD COLUMN IF NOT EXISTS branch_id TEXT DEFAULT '__default__'")
         cur.execute("UPDATE orders SET branch_id = '__default__' WHERE branch_id IS NULL")
+        conn.commit()
+    except Exception:
+        conn._conn.rollback()
+
+    # orders — delivery support
+    try:
+        cur.execute("ALTER TABLE orders ADD COLUMN IF NOT EXISTS customer_id INTEGER REFERENCES customers(id)")
+        conn.commit()
+    except Exception:
+        conn._conn.rollback()
+    try:
+        cur.execute("ALTER TABLE orders ADD COLUMN IF NOT EXISTS customer_address TEXT")
+        conn.commit()
     except Exception:
         conn._conn.rollback()
 
@@ -254,6 +285,7 @@ def init_db():
     try:
         cur.execute("ALTER TABLE bills ADD COLUMN IF NOT EXISTS branch_id TEXT DEFAULT '__default__'")
         cur.execute("UPDATE bills SET branch_id = '__default__' WHERE branch_id IS NULL")
+        conn.commit()
     except Exception:
         conn._conn.rollback()
 
@@ -261,16 +293,19 @@ def init_db():
     try:
         cur.execute("ALTER TABLE tables ADD COLUMN IF NOT EXISTS branch_id TEXT DEFAULT '__default__'")
         cur.execute("UPDATE tables SET branch_id = '__default__' WHERE branch_id IS NULL")
+        conn.commit()
     except Exception:
         conn._conn.rollback()
     try:
         cur.execute("ALTER TABLE tables ADD COLUMN IF NOT EXISTS waiter_called_at TEXT DEFAULT NULL")
+        conn.commit()
     except Exception:
         conn._conn.rollback()
     # Purana UNIQUE(client_id, table_no) → UNIQUE(client_id, branch_id, table_no)
     # Safe: drop old constraint if exists, add new one
     try:
         cur.execute("ALTER TABLE tables DROP CONSTRAINT IF EXISTS tables_client_id_table_no_key")
+        conn.commit()
     except Exception:
         conn._conn.rollback()
     try:
@@ -286,21 +321,25 @@ def init_db():
                 END IF;
             END $$;
         """)
+        conn.commit()
     except Exception:
         conn._conn.rollback()
 
     # staff — restaurant_id → client_id rename, branch_ids → branch_id
     try:
         cur.execute("ALTER TABLE staff RENAME COLUMN restaurant_id TO client_id")
+        conn.commit()
     except Exception:
         conn._conn.rollback()  # already renamed — ignore
     try:
         cur.execute("ALTER TABLE staff DROP COLUMN IF EXISTS branch_ids")
+        conn.commit()
     except Exception:
         conn._conn.rollback()
     try:
         cur.execute("ALTER TABLE staff ADD COLUMN IF NOT EXISTS branch_id TEXT DEFAULT '__default__'")
         cur.execute("UPDATE staff SET branch_id = '__default__' WHERE branch_id IS NULL")
+        conn.commit()
     except Exception:
         conn._conn.rollback()
 
@@ -309,15 +348,18 @@ def init_db():
     try:
         cur.execute("ALTER TABLE restaurants ADD COLUMN IF NOT EXISTS branch_id TEXT DEFAULT '__default__'")
         cur.execute("UPDATE restaurants SET branch_id = '__default__' WHERE branch_id IS NULL")
+        conn.commit()
     except Exception:
         conn._conn.rollback()
     try:
         cur.execute("ALTER TABLE restaurants ADD COLUMN IF NOT EXISTS theme JSONB DEFAULT NULL")
+        conn.commit()
     except Exception:
         conn._conn.rollback()
     # Old single PK drop, new composite PK add
     try:
         cur.execute("ALTER TABLE restaurants DROP CONSTRAINT IF EXISTS restaurants_pkey")
+        conn.commit()
     except Exception:
         conn._conn.rollback()
     try:
@@ -332,6 +374,7 @@ def init_db():
                 END IF;
             END $$;
         """)
+        conn.commit()
     except Exception:
         conn._conn.rollback()
 
@@ -709,14 +752,17 @@ def get_table_summary(client_id: str, branch_id: str = "__default__"):
 def place_order(client_id: str, table_no: int, items: list,
                 total: int, source: str = "customer",
                 customer_name: str = None, customer_phone: str = None,
-                branch_id: str = "__default__"):
+                branch_id: str = "__default__",
+                customer_id: int = None, customer_address: str = None):
     conn = get_db()
     cur = conn._conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
     cur.execute("""
-        INSERT INTO orders (client_id, branch_id, table_no, source, customer_name, customer_phone, items, total)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+        INSERT INTO orders (client_id, branch_id, table_no, source, customer_name, customer_phone,
+                            items, total, customer_id, customer_address)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         RETURNING id
-    """, (client_id, branch_id, table_no, source, customer_name, customer_phone, json.dumps(items), total))
+    """, (client_id, branch_id, table_no, source, customer_name, customer_phone,
+          json.dumps(items), total, customer_id, customer_address))
     order_id = cur.fetchone()["id"]
     conn.commit()
     conn.close()
@@ -1898,6 +1944,68 @@ def update_owner_password(owner_id: int, new_password: str):
     conn.execute("UPDATE owners SET password_hash=%s WHERE id=%s", (password_hash, owner_id))
     conn.commit()
     conn.close()
+
+
+# ════════════════════════════════
+# CUSTOMERS — Google OAuth delivery users
+# ════════════════════════════════
+
+def get_or_create_customer(google_id: str, name: str, email: str) -> dict:
+    """Google login ke baad customer upsert karo — pehli baar create, baad mein fetch"""
+    conn = get_db()
+    conn.execute("""
+        INSERT INTO customers (google_id, name, email)
+        VALUES (%s, %s, %s)
+        ON CONFLICT (google_id) DO UPDATE
+            SET name  = EXCLUDED.name,
+                email = EXCLUDED.email
+    """, (google_id, name, email))
+    conn.commit()
+    cur = conn.execute(
+        "SELECT * FROM customers WHERE google_id=%s", (google_id,)
+    )
+    row = cur.fetchone()
+    conn.close()
+    return dict(row)
+
+def get_customer_by_id(customer_id: int) -> dict | None:
+    """Customer by internal ID"""
+    conn = get_db()
+    cur = conn.execute(
+        "SELECT * FROM customers WHERE id=%s", (customer_id,)
+    )
+    row = cur.fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+def update_customer_profile(customer_id: int, phone: str, address: str):
+    """First time profile complete karo — phone + address save"""
+    conn = get_db()
+    conn.execute("""
+        UPDATE customers SET phone=%s, address=%s WHERE id=%s
+    """, (phone, address, customer_id))
+    conn.commit()
+    conn.close()
+
+def get_customer_orders(customer_id: int) -> list:
+    """Customer ki saari delivery orders — history page ke liye"""
+    conn = get_db()
+    cur = conn.execute("""
+        SELECT o.*, c.name as customer_name_full
+        FROM orders o
+        LEFT JOIN customers c ON c.id = o.customer_id
+        WHERE o.customer_id=%s
+        ORDER BY o.created_at DESC
+    """, (customer_id,))
+    rows = cur.fetchall()
+    conn.close()
+    result = []
+    for r in rows:
+        row = dict(r)
+        row["items"] = json.loads(row["items"])
+        result.append(row)
+    return result
+
 
 if __name__ == "__main__":
     init_db()
