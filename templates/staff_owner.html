@@ -234,14 +234,16 @@
 
         <div class="section-hd">📱 Order Sources — Today</div>
         <div class="source-bar-box">
-            <div class="source-bar-title">Customer app vs Waiter-placed</div>
+            <div class="source-bar-title">Customer app vs Waiter-placed vs Delivery</div>
             <div class="split-bar">
-                <div class="split-customer" id="split-c" style="width:50%"></div>
-                <div class="split-waiter"   id="split-w" style="width:50%"></div>
+                <div class="split-customer" id="split-c" style="width:34%"></div>
+                <div class="split-waiter"   id="split-w" style="width:33%"></div>
+                <div id="split-d" style="width:33%;background:#f59e0b;border-radius:0 6px 6px 0;transition:width 0.5s ease;"></div>
             </div>
             <div class="split-legend">
                 <span><span class="legend-dot" style="background:#2196f3"></span><span id="split-c-lbl">Customer: —</span></span>
                 <span><span class="legend-dot" style="background:#9c27b0"></span><span id="split-w-lbl">Waiter: —</span></span>
+                <span><span class="legend-dot" style="background:#f59e0b"></span><span id="split-d-lbl">Delivery: —</span></span>
             </div>
         </div>
 
@@ -282,7 +284,10 @@
                 <option value="">All Status</option>
                 <option value="kitchen">In Kitchen</option>
                 <option value="ready">Ready</option>
-                <option value="done">Delivered</option>
+                <option value="done">Done</option>
+                <option value="out_for_delivery">Out for Delivery</option>
+                <option value="delivered">Delivered</option>
+                <option value="failed">Failed</option>
                 <option value="paid">Paid</option>
                 <option value="cancelled">Cancelled</option>
             </select>
@@ -290,6 +295,7 @@
                 <option value="">All Sources</option>
                 <option value="customer">Customer</option>
                 <option value="waiter">Staff</option>
+                <option value="delivery">Delivery</option>
             </select>
             <select class="filter-sel" id="f-time" onchange="loadOrders()" style="width:120px;flex-shrink:0;">
                 <option value="">All Time</option>
@@ -479,6 +485,7 @@
                 <option value="kitchen">Kitchen</option>
                 <option value="waiter">Waiter</option>
                 <option value="counter">Counter</option>
+                <option value="delivery">Delivery</option>
                 {% if site_settings.get('blog_owner_enabled', true) %}
                 <option value="blogger">Blogger</option>
                 {% endif %}
@@ -523,6 +530,7 @@
                     <option value="kitchen">Kitchen</option>
                     <option value="waiter">Waiter</option>
                     <option value="counter">Counter</option>
+                    <option value="delivery">Delivery</option>
                     {% if site_settings.get('blog_owner_enabled', true) %}
                     <option value="blogger">Blogger</option>
                     {% endif %}

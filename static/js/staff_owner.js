@@ -114,14 +114,19 @@ function renderOverviewTab() {
     document.getElementById('s-alltime-rev').textContent    = fmt(a.revenue);
 
     // Source split
-    const cust   = t.source_breakdown?.customer || 0;
-    const waiter = t.source_breakdown?.waiter   || 0;
-    const total  = (cust + waiter) || 1;
-    const cpct   = Math.round(cust / total * 100);
+    const cust     = t.source_breakdown?.customer || 0;
+    const waiter   = t.source_breakdown?.waiter   || 0;
+    const delivery = t.source_breakdown?.delivery || 0;
+    const total    = (cust + waiter + delivery) || 1;
+    const cpct     = Math.round(cust     / total * 100);
+    const wpct     = Math.round(waiter   / total * 100);
+    const dpct     = 100 - cpct - wpct;
     document.getElementById('split-c').style.width = cpct + '%';
-    document.getElementById('split-w').style.width = (100 - cpct) + '%';
+    document.getElementById('split-w').style.width = wpct + '%';
+    document.getElementById('split-d').style.width = dpct + '%';
     document.getElementById('split-c-lbl').textContent = `Customer: ${cust}`;
     document.getElementById('split-w-lbl').textContent = `Waiter: ${waiter}`;
+    document.getElementById('split-d-lbl').textContent = `Delivery: ${delivery}`;
 
     // Hourly bar chart
     const hours   = d.hourly_today.map(h => h.hour + ':00');

@@ -253,7 +253,7 @@ async function loadWithNotif() {
         const isDelivery = o.table_no === 0 || o.source === 'delivery';
         const tableLabel = isDelivery ? '🛵 Delivery' : `Table ${o.table_no}`;
         const footButton = (isDelivery && o.status === 'ready') 
-            ? `<button onclick="updateStatus(${o.id}, 'done').then(load)" style="padding: 6px 12px; background: #2e7d32; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.82rem; transition: background 0.2s;" onmouseover="this.style.background='#1b5e20'" onmouseout="this.style.background='#2e7d32'">🛵 Out for Delivery</button>` 
+            ? `<button onclick="updateStatus(${o.id}, 'out_for_delivery').then(load)" style="padding: 6px 12px; background: #2e7d32; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.82rem; transition: background 0.2s;" onmouseover="this.style.background='#1b5e20'" onmouseout="this.style.background='#2e7d32'">🛵 Out for Delivery</button>` 
             : '';
 
         return `<div class="order-card ${o.status}">

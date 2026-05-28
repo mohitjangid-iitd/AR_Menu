@@ -62,19 +62,23 @@ async def customer_profile(request: Request, next: Optional[str] = "/"):
 
 
 @router.get("/customer/orders", response_class=HTMLResponse)
-async def customer_orders_page(request: Request):
+async def customer_orders_page(request: Request, next: Optional[str] = "/"):
     """Customer ki delivery order history"""
     from auth import decode_token
     token = request.cookies.get("customer_token")
+    
+    import urllib.parse
+    next_encoded = urllib.parse.quote(next or "/")
+    
     if not token:
-        return RedirectResponse(url="/auth/google?next=/customer/orders")
+        return RedirectResponse(url=f"/auth/google?next=/customer/orders?next={next_encoded}")
     payload = decode_token(token)
     if not payload or payload.get("role") != "customer":
-        return RedirectResponse(url="/auth/google?next=/customer/orders")
+        return RedirectResponse(url=f"/auth/google?next=/customer/orders?next={next_encoded}")
     from database import get_customer_by_id
     customer = get_customer_by_id(payload["customer_id"])
     if not customer:
-        return RedirectResponse(url="/auth/google?next=/customer/orders")
+        return RedirectResponse(url=f"/auth/google?next=/customer/orders?next={next_encoded}")
     return templates.TemplateResponse("customer_orders.html", {
         "request":  request,
         "customer": customer,
@@ -295,6 +299,24 @@ async def staff_waiter(request: Request, client_id: str,
         "request": request, "client_id": client_id, "data": data, "user": user,
         "branch_id": user.get("branch_id") or "__default__",
         "features": features,
+    })
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    response.headers["Pragma"] = "no-cache"
+    return response
+
+
+@router.get("/{client_id}/staff/delivery", response_class=HTMLResponse)
+async def staff_delivery(request: Request, client_id: str,
+                         auth_token: Optional[str] = Cookie(None)):
+    _block_on_admin_subdomain(request)
+    user = require_auth(auth_token, ["delivery", "owner", "admin"], client_id)
+    data = get_client_data(client_id)
+    if not data:
+        raise HTTPException(status_code=404, detail="Restaurant not found")
+    response = templates.TemplateResponse("staff_delivery.html", {
+        "request": request, "client_id": client_id, "data": data, "user": user,
+        "branch_id": user.get("branch_id") or "__default__",
+        "site": SITE_CONFIG,
     })
     response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
     response.headers["Pragma"] = "no-cache"

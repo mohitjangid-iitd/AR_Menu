@@ -1,10 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <link rel="icon" type="image/x-icon" href="/static/assets/zentable/favicon.ico" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/assets/zentable/favicon_32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/static/assets/zentable/favicon_16.png" />
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Orders — {{ site.name }}</title>
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -154,6 +158,42 @@
         .status-ready     { background: #f0fdf4; color: #16a34a; }
         .status-done      { background: #f0fdf4; color: #16a34a; }
         .status-cancelled { background: #fef2f2; color: #dc2626; }
+        .status-out_for_delivery { background: #e0f2fe; color: #0369a1; }
+        .status-delivered        { background: #f0fdf4; color: #16a34a; }
+        .status-failed           { background: #fef2f2; color: #dc2626; }
+
+        /* ── Tab Bar ── */
+        .tab-bar {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #eef2f5;
+            padding-bottom: 8px;
+        }
+
+        .tab-btn {
+            background: none;
+            border: none;
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #888;
+            padding: 8px 16px;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.25s ease;
+        }
+
+        .tab-btn:hover {
+            color: var(--secondary);
+            background: rgba(0,0,0,0.02);
+        }
+
+        .tab-btn.active {
+            color: var(--secondary);
+            background: rgba(0, 0, 0, 0.05);
+            font-weight: 700;
+        }
 
         /* ── Items ── */
         .items-list { margin-bottom: 12px; }
@@ -196,6 +236,11 @@
             color: var(--secondary);
         }
 
+        #back-btn:hover {
+            background: rgba(255, 255, 255, 0.25) !important;
+            transform: translateX(-2px);
+        }
+
         /* ── Section title ── */
         .section-title {
             font-family: 'Space Grotesk', sans-serif;
@@ -212,7 +257,11 @@
 
 <header>
     <div class="header-top">
-        <div class="logo">{{ site.name }}</div>
+        <div style="display:flex;align-items:center;gap:12px;">
+            <!-- Back Button -->
+            <a href="#" id="back-btn" style="color:white;font-size:1.1rem;text-decoration:none;display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,0.12);transition:all 0.2s;"><i class="fas fa-arrow-left"></i></a>
+            <div class="logo">{{ site.name }}</div>
+        </div>
         <button class="logout-btn" onclick="logout()">Logout</button>
     </div>
     <div class="welcome">
@@ -222,45 +271,101 @@
 </header>
 
 <div class="content">
+    <!-- Tab Bar to toggle between Active and Past orders -->
+    <div class="tab-bar">
+        <button class="tab-btn active" id="btn-active" onclick="setView('active')">🟢 Active Orders</button>
+        <button class="tab-btn" id="btn-history" onclick="setView('history')">📜 Order History</button>
+    </div>
+
     <div class="loading" id="loading">Loading orders...</div>
     <div id="orders-container" style="display:none"></div>
 </div>
 
+<div style="text-align:center;padding:24px 10px;font-size:0.72rem;color:rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;gap:6px;">
+    Powered by
+    <img src="/static/assets/zentable/logo_dark_512.png" alt="{{ site.name }}" style="width:13px;height:13px;object-fit:contain;opacity:0.5;vertical-align:middle;" />
+    <span>{{ site.name }}</span>
+</div>
+
 <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const nextUrl = urlParams.get('next') || sessionStorage.getItem('customer_last_menu') || '/';
+    
+    // Set back button href
+    const backBtn = document.getElementById('back-btn');
+    if (backBtn) backBtn.href = nextUrl;
+
+    let allOrders = [];
+    let currentView = 'active';
+
     async function loadOrders() {
         try {
             const res  = await fetch('/api/customer/orders');
             const data = await res.json();
-            renderOrders(data.orders || []);
+            allOrders = data.orders || [];
+            renderOrders();
         } catch(e) {
             document.getElementById('loading').textContent = 'Failed to load orders.';
         }
     }
 
-    function renderOrders(orders) {
+    function setView(view) {
+        currentView = view;
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+        if (view === 'active') {
+            document.getElementById('btn-active').classList.add('active');
+        } else {
+            document.getElementById('btn-history').classList.add('active');
+        }
+        renderOrders();
+    }
+
+    function renderOrders() {
         document.getElementById('loading').style.display = 'none';
         const container = document.getElementById('orders-container');
         container.style.display = 'block';
 
-        if (!orders.length) {
-            container.innerHTML = `
-                <div class="empty">
-                    <div class="empty-icon">🛵</div>
-                    <h3>No orders yet</h3>
-                    <p>Apne favourite restaurant ka menu open karo aur pehla order do!</p>
-                </div>`;
+        // Filter orders based on active vs history
+        let filteredOrders = [];
+        const completedStatuses = ['delivered', 'failed', 'cancelled'];
+        
+        if (currentView === 'active') {
+            filteredOrders = allOrders.filter(o => !completedStatuses.includes(o.status));
+        } else {
+            filteredOrders = allOrders.filter(o => completedStatuses.includes(o.status));
+        }
+
+        if (!filteredOrders.length) {
+            if (currentView === 'active') {
+                container.innerHTML = `
+                    <div class="empty">
+                        <div class="empty-icon">🛵</div>
+                        <h3>No active orders</h3>
+                        <p>Abhi aapka koi bhi active order nahi hai.</p>
+                    </div>`;
+            } else {
+                container.innerHTML = `
+                    <div class="empty">
+                        <div class="empty-icon">📜</div>
+                        <h3>No order history</h3>
+                        <p>Delivered, failed, ya cancelled orders yahan dikhenge.</p>
+                    </div>`;
+            }
             return;
         }
 
-        container.innerHTML = `<div class="section-title">${orders.length} Order${orders.length > 1 ? 's' : ''}</div>` +
-            orders.map((o, i) => {
+        container.innerHTML = `<div class="section-title">${filteredOrders.length} Order${filteredOrders.length > 1 ? 's' : ''}</div>` +
+            filteredOrders.map((o, i) => {
                 const items   = Array.isArray(o.items) ? o.items : JSON.parse(o.items || '[]');
                 const date    = new Date(o.created_at).toLocaleString('en-IN', {
                     day: 'numeric', month: 'short', year: 'numeric',
                     hour: '2-digit', minute: '2-digit'
                 });
                 const status  = o.status || 'pending';
-                const rname   = o.client_id || 'Restaurant';
+                let rdisplayName = o.restaurant_name || o.client_id || 'Restaurant';
+                if (o.branch_id && o.branch_id !== '__default__' && o.branch_name && o.branch_name !== o.restaurant_name) {
+                    rdisplayName += ` (${o.branch_name})`;
+                }
 
                 const itemsHtml = items.map(it =>
                     `<div class="item-row">
@@ -269,14 +374,22 @@
                     </div>`
                 ).join('');
 
+                let statusLabel = status;
+                if (status === 'out_for_delivery') statusLabel = '🛵 Out for Delivery';
+                else if (status === 'delivered') statusLabel = '✅ Delivered';
+                else if (status === 'failed') statusLabel = '❌ Failed';
+                else if (status === 'ready') statusLabel = '📦 Ready';
+                else if (status === 'preparing') statusLabel = '🍳 Preparing';
+                else if (status === 'pending') statusLabel = '🕒 Pending';
+
                 return `
                 <div class="order-card" style="animation-delay:${i * 0.05}s">
                     <div class="order-header">
                         <div class="order-meta">
-                            <div class="restaurant-name">🍽 ${rname}</div>
+                            <div class="restaurant-name">🍽 ${rdisplayName}</div>
                             <div class="order-date">${date}</div>
                         </div>
-                        <div class="status-badge status-${status}">${status}</div>
+                        <div class="status-badge status-${status}">${statusLabel}</div>
                     </div>
                     <div class="items-list">${itemsHtml}</div>
                     <div class="order-footer">
@@ -288,7 +401,7 @@
     }
 
     function logout() {
-        window.location.href = '/auth/customer/logout?next=/';
+        window.location.href = '/auth/customer/logout?next=' + encodeURIComponent(nextUrl);
     }
 
     loadOrders();

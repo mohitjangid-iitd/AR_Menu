@@ -1991,10 +1991,13 @@ def get_customer_orders(customer_id: int) -> list:
     """Customer ki saari delivery orders — history page ke liye"""
     conn = get_db()
     cur = conn.execute("""
-        SELECT o.*, c.name as customer_name_full
+        SELECT o.*,
+               r_default.config->'restaurant'->>'name' as restaurant_name,
+               r_branch.config->'restaurant'->>'name' as branch_name
         FROM orders o
-        LEFT JOIN customers c ON c.id = o.customer_id
-        WHERE o.customer_id=%s
+        LEFT JOIN restaurants r_default ON r_default.client_id = o.client_id AND r_default.branch_id = '__default__'
+        LEFT JOIN restaurants r_branch ON r_branch.client_id = o.client_id AND r_branch.branch_id = o.branch_id
+        WHERE o.customer_id=%s AND o.source='delivery'
         ORDER BY o.created_at DESC
     """, (customer_id,))
     rows = cur.fetchall()
@@ -2002,7 +2005,7 @@ def get_customer_orders(customer_id: int) -> list:
     result = []
     for r in rows:
         row = dict(r)
-        row["items"] = json.loads(row["items"])
+        row["items"] = json.loads(row["items"]) if isinstance(row["items"], str) else row["items"]
         result.append(row)
     return result
 

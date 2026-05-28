@@ -131,9 +131,9 @@ async def owner_create_staff(client_id: str, body: CreateStaffRequest,
                               auth_token: Optional[str] = Cookie(None)):
     """Naya staff member add karo"""
     user = require_auth(auth_token, client_id=client_id, allowed_roles=["owner", "admin"])
-    valid_roles = {"kitchen", "waiter", "counter", "blogger"}
+    valid_roles = {"kitchen", "waiter", "counter", "blogger", "delivery"}
     if body.role not in valid_roles:
-        raise HTTPException(status_code=400, detail="Invalid role. Allowed: kitchen, waiter, counter, blogger")
+        raise HTTPException(status_code=400, detail="Invalid role. Allowed: kitchen, waiter, counter, blogger, delivery")
     branch_id = body.branch_id or user.get("branch_id") or "__default__"
     ok = create_staff(client_id, body.username, body.password, body.name, body.role, branch_id)
     if not ok:

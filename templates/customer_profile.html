@@ -1,6 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <link rel="icon" type="image/x-icon" href="/static/assets/zentable/favicon.ico" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/assets/zentable/favicon_32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/static/assets/zentable/favicon_16.png" />
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Complete Your Profile — {{ site.name }}</title>
@@ -251,6 +254,12 @@
     <button class="btn" id="saveBtn" onclick="saveProfile()">
         Save &amp; Continue →
     </button>
+</div>
+
+<div style="text-align:center;padding:10px;font-size:0.72rem;color:rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;gap:6px;margin-top:20px;">
+    Powered by
+    <img src="/static/assets/zentable/logo_dark_512.png" alt="{{ site.name }}" style="width:13px;height:13px;object-fit:contain;opacity:0.5;vertical-align:middle;" />
+    <span>{{ site.name }}</span>
 </div>
 
 <!-- Success overlay -->

@@ -302,10 +302,31 @@ function updateTotals() {
     var items = Object.entries(plate);
     var totalQty   = items.reduce(function(s, e) { return s + e[1].qty; }, 0);
     var totalPrice = items.reduce(function(s, e) { return s + parsePrice(e[1].price) * e[1].qty; }, 0);
-    document.getElementById('plate-count').textContent = totalQty;
-    document.getElementById('plate-total').textContent = totalQty > 0 ? '• INR ' + totalPrice : '';
+
+    // plate-count aur plate-total — dono jagah hain (dine-in btn + delivery cw-bar)
+    document.querySelectorAll('#plate-count').forEach(function(el) {
+        el.textContent = totalQty;
+    });
+    document.querySelectorAll('#plate-total').forEach(function(el) {
+        el.textContent = totalQty > 0 ? '• INR ' + totalPrice : '';
+    });
     document.getElementById('drawer-total-price').textContent = 'INR ' + totalPrice;
-    document.getElementById('plate-btn').classList.toggle('visible', totalQty > 0);
+
+    // Dine-in plate-btn
+    var plateBtn = document.getElementById('plate-btn');
+    if (plateBtn) plateBtn.classList.toggle('visible', totalQty > 0);
+
+    // Delivery mode — cw-bar morph
+    var cwBar = document.getElementById('cw-bar');
+    if (cwBar) {
+        if (totalQty > 0) {
+            cwBar.classList.remove('state-profile');
+            cwBar.classList.add('state-plate');
+        } else {
+            cwBar.classList.remove('state-plate');
+            cwBar.classList.add('state-profile');
+        }
+    }
 }
 
 // ─────────────────────────────────────────

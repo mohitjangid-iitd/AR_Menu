@@ -495,7 +495,7 @@ async def api_admin_get_staff(client_id: str, auth_token: Optional[str] = Cookie
 async def api_admin_create_staff(client_id: str, body: CreateStaffRequest,
                                   auth_token: Optional[str] = Cookie(None)):
     require_auth(auth_token, ["admin"])
-    valid_roles = {"owner", "kitchen", "waiter", "counter", "blogger"}
+    valid_roles = {"owner", "kitchen", "waiter", "counter", "blogger", "delivery"}
     if body.role not in valid_roles:
         raise HTTPException(status_code=400, detail="Invalid role")
     ok = create_staff(client_id, body.username, body.password, body.name, body.role, body.branch_id)

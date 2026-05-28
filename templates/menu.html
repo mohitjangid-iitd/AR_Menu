@@ -170,13 +170,15 @@
     {% endfor %}
 </div>
 
-<!-- Floating Plate Button -->
+<!-- Floating Plate Button — sirf dine-in mode mein -->
+{% if table_no %}
 <button id="plate-btn" onclick="toggleDrawer()">
     <i class="fas fa-utensils"></i>
     My Plate
     <span class="plate-count" id="plate-count">0</span>
     <span class="plate-total" id="plate-total"></span>
 </button>
+{% endif %}
 
 {% if table_no %}
 <!-- Call Waiter Bell Button — sirf table page pe dikhega -->
@@ -215,7 +217,180 @@
     const TABLE_NO = {{ table_no if table_no else 'null' }};
     const CLIENT_ID = "{{ client_id }}";
     const BRANCH_ID = "{{ branch_id | default('__default__') }}";
+    
+    // Save last menu URL to sessionStorage for smart back navigation fallback
+    sessionStorage.setItem('customer_last_menu', window.location.pathname + window.location.search);
 </script>
+
+{% if not table_no %}
+<!-- ── Morphing Bottom Bar — delivery mode only ── -->
+<style>
+/* Base pill */
+#cw-bar {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 200;
+    width: calc(100% - 32px);
+    max-width: 480px;
+    border-radius: 50px;
+    background: var(--secondary, #222);
+    box-shadow: 0 4px 24px rgba(0,0,0,0.28);
+    overflow: hidden;
+    transition: width 0.4s cubic-bezier(0.34,1.56,0.64,1),
+                max-width 0.4s cubic-bezier(0.34,1.56,0.64,1),
+                border-radius 0.3s ease;
+    cursor: pointer;
+}
+
+/* Profile state — wide pill */
+#cw-bar.state-profile {
+    width: calc(100% - 32px);
+    max-width: 480px;
+    border-radius: 50px;
+}
+
+/* Plate state — shrunk pill (like plate-btn) */
+#cw-bar.state-plate {
+    width: auto;
+    max-width: 260px;
+    border-radius: 50px;
+}
+
+/* Profile content */
+#cwb-profile-content {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 11px 16px;
+    transition: opacity 0.2s ease;
+}
+#cw-bar.state-plate #cwb-profile-content {
+    opacity: 0;
+    pointer-events: none;
+    position: absolute;
+}
+
+/* Plate content */
+#cwb-plate-content {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 13px 20px;
+    opacity: 0;
+    pointer-events: none;
+    position: absolute;
+    white-space: nowrap;
+    transition: opacity 0.2s ease 0.15s;
+}
+#cw-bar.state-plate #cwb-plate-content {
+    opacity: 1;
+    pointer-events: all;
+    position: relative;
+}
+
+@keyframes cwFade { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+</style>
+
+<div id="cw-bar" class="state-profile" onclick="cwBarClick()">
+
+    <!-- Profile content -->
+    <div id="cwb-profile-content">
+        <!-- Logged out -->
+        <div id="cwb-login" style="display:none;width:100%;align-items:center;justify-content:center;gap:8px;">
+            <svg width="16" height="16" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.29-8.16 2.29-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+            <span style="font-size:0.88rem;font-weight:700;color:white;">Sign in to order</span>
+        </div>
+        <!-- Logged in -->
+        <div id="cwb-user" style="display:none;width:100%;align-items:center;gap:10px;">
+            <div id="cwb-initials" style="width:32px;height:32px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:0.88rem;font-family:'Space Grotesk',sans-serif;border:2px solid rgba(255,255,255,0.3);"></div>
+            <div style="flex:1;min-width:0;">
+                <div id="cwb-name" style="font-weight:700;font-size:0.82rem;color:white;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:'Space Grotesk',sans-serif;"></div>
+                <div id="cwb-address" style="font-size:0.7rem;color:rgba(255,255,255,0.55);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">📍 </div>
+            </div>
+            <a href="/customer/orders?next={{ '/' ~ client_id ~ '/menu' ~ ('?branch_id=' ~ branch_id if branch_id and branch_id != '__default__' else '') }}" onclick="event.stopPropagation()" style="font-size:0.72rem;font-weight:600;color:rgba(255,255,255,0.85);text-decoration:none;background:rgba(255,255,255,0.12);border-radius:20px;padding:5px 10px;white-space:nowrap;flex-shrink:0;">📦 Orders</a>
+        </div>
+    </div>
+
+    <!-- Plate content (shown when items in cart) -->
+    <div id="cwb-plate-content">
+        <div id="cwb-plate-initials" style="display:none;width:26px;height:26px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:0.75rem;font-family:'Space Grotesk',sans-serif;border:1.5px solid rgba(255,255,255,0.3);margin-right:2px;"></div>
+        <i class="fas fa-utensils" id="cwb-plate-icon" style="color:white;font-size:0.95rem;"></i>
+        <span style="color:white;font-weight:700;font-size:0.9rem;">My Plate</span>
+        <span id="plate-count" style="background:rgba(255,255,255,0.2);color:white;font-size:0.75rem;font-weight:700;padding:2px 8px;border-radius:20px;min-width:22px;text-align:center;">0</span>
+        <span id="plate-total" style="color:rgba(255,255,255,0.75);font-size:0.8rem;"></span>
+    </div>
+
+</div>
+
+<script>
+const CW_COLORS = [
+    ['#FF6B6B','#fff'], ['#6C63FF','#fff'], ['#FF8E53','#fff'],
+    ['#00C9A7','#fff'], ['#F7971E','#fff'], ['#2193b0','#fff'],
+    ['#cc2b5e','#fff'], ['#42E695','#222'], ['#3A1C71','#fff'],
+    ['#FC5C7D','#fff'],
+];
+function cwColorFor(name) {
+    var idx = 0;
+    for (var i = 0; i < (name||'').length; i++) idx += name.charCodeAt(i);
+    return CW_COLORS[idx % CW_COLORS.length];
+}
+
+// cw-bar click handler — profile pe login/orders, plate pe drawer
+function cwBarClick() {
+    var bar = document.getElementById('cw-bar');
+    if (!bar) return;
+    if (bar.classList.contains('state-plate')) {
+        toggleDrawer();
+        return;
+    }
+    var loginEl = document.getElementById('cwb-login');
+    if (loginEl && loginEl.style.display !== 'none') {
+        window.location.href = '/auth/google?next=' + encodeURIComponent(window.location.pathname + window.location.search);
+        return;
+    }
+    window.location.href = '/customer/orders?next=' + encodeURIComponent(window.location.pathname + window.location.search);
+}
+
+(async function initCustomerBar() {
+    var bar = document.getElementById('cw-bar');
+    if (!bar) return;
+    try {
+        var res  = await fetch('/api/customer/me');
+        var data = await res.json();
+        if (!data.logged_in) {
+            document.getElementById('cwb-login').style.display = 'flex';
+            return;
+        }
+        var name   = data.name || '?';
+        var colors = cwColorFor(name);
+        var el     = document.getElementById('cwb-initials');
+        el.textContent      = name.trim()[0].toUpperCase();
+        el.style.background = colors[0];
+        el.style.color      = colors[1];
+        document.getElementById('cwb-name').textContent    = name;
+        document.getElementById('cwb-address').textContent = '📍 ' + (data.address || 'Address add karo');
+        document.getElementById('cwb-user').style.display  = 'flex';
+
+        // Set plate initials and hide default utensils icon
+        var pEl = document.getElementById('cwb-plate-initials');
+        if (pEl) {
+            pEl.textContent      = name.trim()[0].toUpperCase();
+            pEl.style.background = colors[0];
+            pEl.style.color      = colors[1];
+            pEl.style.display    = 'flex';
+        }
+        var pIcon = document.getElementById('cwb-plate-icon');
+        if (pIcon) {
+            pIcon.style.display  = 'none';
+        }
+    } catch(e) {
+        document.getElementById('cwb-login').style.display = 'flex';
+    }
+})();
+</script>
+{% endif %}
 
 <!-- Static JS -->
 <script src="/static/js/menu.js?v={{ static_v('js/menu.js') }}"></script>
