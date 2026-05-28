@@ -4,6 +4,24 @@
 
 const Billing = (() => {
 
+    // ── CONFIGURABLE CUSTOM MESSAGE TEMPLATES ──
+    // Feel free to modify these templates!
+    // Available placeholders: {amount}, {clientId}, {upiStr}
+    const TEMPLATES = {
+        // WhatsApp button sharing text message
+        whatsapp: "Hi, please pay ₹{amount} for ZenTable subscription ({clientId}) using this UPI link:\n\n{upiStr}",
+
+        // System Share button message (Laptops/Mobiles direct share)
+        share: "ZenTable subscription payment of ₹{amount} for {clientId}:\n\n{upiStr}"
+    };
+
+    function _formatMessage(template, amount, clientId, upiStr) {
+        return template
+            .replace(/{amount}/g, amount)
+            .replace(/{clientId}/g, clientId)
+            .replace(/{upiStr}/g, upiStr);
+    }
+
     // ── State ──
     let _allSubs   = [];
     let _plans     = [];
@@ -650,10 +668,47 @@ const Billing = (() => {
                     <input type="hidden" id="bpm-cid">
 
                     <!-- QR -->
-                    <div style="display:flex;justify-content:center;margin-bottom:16px;">
+                    <div style="display:flex;flex-direction:column;align-items:center;margin-bottom:16px;">
                         <div id="bpm-qr" style="padding:12px;background:#1a1a2e;border:1px solid var(--border);border-radius:10px;display:inline-block;"></div>
+                        <div style="display:flex;gap:8px;margin-top:10px;">
+                            <button onclick="Billing.downloadQR()" 
+                                    onmouseover="this.style.transform='translateY(-1px)'; this.style.background='rgba(255,255,255,0.05)'; this.style.color='white';" 
+                                    onmouseout="this.style.transform='none'; this.style.background='transparent'; this.style.color='var(--muted)';"
+                                    style="padding:5px 12px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:0.7rem;cursor:pointer;display:flex;align-items:center;gap:4px;transition:all 0.2s;outline:none;">
+                                <i class="fas fa-download"></i> Download QR
+                            </button>
+                            <button onclick="Billing.copyQRImage()" 
+                                    onmouseover="this.style.transform='translateY(-1px)'; this.style.background='rgba(255,255,255,0.05)'; this.style.color='white';" 
+                                    onmouseout="this.style.transform='none'; this.style.background='transparent'; this.style.color='var(--muted)';"
+                                    style="padding:5px 12px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:0.7rem;cursor:pointer;display:flex;align-items:center;gap:4px;transition:all 0.2s;outline:none;">
+                                <i class="fas fa-copy"></i> Copy QR Image
+                            </button>
+                        </div>
                     </div>
-                    <div id="bpm-upi-str" style="font-size:0.68rem;color:var(--muted);word-break:break-all;text-align:center;margin-bottom:16px;font-family:var(--font-m);"></div>
+
+                    <div id="bpm-upi-str" style="font-size:0.68rem;color:var(--muted);word-break:break-all;text-align:center;margin-bottom:12px;font-family:var(--font-m);"></div>
+
+                    <!-- Share buttons -->
+                    <div style="display:flex;gap:8px;justify-content:center;margin-bottom:18px;">
+                        <button onclick="Billing.copyPaymentLink()" 
+                                onmouseover="this.style.transform='translateY(-1px)'; this.style.background='rgba(108,99,255,0.15)';" 
+                                onmouseout="this.style.transform='none'; this.style.background='rgba(108,99,255,0.08)';"
+                                style="padding:6px 12px;border-radius:6px;border:1px solid rgba(108,99,255,0.3);background:rgba(108,99,255,0.08);color:var(--primary);font-size:0.75rem;cursor:pointer;font-weight:600;display:flex;align-items:center;gap:4px;transition:all 0.2s;outline:none;">
+                            <i class="fas fa-copy"></i> Copy Link
+                        </button>
+                        <button onclick="Billing.shareOnWhatsApp()" 
+                                onmouseover="this.style.transform='translateY(-1px)'; this.style.background='rgba(34,197,94,0.15)';" 
+                                onmouseout="this.style.transform='none'; this.style.background='rgba(34,197,94,0.08)';"
+                                style="padding:6px 12px;border-radius:6px;border:1px solid rgba(34,197,94,0.3);background:rgba(34,197,94,0.08);color:#22c55e;font-size:0.75rem;cursor:pointer;font-weight:600;display:flex;align-items:center;gap:4px;transition:all 0.2s;outline:none;">
+                            <i class="fab fa-whatsapp"></i> WhatsApp
+                        </button>
+                        <button onclick="Billing.shareNative()" 
+                                onmouseover="this.style.transform='translateY(-1px)'; this.style.background='rgba(255,255,255,0.1)';" 
+                                onmouseout="this.style.transform='none'; this.style.background='rgba(255,255,255,0.05)';"
+                                style="padding:6px 12px;border-radius:6px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.05);color:white;font-size:0.75rem;cursor:pointer;font-weight:600;display:flex;align-items:center;gap:4px;transition:all 0.2s;outline:none;">
+                            <i class="fas fa-share-alt"></i> Share
+                        </button>
+                    </div>
 
                     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
                         <div class="form-group" style="margin:0;">
@@ -701,6 +756,155 @@ const Billing = (() => {
         }
     }
 
+    function downloadQR() {
+        const qrEl = document.getElementById('bpm-qr');
+        const clientId = document.getElementById('bpm-client-id').textContent || 'zentable';
+        const canvas = qrEl.querySelector('canvas');
+        const img = qrEl.querySelector('img');
+        
+        const d = new Date();
+        const monthNames = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
+        const monthYear = monthNames[d.getMonth()] + d.getFullYear(); // e.g. "may2026"
+        
+        let dataUrl = '';
+        if (canvas) {
+            dataUrl = canvas.toDataURL('image/png');
+        } else if (img) {
+            dataUrl = img.src;
+        }
+        if (dataUrl) {
+            const link = document.createElement('a');
+            link.href = dataUrl;
+            link.download = `${clientId}_${monthYear}.png`;
+            link.click();
+        } else {
+            showToast('QR Code not ready yet', 'error');
+        }
+    }
+
+    function copyQRImage() {
+        const qrEl = document.getElementById('bpm-qr');
+        const canvas = qrEl.querySelector('canvas');
+        const img = qrEl.querySelector('img');
+        
+        const doCopy = (dataUrl) => {
+            fetch(dataUrl)
+                .then(res => res.blob())
+                .then(blob => {
+                    navigator.clipboard.write([
+                        new ClipboardItem({
+                            [blob.type]: blob
+                        })
+                    ]).then(() => {
+                        showToast('✓ QR Code copied! Now paste directly in WhatsApp (Ctrl+V)', 'success');
+                    }).catch(err => {
+                        console.error('Image clipboard copy failed', err);
+                        showToast('Automatic copy failed, please download instead', 'error');
+                    });
+                }).catch(err => {
+                    console.error('Blob fetch failed', err);
+                    showToast('Failed to fetch image blob', 'error');
+                });
+        };
+
+        let dataUrl = '';
+        if (canvas) {
+            dataUrl = canvas.toDataURL('image/png');
+        } else if (img) {
+            dataUrl = img.src;
+        }
+
+        if (dataUrl) {
+            doCopy(dataUrl);
+        } else {
+            showToast('QR Code not ready yet', 'error');
+        }
+    }
+
+    function copyPaymentLink() {
+        const upiStr = document.getElementById('bpm-upi-str').textContent;
+        if (upiStr) {
+            navigator.clipboard.writeText(upiStr).then(() => {
+                showToast('✓ Payment link copied to clipboard!', 'success');
+            }).catch(() => {
+                const el = document.createElement('textarea');
+                el.value = upiStr;
+                document.body.appendChild(el);
+                el.select();
+                document.execCommand('copy');
+                document.body.removeChild(el);
+                showToast('✓ Payment link copied!', 'success');
+            });
+        }
+    }
+
+    function shareOnWhatsApp() {
+        const upiStr = document.getElementById('bpm-upi-str').textContent;
+        const amount = document.getElementById('bpm-amount').value || '';
+        const clientId = document.getElementById('bpm-client-id').textContent || '';
+        if (upiStr) {
+            const text = _formatMessage(TEMPLATES.whatsapp, amount, clientId, upiStr);
+            const url = 'https://api.whatsapp.com/send?text=' + encodeURIComponent(text);
+            window.open(url, '_blank');
+        }
+    }
+
+    async function shareNative() {
+        const upiStr = document.getElementById('bpm-upi-str').textContent;
+        const amount = document.getElementById('bpm-amount').value || '';
+        const clientId = document.getElementById('bpm-client-id').textContent || '';
+        if (!upiStr) return;
+
+        const text = _formatMessage(TEMPLATES.share, amount, clientId, upiStr);
+        const qrEl = document.getElementById('bpm-qr');
+        const canvas = qrEl.querySelector('canvas');
+        const img = qrEl.querySelector('img');
+        
+        let dataUrl = '';
+        if (canvas) {
+            dataUrl = canvas.toDataURL('image/png');
+        } else if (img) {
+            dataUrl = img.src;
+        }
+
+        try {
+            if (dataUrl && navigator.share) {
+                const res = await fetch(dataUrl);
+                const blob = await res.blob();
+                
+                const d = new Date();
+                const monthNames = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
+                const monthYear = monthNames[d.getMonth()] + d.getFullYear();
+                
+                const file = new File([blob], `${clientId}_${monthYear}.png`, { type: blob.type });
+
+                if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                    await navigator.share({
+                        title: 'ZenTable Subscription Payment',
+                        text: text,
+                        files: [file]
+                    });
+                    showToast('✓ Shared successfully with QR Code!', 'success');
+                    return;
+                }
+            }
+
+            // Fallback to text share if files are not shareable but text share is supported
+            if (navigator.share) {
+                await navigator.share({
+                    title: 'ZenTable Subscription Payment',
+                    text: text
+                });
+                showToast('✓ Shared successfully!', 'success');
+            } else {
+                copyPaymentLink();
+            }
+        } catch (e) {
+            console.log('Web Share failed, falling back to clipboard', e);
+            copyPaymentLink();
+        }
+    }
+
     // ── Public API ──
     return {
         load,
@@ -717,6 +921,11 @@ const Billing = (() => {
         _onStatusChange,
         _refreshPreview,
         _submitCreate,
+        downloadQR,
+        copyQRImage,
+        copyPaymentLink,
+        shareOnWhatsApp,
+        shareNative,
     };
 
 })();
