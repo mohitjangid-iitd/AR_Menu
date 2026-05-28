@@ -119,6 +119,40 @@ class TestPlaceOrder:
                         json={"items": [{"name": "x", "qty": 1, "price": 10}]})
         assert r.status_code == 422
 
+    def test_delivery_order_successful_when_feature_enabled(self, client):
+        """Delivery order place hona chahiye jab delivery feature active ho"""
+        from fastapi import HTTPException
+        
+        # require_feature should run without raising any error (feature enabled)
+        with patch("routers.orders.get_client_data", return_value={"restaurant": {}}), \
+             patch("routers.orders.require_feature") as mock_require_feature, \
+             patch("routers.orders.place_order", return_value=100):
+            r = client.post(
+                "/api/order/test_resto/0",
+                json={"items": [{"name": "Paneer", "qty": 1, "price": 280}], "total": 280, "source": "delivery"}
+            )
+        assert r.status_code == 200
+        assert r.json()["order_id"] == 100
+        # requirement is checked for "delivery"
+        mock_require_feature.assert_any_call("test_resto", "delivery")
+
+    def test_delivery_order_fails_when_feature_disabled(self, client):
+        """Delivery order block hona chahiye agar delivery feature inactive ho"""
+        from fastapi import HTTPException
+        
+        def mock_require_feature(client_id, feature):
+            if feature == "delivery":
+                raise HTTPException(status_code=403, detail="Feature 'delivery' not available")
+        
+        with patch("routers.orders.get_client_data", return_value={"restaurant": {}}), \
+             patch("routers.orders.require_feature", side_effect=mock_require_feature):
+            r = client.post(
+                "/api/order/test_resto/0",
+                json={"items": [{"name": "Paneer", "qty": 1, "price": 280}], "total": 280, "source": "delivery"}
+            )
+        assert r.status_code == 403
+        assert "delivery" in r.json()["detail"]
+
 
 class TestGetOrders:
     """GET /api/orders/{client_id}"""

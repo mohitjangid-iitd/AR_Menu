@@ -24,6 +24,7 @@ FEATURES = {
     "owner_analytics":       "Owner Analytics Dashboard",
     "ai_chatbot":            "AI Chat Support",
     "multi_branch":          "Multi-branch / Outlets",
+    "delivery":              "Home Delivery System",
 
     # ── Elite only ──
     "centralized_reporting": "Centralized Reporting",
@@ -57,6 +58,7 @@ DEFAULT_PLAN_MAP = {
     "owner_analytics":       (False, True,  True),
     "ai_chatbot":            (False, True,  True),
     "multi_branch":          (False, True,  True),
+    "delivery":              (False, True,  True),
     "centralized_reporting": (False, False, True),
     "custom_integrations":   (False, False, True),
     "dedicated_support":     (False, False, True),

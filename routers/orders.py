@@ -76,7 +76,12 @@ async def api_place_order(request: Request, client_id: str, table_no: int, body:
     data = get_client_data(client_id)
     if not data:
         raise HTTPException(status_code=404, detail="Restaurant not found")
-    require_feature(client_id, "ordering")
+    
+    if table_no == 0 or (body.source and body.source == "delivery"):
+        require_feature(client_id, "delivery")
+    else:
+        require_feature(client_id, "ordering")
+        
     # Delivery orders ke liye table check skip karo (table_no=0 reserved)
     if table_no != 0:
         table = get_table_status(client_id, table_no, branch_id)

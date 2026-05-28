@@ -33,6 +33,7 @@
     <link rel="stylesheet" href="/static/css/menu.css?v={{ static_v('css/menu.css') }}">
 </head>
 <body>
+{% set can_order = ('ordering' in features) if table_no else ('delivery' in features) %}
 
 <!-- Banner -->
 <div class="banner">
@@ -113,7 +114,7 @@
                     <div class="dish-bottom">
                         <div class="dish-price"></div>
                         <div class="add-btn-wrapper" id="abw-{{ ddid }}">
-                            {% if 'ordering' in features %}
+                            {% if can_order %}
                             <button class="add-btn js-size-toggle" data-ddid="{{ ddid }}">+</button>
                             {% else %}
                             <button class="add-btn add-btn-locked js-locked">+</button>
@@ -123,7 +124,7 @@
                 </div>
             </div><!-- /dish-card -->
 
-            {% if 'ordering' in features %}
+            {% if can_order %}
             <div class="size-dropdown" id="{{ ddid }}">
                 <div class="size-options">
                     {% if has_sizes %}
@@ -222,7 +223,7 @@
     sessionStorage.setItem('customer_last_menu', window.location.pathname + window.location.search);
 </script>
 
-{% if not table_no %}
+{% if not table_no and 'delivery' in features %}
 <!-- ── Morphing Bottom Bar — delivery mode only ── -->
 <style>
 /* Base pill */

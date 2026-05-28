@@ -191,6 +191,22 @@ class TestStaffRoutes:
         r = client.get("/test_resto/staff/counter", follow_redirects=False)
         assert r.status_code not in (500,)
 
+    def test_delivery_no_auth(self, client):
+        r = client.get("/test_resto/staff/delivery", follow_redirects=False)
+        assert r.status_code not in (500,)
+
+    def test_delivery_with_auth_feature_disabled_fails_403(self, owner_client):
+        """Delivery dashboard should fail with 403 when delivery feature is disabled"""
+        r = owner_client.get("/test_resto/staff/delivery", follow_redirects=False)
+        assert r.status_code == 403
+
+    def test_delivery_with_auth_feature_enabled_succeeds_200(self, owner_client):
+        """Delivery dashboard should succeed with 200 when delivery feature is enabled"""
+        from unittest.mock import patch
+        with patch("helpers.has_feature", return_value=True):
+            r = owner_client.get("/test_resto/staff/delivery", follow_redirects=False)
+        assert r.status_code == 200
+
 
 # ════════════════════════════════
 # CHATBOT ROUTES

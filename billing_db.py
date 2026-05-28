@@ -153,6 +153,7 @@ def init_billing_tables():
                     "basic_pos":      "Basic POS",
                     "ai_menu_import": "Photo to Menu (AI)",
                     "blog":           "Personal Blog Page",
+                    "delivery":       "Home Delivery System",
                 }
             }
         },
@@ -166,7 +167,7 @@ def init_billing_tables():
                 "included": [
                     "website", "qr_ordering", "digital_menu",
                     "staff_panel", "basic_pos", "ai_menu_import", "blog",
-                    "owner_analytics", "ai_chatbot", "multi_branch"
+                    "owner_analytics", "ai_chatbot", "multi_branch", "delivery"
                 ],
                 "labels": {
                     "website":          "Personal website (zentable.in/restaurant)",
@@ -179,6 +180,7 @@ def init_billing_tables():
                     "owner_analytics":  "Owner Analytics Dashboard",
                     "ai_chatbot":       "AI Chat Support (Analytics)",
                     "multi_branch":     "Multi-branch / Outlets",
+                    "delivery":         "Home Delivery System",
                 }
             }
         },
@@ -192,7 +194,7 @@ def init_billing_tables():
                 "included": [
                     "website", "qr_ordering", "digital_menu",
                     "staff_panel", "basic_pos", "ai_menu_import", "blog",
-                    "owner_analytics", "ai_chatbot", "multi_branch",
+                    "owner_analytics", "ai_chatbot", "multi_branch", "delivery",
                     "centralized_reporting", "custom_integrations", "dedicated_support"
                 ],
                 "labels": {
@@ -206,6 +208,7 @@ def init_billing_tables():
                     "owner_analytics":        "Owner Analytics Dashboard",
                     "ai_chatbot":             "AI Chat Support (Analytics)",
                     "multi_branch":           "Multi-branch / Outlets",
+                    "delivery":               "Home Delivery System",
                     "centralized_reporting":  "Centralized Reporting",
                     "custom_integrations":    "Custom Integrations",
                     "dedicated_support":      "Dedicated Account Manager",

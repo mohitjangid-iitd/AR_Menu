@@ -106,7 +106,7 @@ async def restaurant_home(request: Request, client_id: str, branch_id: Optional[
         if default_data:
             data["restaurant"]["name"] = default_data["restaurant"]["name"]
 
-    features = [f for f in ["ar_menu", "ordering", "analytics"] if has_feature(client_id, f)]
+    features = [f for f in ["ar_menu", "ordering", "analytics", "delivery"] if has_feature(client_id, f)]
     return templates.TemplateResponse("home.html", {
         "request": request, "client_id": client_id, "data": data, "table_no": None,
         "branch_id": branch_id,
@@ -129,7 +129,7 @@ async def menu(request: Request, client_id: str, branch_id: Optional[str] = "__d
         default_data = get_client_data(client_id)
         if default_data:
             data["restaurant"]["name"] = default_data["restaurant"]["name"]
-    features = [f for f in ["ar_menu", "ordering", "analytics"] if has_feature(client_id, f)]
+    features = [f for f in ["ar_menu", "ordering", "analytics", "delivery"] if has_feature(client_id, f)]
     return templates.TemplateResponse("menu.html", {
         "request": request, "client_id": client_id, "data": data, "table_no": None,
         "branch_id": branch_id,
@@ -151,7 +151,7 @@ async def ar_menu(request: Request, client_id: str, branch_id: Optional[str] = "
         return RedirectResponse(url=f"/{client_id}/menu{qs}")
     mind_url = r2_public_url(f"{client_id}/targets.mind") if USE_R2 \
                else f"/static/assets/{client_id}/targets.mind"
-    features = [f for f in ["ar_menu", "ordering", "analytics"] if has_feature(client_id, f)]
+    features = [f for f in ["ar_menu", "ordering", "analytics", "delivery"] if has_feature(client_id, f)]
     return templates.TemplateResponse("ar_menu.html", {
         "request": request, "client_id": client_id, "table_no": None,
         "branch_id": branch_id,
@@ -178,7 +178,7 @@ async def table_home(request: Request, client_id: str, table_no: int,
         default_data = get_client_data(client_id)
         if default_data:
             data["restaurant"]["name"] = default_data["restaurant"]["name"]
-    features = [f for f in ["ar_menu", "ordering", "analytics"] if has_feature(client_id, f)]
+    features = [f for f in ["ar_menu", "ordering", "analytics", "delivery"] if has_feature(client_id, f)]
     return templates.TemplateResponse("home.html", {
         "request": request, "client_id": client_id, "data": data,
         "table_no": table_no, "branch_id": branch_id,
@@ -205,7 +205,7 @@ async def table_menu(request: Request, client_id: str, table_no: int,
         default_data = get_client_data(client_id)
         if default_data:
             data["restaurant"]["name"] = default_data["restaurant"]["name"]
-    features = [f for f in ["ar_menu", "ordering", "analytics"] if has_feature(client_id, f)]
+    features = [f for f in ["ar_menu", "ordering", "analytics", "delivery"] if has_feature(client_id, f)]
     return templates.TemplateResponse("menu.html", {
         "request": request, "client_id": client_id, "data": data,
         "table_no": table_no, "branch_id": branch_id,
@@ -231,7 +231,7 @@ async def table_ar_menu(request: Request, client_id: str, table_no: int,
         raise HTTPException(status_code=403, detail="Table not active. Please ask staff.")
     mind_url = r2_public_url(f"{client_id}/targets.mind") if USE_R2 \
                else f"/static/assets/{client_id}/targets.mind"
-    features = [f for f in ["ar_menu", "ordering", "analytics"] if has_feature(client_id, f)]
+    features = [f for f in ["ar_menu", "ordering", "analytics", "delivery"] if has_feature(client_id, f)]
     return templates.TemplateResponse("ar_menu.html", {
         "request": request, "client_id": client_id,
         "table_no": table_no, "branch_id": branch_id,
@@ -253,7 +253,7 @@ async def staff_owner(request: Request, client_id: str,
     if not data:
         raise HTTPException(status_code=404, detail="Restaurant not found")
     branches = get_restaurant_branches(client_id)
-    features = [f for f in ["ar_menu", "ordering", "analytics"] if has_feature(client_id, f)]
+    features = [f for f in ["ar_menu", "ordering", "analytics", "delivery"] if has_feature(client_id, f)]
     response = templates.TemplateResponse("staff_owner.html", {
         "request": request, "client_id": client_id, "data": data, "user": user,
         "branch_id": user.get("branch_id") or "__default__",
@@ -275,7 +275,7 @@ async def staff_kitchen(request: Request, client_id: str,
     data = get_client_data(client_id)
     if not data:
         raise HTTPException(status_code=404, detail="Restaurant not found")
-    features = [f for f in ["ar_menu", "ordering", "analytics"] if has_feature(client_id, f)]
+    features = [f for f in ["ar_menu", "ordering", "analytics", "delivery"] if has_feature(client_id, f)]
     response = templates.TemplateResponse("staff_kitchen.html", {
         "request": request, "client_id": client_id, "data": data, "user": user,
         "branch_id": user.get("branch_id") or "__default__",
@@ -294,7 +294,7 @@ async def staff_waiter(request: Request, client_id: str,
     data = get_client_data(client_id)
     if not data:
         raise HTTPException(status_code=404, detail="Restaurant not found")
-    features = [f for f in ["ar_menu", "ordering", "analytics"] if has_feature(client_id, f)]
+    features = [f for f in ["ar_menu", "ordering", "analytics", "delivery"] if has_feature(client_id, f)]
     response = templates.TemplateResponse("staff_waiter.html", {
         "request": request, "client_id": client_id, "data": data, "user": user,
         "branch_id": user.get("branch_id") or "__default__",
@@ -310,13 +310,16 @@ async def staff_delivery(request: Request, client_id: str,
                          auth_token: Optional[str] = Cookie(None)):
     _block_on_admin_subdomain(request)
     user = require_auth(auth_token, ["delivery", "owner", "admin"], client_id)
+    require_feature(client_id, "delivery")
     data = get_client_data(client_id)
     if not data:
         raise HTTPException(status_code=404, detail="Restaurant not found")
+    features = [f for f in ["ar_menu", "ordering", "analytics", "delivery"] if has_feature(client_id, f)]
     response = templates.TemplateResponse("staff_delivery.html", {
         "request": request, "client_id": client_id, "data": data, "user": user,
         "branch_id": user.get("branch_id") or "__default__",
         "site": SITE_CONFIG,
+        "features": features,
     })
     response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
     response.headers["Pragma"] = "no-cache"
@@ -331,7 +334,7 @@ async def staff_counter(request: Request, client_id: str,
     data = get_client_data(client_id)
     if not data:
         raise HTTPException(status_code=404, detail="Restaurant not found")
-    features = [f for f in ["ar_menu", "ordering", "analytics"] if has_feature(client_id, f)]
+    features = [f for f in ["ar_menu", "ordering", "analytics", "delivery"] if has_feature(client_id, f)]
     response = templates.TemplateResponse("staff_counter.html", {
         "request": request, "client_id": client_id, "data": data, "user": user,
         "branch_id": user.get("branch_id") or "__default__",
