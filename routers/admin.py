@@ -14,6 +14,13 @@ Restaurant:
   DELETE /api/admin/restaurant/{client_id}
   PATCH  /api/admin/restaurant/{client_id}/toggle
   GET    /api/admin/restaurant/{client_id}/analytics
+  POST   /api/admin/restaurant/{client_id}/repair-default-name
+
+Branches:
+  GET    /api/admin/restaurant/{client_id}/branches
+  POST   /api/admin/restaurant/{client_id}/branch
+  PUT    /api/admin/restaurant/{client_id}/branch/{branch_id}/json
+  DELETE /api/admin/restaurant/{client_id}/branch/{branch_id}
 
 Staff:
   GET    /api/admin/staff/{client_id}
@@ -21,6 +28,21 @@ Staff:
   PATCH  /api/admin/staff/{staff_id}/password
   PATCH  /api/admin/staff/{staff_id}/toggle
   DELETE /api/admin/staff/{staff_id}
+
+Owners:
+  GET    /api/admin/owner/{client_id}
+  PATCH  /api/admin/owner/{owner_id}/toggle
+  PATCH  /api/admin/owner/{owner_id}/password
+
+Signup Requests:
+  GET    /api/admin/signup-requests
+  GET    /api/admin/signup-requests/{req_id}
+  POST   /api/admin/signup-requests/{req_id}/approve
+  POST   /api/admin/signup-requests/{req_id}/reject
+
+Site Settings:
+  GET    /api/admin/site-settings
+  PATCH  /api/admin/site-settings/{key}
 
 Admin account:
   POST   /api/admin/create
