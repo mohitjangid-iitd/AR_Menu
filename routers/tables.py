@@ -8,6 +8,9 @@ POST /api/table/{client_id}/close-all
 GET  /api/tables/{client_id}/summary
 GET  /api/tables/{client_id}
 GET  /api/table/{client_id}/{table_no}/detail
+POST /api/table/{client_id}/{table_no}/call
+POST /api/table/{client_id}/{table_no}/call/resolve
+GET  /api/tables/{client_id}/calls
 """
 
 from typing import Optional

@@ -3,13 +3,13 @@ routers/blog.py — Blog system routes
 
 Public routes:
   GET  /blog                    → published posts listing
+  GET  /blog/rss.xml            → RSS feed feed generator
   GET  /blog/{slug}             → single post reader
   GET  /blog/tag/{tag}          → tag filter page
 
 Auth routes (management):
   GET  /{client_id}/staff/blog  → blogger's management page
   GET  /admin/blog              → admin blog management (sabhi posts)
-  GET  /owner/blog              → owner blog management (apne restaurant ke posts)
 
 Editor routes (auth):
   GET  /blog/editor             → new post editor

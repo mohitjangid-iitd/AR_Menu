@@ -1,6 +1,10 @@
 """
 routers/pages.py — Public + Staff HTML page routes
 
+Customer (auth required):
+  GET /customer/profile
+  GET /customer/orders
+
 Public:
   GET /{client_id}
   GET /{client_id}/menu
@@ -13,6 +17,7 @@ Staff (auth required):
   GET /{client_id}/staff/owner
   GET /{client_id}/staff/kitchen
   GET /{client_id}/staff/waiter
+  GET /{client_id}/staff/delivery
   GET /{client_id}/staff/counter
 """
 

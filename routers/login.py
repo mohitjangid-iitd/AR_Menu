@@ -3,6 +3,8 @@ routers/auth.py — Login / Logout routes
 
 GET  /login
 GET  /admin/login
+GET  /signup
+POST /api/auth/signup
 POST /api/auth/login
 POST /api/auth/logout
 GET  /logout

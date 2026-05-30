@@ -1,6 +1,14 @@
 """
 routers/customer_auth.py — Customer Google OAuth flow
 Delivery orders ke liye customer login/logout
+
+Endpoints:
+  GET   /auth/google
+  GET   /auth/google/callback
+  GET   /auth/customer/logout
+  GET   /api/customer/me
+  POST  /api/customer/profile
+  GET   /api/customer/orders
 """
 
 import os

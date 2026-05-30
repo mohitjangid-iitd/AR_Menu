@@ -1,6 +1,24 @@
 """
 routers/billing.py — ZenTable subscription billing API
 Sirf admin access — sab routes /api/billing/... pe hain
+
+Endpoints:
+  GET   /api/billing/features/me
+  GET   /api/billing/plans
+  PATCH /api/billing/plans/{key}
+  GET   /api/billing/addons
+  PATCH /api/billing/addons/{key}
+  GET   /api/billing/subscriptions
+  GET   /api/billing/subscriptions/{client_id}
+  POST  /api/billing/subscriptions/{client_id}
+  PATCH /api/billing/subscriptions/{client_id}
+  POST  /api/billing/subscriptions/{client_id}/addons
+  DELETE /api/billing/subscriptions/{client_id}/addons/{addon_key}
+  GET   /api/billing/subscriptions/{client_id}/history
+  POST  /api/billing/subscriptions/{client_id}/confirm-payment
+  GET   /api/billing/preview-price
+  GET   /api/billing/subscriptions/{client_id}/upi-data
+  POST  /api/billing/run-cron
 """
 
 from fastapi import APIRouter, Request, HTTPException
