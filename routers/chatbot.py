@@ -29,6 +29,7 @@ from google import genai
 from google.genai import types
 
 from auth import decode_token
+from helpers import require_feature
 
 # ── DB functions — yeh database.py mein add honge (Task 8)
 from database import (
@@ -337,6 +338,9 @@ async def chat(
     client_id = payload.get("client_id")
     if not client_id:
         raise HTTPException(status_code=401, detail="Invalid token: client_id missing")
+
+    # ── 3.5. Feature check ──
+    require_feature(client_id, "chatbot")
 
     # ── 4. Rate limit ──
     if not _check_rate_limit(client_id):

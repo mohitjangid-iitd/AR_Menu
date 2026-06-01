@@ -1107,6 +1107,7 @@
   window.ImageToMenu = {
     open:  openModal,
     close: closeModal,
+    init:  init,
   };
 
   // ─── Auto-init on DOM ready ────────────────────────────────────

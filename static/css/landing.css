@@ -1384,12 +1384,13 @@ footer {
   border-top: 1px solid rgba(255,255,255,0.07);
   padding-top: 28px;
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
+  justify-content: center;
   align-items: center;
-  flex-wrap: wrap;
-  gap: 16px;
+  text-align: center;
+  gap: 12px;
 }
-.footer-bottom p { font-size: 13px; color: rgba(255,255,255,0.25); }
+.footer-bottom p { font-size: 13px; color: rgba(255,255,255,0.25); text-align: center; }
 .footer-bottom-links { display: flex; gap: 20px; }
 .footer-bottom-links a { font-size: 13px; color: rgba(255,255,255,0.25); transition: color 0.18s; }
 .footer-bottom-links a:hover { color: var(--primary); }
@@ -1781,4 +1782,603 @@ footer {
 .mobile-menu-actions .btn-outline {
   color: var(--primary);
   border-color: var(--primary);
+}
+
+/* ═══════════════════════════════════════
+   PRICING SECTION
+═══════════════════════════════════════ */
+#pricing {
+  padding: 110px 24px;
+  background: var(--secondary);
+  position: relative;
+  overflow: hidden;
+}
+
+.pricing-bg-blob {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  filter: blur(90px);
+}
+.pricing-blob-1 {
+  top: -150px; left: 50%;
+  transform: translateX(-50%);
+  width: 800px; height: 500px;
+  background: radial-gradient(ellipse, rgba(108,99,255,0.14), transparent 70%);
+}
+.pricing-blob-2 {
+  bottom: -100px; right: -100px;
+  width: 500px; height: 400px;
+  background: radial-gradient(ellipse, rgba(255,101,132,0.1), transparent 70%);
+}
+
+#pricing .section-label { background: rgba(108,99,255,0.15); border-color: rgba(108,99,255,0.3); }
+#pricing .section-header h2 { color: #fff; }
+#pricing .section-header p  { color: rgba(255,255,255,0.5); }
+
+/* Grid */
+.pricing-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 22px;
+  align-items: stretch;   /* sabhi cards stretch honge — equal height */
+  margin-bottom: 48px;
+}
+
+/* Base card */
+.pricing-card {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.09);
+  border-radius: 24px;
+  padding: 36px 30px 30px;
+  position: relative;
+  transition: all 0.3s ease;
+  cursor: default;
+  display: flex;
+  flex-direction: column;  /* content + spacer + button stack vertically */
+}
+.pricing-card:hover {
+  background: rgba(108,99,255,0.07);
+  border-color: rgba(108,99,255,0.22);
+  transform: translateY(-6px);
+  box-shadow: 0 24px 60px rgba(0,0,0,0.3);
+}
+
+/* Highlighted card (Pro) */
+.pricing-card--highlighted {
+  background: linear-gradient(160deg, rgba(108,99,255,0.18), rgba(255,101,132,0.08));
+  border: 1.5px solid rgba(108,99,255,0.4);
+  box-shadow: 0 0 0 1px rgba(108,99,255,0.15), 0 24px 60px rgba(108,99,255,0.2);
+  transform: translateY(-8px) scale(1.02);
+}
+.pricing-card--highlighted:hover {
+  transform: translateY(-14px) scale(1.02);
+  box-shadow: 0 0 0 1px rgba(108,99,255,0.3), 0 32px 80px rgba(108,99,255,0.3);
+}
+.pricing-card--highlighted::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  border-radius: 24px 24px 0 0;
+  background: linear-gradient(90deg, var(--primary), var(--accent));
+}
+
+/* Badge */
+.pricing-badge {
+  position: absolute;
+  top: -14px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  color: #fff;
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  padding: 5px 16px;
+  border-radius: var(--r-pill);
+  white-space: nowrap;
+  box-shadow: 0 4px 14px rgba(108,99,255,0.4);
+}
+
+/* Emoji */
+.pricing-emoji {
+  font-size: 36px;
+  margin-bottom: 14px;
+  display: block;
+}
+
+/* Plan name */
+.pricing-plan-name {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 4px;
+}
+
+/* Tagline */
+.pricing-tagline {
+  font-size: 13px;
+  color: rgba(255,255,255,0.45);
+  margin-bottom: 18px;
+}
+
+/* Price block — column layout: strikethrough → main price → billing label */
+.pricing-price {
+  display: flex;
+  flex-direction: column;      /* vertical stack */
+  align-items: flex-start;
+  gap: 2px;
+  margin-bottom: 24px;
+  margin-top: 6px;
+}
+/* Inner row: ₹ + amount + /month */
+.pricing-price > div {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+.price-currency {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--primary);
+}
+.price-amount {
+  font-family: var(--font-display);
+  font-size: 42px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+.price-period {
+  font-size: 14px;
+  color: rgba(255,255,255,0.4);
+  font-weight: 400;
+  margin-left: 2px;
+}
+
+/* Features list */
+.pricing-features {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+  margin-bottom: 30px;
+  padding: 0;
+  flex: 1;   /* features section grow karta hai — CTA hamesha bottom pe */
+}
+.pricing-features li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 14px;
+  color: rgba(255,255,255,0.65);
+  line-height: 1.45;
+}
+.pf-check {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: rgba(108,99,255,0.18);
+  border: 1px solid rgba(108,99,255,0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  color: var(--primary);
+  flex-shrink: 0;
+  margin-top: 1px;
+  font-weight: 700;
+}
+.pricing-card--highlighted .pf-check {
+  background: rgba(108,99,255,0.28);
+  border-color: rgba(108,99,255,0.55);
+}
+
+/* CTA button */
+.pricing-cta {
+  width: 100%;
+  justify-content: center;
+  border-radius: 12px;
+  padding: 14px;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  transition: all 0.25s ease;
+}
+.pricing-card .btn-outline {
+  color: rgba(255,255,255,0.75);
+  border-color: rgba(255,255,255,0.18);
+  background: transparent;
+}
+.pricing-card .btn-outline:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: rgba(108,99,255,0.1);
+}
+
+/* Footnote */
+.pricing-footnote {
+  text-align: center;
+  font-size: 14px;
+  color: rgba(255,255,255,0.4);
+  margin-top: 0;
+}
+.pricing-footnote strong { color: rgba(255,255,255,0.75); }
+
+/* Responsive */
+@media (max-width: 900px) {
+  .pricing-grid { grid-template-columns: 1fr; max-width: 420px; margin-left: auto; margin-right: auto; }
+  .pricing-card--highlighted { transform: none; }
+  .pricing-card--highlighted:hover { transform: translateY(-6px); }
+}
+@media (max-width: 600px) {
+  #pricing { padding: 80px 16px; }
+  .pricing-card { padding: 28px 22px 24px; }
+  .price-amount { font-size: 36px; }
+}
+
+/* ── Period Toggle ── */
+.pricing-toggle-wrap {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 48px;
+}
+.pricing-toggle {
+  display: inline-flex;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: var(--r-pill);
+  padding: 5px;
+  gap: 4px;
+}
+.ptoggle-btn {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 20px;
+  border-radius: var(--r-pill);
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.5);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 0.22s ease;
+  white-space: nowrap;
+}
+.ptoggle-btn:hover { color: rgba(255,255,255,0.85); }
+.ptoggle-btn.active {
+  background: var(--primary);
+  color: #fff;
+  box-shadow: 0 4px 18px rgba(108,99,255,0.4);
+}
+.ptoggle-disc {
+  font-size: 10px;
+  font-weight: 700;
+  background: var(--accent);
+  color: #fff;
+  padding: 2px 7px;
+  border-radius: var(--r-pill);
+  letter-spacing: 0.04em;
+}
+.ptoggle-btn.active .ptoggle-disc {
+  background: rgba(255,255,255,0.25);
+}
+
+/* Price transition */
+.price-amount,
+.price-period,
+.price-currency { transition: opacity 0.18s ease; }
+.pricing-price.switching .price-amount,
+.pricing-price.switching .price-period,
+.pricing-price.switching .price-currency { opacity: 0; }
+
+/* Original price (strikethrough) */
+.price-original {
+  font-size: 13px;
+  color: rgba(255,255,255,0.3);
+  text-decoration: line-through;
+  margin-bottom: 2px;
+  font-family: var(--font-display);
+  transition: opacity 0.18s ease;
+}
+
+/* Addon Cards Hover */
+.addon-card:hover {
+  background: rgba(108,99,255,0.06) !important;
+  border-color: rgba(108,99,255,0.2) !important;
+  transform: translateY(-4px);
+  box-shadow: 0 12px 30px rgba(0,0,0,0.3);
+}
+
+/* ══════════════════════════════════════════════
+   ADD-ONS SECTION — Proper dark-theme styling
+══════════════════════════════════════════════ */
+
+.pricing-addons-section {
+  margin-top: 64px !important;
+  border-top: 1px solid rgba(255,255,255,0.1) !important;
+  padding-top: 56px !important;
+}
+
+.addons-section-header {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.addons-section-header h3 {
+  font-family: var(--font-display);
+  font-size: clamp(22px, 3vw, 30px);
+  font-weight: 700;
+  color: #fff;
+  margin-top: 14px;
+  margin-bottom: 10px;
+}
+
+.addons-section-header p {
+  color: rgba(255,255,255,0.45);
+  font-size: 14.5px;
+  max-width: 580px;
+  margin: 0 auto;
+  line-height: 1.7;
+}
+
+/* Override inline grid styles */
+.addons-grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)) !important;
+  gap: 20px !important;
+}
+
+/* Full addon card reset — override inline styles */
+.addon-card {
+  background: rgba(255,255,255,0.04) !important;
+  border: 1px solid rgba(255,255,255,0.1) !important;
+  border-radius: 20px !important;
+  padding: 28px !important;
+  box-shadow: none !important;
+  position: relative !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: space-between !important;
+  transition: all 0.3s ease !important;
+  overflow: hidden !important;
+}
+
+.addon-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--primary), var(--accent));
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.addon-card:hover {
+  background: rgba(108,99,255,0.1) !important;
+  border-color: rgba(108,99,255,0.35) !important;
+  transform: translateY(-6px) !important;
+  box-shadow: 0 20px 48px rgba(0,0,0,0.35) !important;
+}
+
+.addon-card:hover::before {
+  opacity: 1;
+}
+
+/* Icon box */
+.addon-card > div:first-child > div:first-child > span:first-child {
+  width: 48px;
+  height: 48px;
+  border-radius: 13px;
+  background: rgba(108,99,255,0.15);
+  border: 1px solid rgba(108,99,255,0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+}
+
+/* Price amount in addon card */
+.addon-card > div:first-child > div:first-child > div > div:first-child {
+  font-family: var(--font-display) !important;
+  font-size: 20px !important;
+  font-weight: 700 !important;
+  color: #fff !important;
+}
+
+/* Price label — /mo or one-time */
+.addon-card > div:first-child > div:first-child > div > div:last-child {
+  color: rgba(255,255,255,0.35) !important;
+}
+
+/* Addon name h4 */
+.addon-card h4 {
+  font-family: var(--font-display) !important;
+  font-size: 16px !important;
+  font-weight: 700 !important;
+  color: #fff !important;
+  margin-bottom: 7px !important;
+}
+
+/* Addon description */
+.addon-card p {
+  color: rgba(255,255,255,0.45) !important;
+  font-size: 13px !important;
+  line-height: 1.65 !important;
+}
+
+/* Footer divider in addon card */
+.addon-card > div:last-child {
+  border-top: 1px dashed rgba(255,255,255,0.1) !important;
+  color: rgba(255,255,255,0.35) !important;
+}
+
+.addon-card > div:last-child span:last-child {
+  font-weight: 700 !important;
+  color: rgba(255,255,255,0.7) !important;
+}
+
+/* Pricing toggle for dark bg */
+.pricing-addons-section .section-label,
+#pricing .section-label {
+  background: rgba(108,99,255,0.15) !important;
+  border-color: rgba(108,99,255,0.35) !important;
+  color: #a8a2ff !important;
+}
+
+/* Footnote */
+.pricing-footnote {
+  text-align: center;
+  font-size: 14px;
+  color: rgba(255,255,255,0.4);
+  margin-top: 40px;
+  padding-top: 0;
+}
+.pricing-footnote strong {
+  color: rgba(255,255,255,0.75);
+}
+
+@media (max-width: 768px) {
+  .addons-grid {
+    grid-template-columns: 1fr !important;
+    max-width: 420px !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+}
+
+/* ── ADDON CARD COMPONENT CLASSES ── */
+.addon-card-body {
+  margin-bottom: 20px;
+}
+
+.addon-card-header-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.addon-icon-wrap {
+  width: 50px;
+  height: 50px;
+  border-radius: 13px;
+  background: rgba(108,99,255,0.15);
+  border: 1px solid rgba(108,99,255,0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  flex-shrink: 0;
+}
+
+.addon-price-block {
+  text-align: right;
+}
+
+.addon-price-amount {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1.2;
+}
+
+.addon-price-amount span {
+  font-size: 12px;
+  font-weight: 400;
+  color: rgba(255,255,255,0.4);
+}
+
+.addon-price-type {
+  font-size: 10px;
+  color: rgba(255,255,255,0.35);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-top: 3px;
+  font-family: var(--font-display);
+  font-weight: 600;
+}
+
+.addon-price-type.one-time {
+  color: rgba(255,101,132,0.8);
+}
+
+.addon-name {
+  font-family: var(--font-display) !important;
+  font-size: 16px !important;
+  font-weight: 700 !important;
+  color: #fff !important;
+  margin-bottom: 8px !important;
+}
+
+.addon-desc {
+  color: rgba(255,255,255,0.45) !important;
+  font-size: 13px !important;
+  line-height: 1.65 !important;
+  margin: 0 !important;
+}
+
+.addon-card-footer {
+  border-top: 1px dashed rgba(255,255,255,0.12);
+  padding-top: 14px;
+  margin-top: auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11.5px;
+}
+
+.addon-footer-label {
+  color: rgba(255,255,255,0.35);
+}
+
+.addon-footer-val {
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: rgba(255,255,255,0.7);
+}
+
+.addon-footer-val small {
+  font-size: 10px;
+  color: rgba(255,255,255,0.35);
+  font-weight: 400;
+}
+
+/* Addon footer — included variant (green) */
+.addon-footer-val--included {
+  color: #43E97B !important;
+  font-size: 12px !important;
+}
+
+/* Ensure all addon cards have equal height via grid stretch */
+.addons-grid {
+  align-items: stretch !important;
+}
+
+.addon-card {
+  height: 100% !important;
+}
+
+/* Addon footer — note/contact variant (amber) */
+.addon-footer-val--note {
+  color: #FFB347 !important;
+  font-size: 11.5px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.02em;
+  cursor: default;
+}
+
+/* Footer label when hardware not included — slightly dimmer */
+.addon-card-footer .addon-footer-label {
+  font-size: 11px;
+  color: rgba(255,255,255,0.3);
+  line-height: 1.4;
 }

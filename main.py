@@ -9,7 +9,7 @@ from fastapi.staticfiles import StaticFiles
 from site_config import SITE_CONFIG
 from database import get_db,init_db, seed_tables, get_all_restaurants_info, get_all_site_settings
 from r2 import USE_R2, r2_public_url, IS_PROD
-from helpers import get_client_data
+from helpers import get_client_data, is_restaurant_active, has_feature
 from trash_utils import purge_expired_trash
 
 from routers.menu import router as menu_router
@@ -23,7 +23,10 @@ from routers.chatbot import router as chatbot_router
 from routers.help_chat import router as help_chat_router
 from routers.image_to_menu import router as image_to_menu_router
 from routers.blog import router as blog_router
+from routers.billing import router as billing_router
+from routers.customer_auth import router as customer_auth_router
 from blog_db import init_blog_tables, get_published_posts as get_blog_posts
+from billing_db import init_billing_tables, sync_plan_features, run_daily_billing_cron, get_all_plans, get_all_addons
 from templates_env import templates
 
 # ════════════════════════════════
@@ -48,6 +51,8 @@ def _keep_neon_alive():
 @asynccontextmanager
 async def lifespan(app):
     init_db()
+    init_billing_tables()
+    sync_plan_features()    # Naye features DB mein add karo (safe, idempotent)
     init_blog_tables()
     purge_expired_trash()
     for r in get_all_restaurants_info():
@@ -61,14 +66,27 @@ async def lifespan(app):
                 num = branch_config.get("restaurant", {}).get("num_tables") \
                       or rdata["restaurant"]["num_tables"]
                 seed_tables(r["client_id"], num, branch["branch_id"])
+    import json as _json
     templates.env.globals["static_v"] = lambda path: \
         int(os.path.getmtime(f"static/{path}")) if os.path.exists(f"static/{path}") else 0
     templates.env.globals["site"] = SITE_CONFIG
-    templates.env.globals["site_settings"] = get_all_site_settings()
+    _ss = get_all_site_settings()
+    templates.env.globals["site_settings"] = _ss
+    # fromjson filter — template mein use kar sakte hain
+    templates.env.filters["fromjson"] = lambda s: _json.loads(s) if isinstance(s, str) else s
+    # billing_plans — landing page pricing ke liye (live fetch)
+    try:
+        templates.env.globals["billing_plans"] = get_all_plans()
+        templates.env.globals["billing_addons"] = get_all_addons()
+    except Exception:
+        templates.env.globals["billing_plans"] = []
+        templates.env.globals["billing_addons"] = []
 
     # Neon ko jaagta rakhne wala thread
     t = threading.Thread(target=_keep_neon_alive, daemon=True)
     t.start()
+
+    run_daily_billing_cron()
 
     yield
 
@@ -121,12 +139,12 @@ async def sitemap(request: Request):
     try:
         for r in get_all_restaurants_info():
             rdata = get_client_data(r["client_id"])
-            if not rdata or not rdata.get("subscription", {}).get("active", True):
+            if not rdata or not is_restaurant_active(r["client_id"]):
                 continue
             cid = r["client_id"]
             urls.append(f"{base_url}/{cid}")
             urls.append(f"{base_url}/{cid}/menu")
-            if "ar_menu" in rdata.get("subscription", {}).get("features", []):
+            if has_feature(r["client_id"], "ar_menu"):
                 urls.append(f"{base_url}/{cid}/ar-menu")
         for post in get_blog_posts(limit=200):
             urls.append(f"{base_url}/blog/{post['slug']}")
@@ -153,7 +171,9 @@ async def landing(request: Request):
             "request": request, "site": SITE_CONFIG,
         })
     return templates.TemplateResponse("landing.html", {
-        "request": request, "config": SITE_CONFIG
+        "request": request, "config": SITE_CONFIG,
+        "billing_plans": get_all_plans(),
+        "billing_addons": get_all_addons(),
     })
 
 @app.get("/.well-known/appspecific/com.chrome.devtools.json")
@@ -171,6 +191,8 @@ app.include_router(chatbot_router)
 app.include_router(help_chat_router)
 app.include_router(image_to_menu_router)
 app.include_router(blog_router)
+app.include_router(billing_router)
+app.include_router(customer_auth_router)
 app.include_router(pages_router)
 
 if __name__ == "__main__":

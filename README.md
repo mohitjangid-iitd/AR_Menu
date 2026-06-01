@@ -9,28 +9,35 @@ A **multi-tenant restaurant management platform** with AR menus, real-time order
 ## Features
 
 ### For Customers
-- **AR Menu** — Scan QR codes to view dishes as 3D models in augmented reality
+- **AR Menu** — Scan branch-specific QR codes to view dishes as 3D models in augmented reality
 - **Interactive Controls** — Rotate and explore dishes before ordering
-- **Digital Menu** — Clean, fast, mobile-friendly menu browsing
+- **Digital Menu** — Clean, fast, mobile-friendly branch-aware menu browsing
+- **Branch Awareness** — Dynamic layout and data adjustments on public pages (`home`, `menu`, `ar_menu`) based on the selected branch
+- **Customer Portal & OAuth** — Secure, dynamic login using Google OAuth2 to access the personalized customer profile
+- **Order History & Active Tracking** — Real-time order tracking dashboard divided into `🟢 Active Orders` and `📜 Order History` with color-coded status badges, tracking details, and direct redirects back to the originating menu URL
 
 ### For Restaurant Staff
-- **Waiter** — Table management, order placement, billing, payments
-- **Kitchen** — Live order queue, mark items ready
-- **Counter** — Table activation/deactivation, payment collection
-- **Owner** — Analytics, QR generator, staff management, order history, full menu control (add/edit/delete items, categories), restaurant info management (name, logo, banner, social links, contact, tables), AI-powered photo-to-menu import, platform help bot, **Multi-Branch Support**, **Self-Signup with Admin Approval**
+- **Waiter** — Table management, order placement, billing, payments (branch-isolated)
+- **Kitchen** — Live order queue, mark items ready (branch-isolated)
+- **Counter** — Table activation/deactivation, payment collection (branch-isolated)
+- **In-house Delivery Flow** — Specialized `delivery` staff role, dedicated delivery management dashboard (`staff_delivery.html`) to view active/assigned orders, and real-time state updates (Dispatched, Delivered) synchronized live across customer and staff views
+- **Owner** — Analytics, branch-specific QR generator, staff management, order history, full menu control (add/edit/delete items, categories), restaurant info management, AI-powered **bulk photo-to-menu import** (parse and save entire menus in one action), platform help bot, **Multi-Branch Support**, **Self-Signup with Admin Approval**
+- **Session Protection** — Automatic mid-session expiry detection (`401` handler) across all staff portals that prompts a graceful redirect to login, preventing broken UI states
 
 ### For Platform Admins (ZenTable)
 > Accessible at [admin.zentable.in](https://admin.zentable.in)
 
 - **Admin Panel** — Manage all restaurants from one place
 - **Per-restaurant stats** — Revenue, orders, top dishes
-- **Menu management** — Add/edit/delete items and categories for any restaurant
+- **Menu management** — Add/edit/delete items and categories for any restaurant (supports bulk imports)
 - **Photo to menu** — AI-powered menu extraction from image, for any restaurant
 - **3D model management** — Upload/manage `.glb` models per dish (owners cannot upload GLBs)
-- **Staff management** — Create, edit, deactivate staff accounts across all restaurants
+- **Staff management** — Create, edit, deactivate staff accounts across all restaurants and branches
 - **Restaurant onboarding** — Instant setup via admin panel; activate, deactivate, or delete restaurants, **Approve Owner Signups**
 - **Blogging Platform** — Built-in blogging system for ZenTable platform and connected restaurants
-- **File management** — Upload images/models, trash + restore system
+- **File management & Storage Security** — Upload images/models with automatic **collision prevention** (unique 8-character `_uid` prefix appended to uploaded images) and secure **trash + restore system** (intelligent key parsing to avoid deleting active assets)
+- **Subscription & Add-ons Manager** — Dynamic configuration editor within the Billings tab to live-edit pricing, taglines, active feature checklists, and inline customized feature tags for global plans (Basic, Pro, Elite) and add-ons.
+- **Smart Payment Sharing & QR Downloads** — Advanced confirm-payment workflow generating fixed-amount UPI payment URLs and dynamic QR codes. Features single-click downloads named dynamically (`client_id + month`), a clipboard copy engine to copy raw QR images directly for instant pasting (`Ctrl+V`) into chats like WhatsApp, and native async Web Share API integration to share the QR image file and custom pre-configured messages simultaneously.
 - **DB export** — Full PostgreSQL export as ZIP
 
 ---
@@ -39,9 +46,14 @@ A **multi-tenant restaurant management platform** with AR menus, real-time order
 
 | Layer | Technology |
 |---|---|
-| Backend | Python — FastAPI |
-| Database | PostgreSQL (psycopg2, ThreadedConnectionPool) |
+| Backend | Python — FastAPI (with background keep-alive threads) |
+| Database | PostgreSQL (psycopg2, ThreadedConnectionPool, Neon DB keep-alive support) |
 | Restaurant Config | PostgreSQL `restaurants` table (JSONB) |
+| Subscriptions & Add-ons | PostgreSQL `billing_plans`, `billing_addons`, `subscriptions`, `subscription_addons`, `payment_history`, `email_log` |
+| Blog Operations | PostgreSQL `blog_posts` table |
+| Trash & Auto-Purge | PostgreSQL `trash_meta` table |
+| Owner Signup & Approvals| PostgreSQL `owner_signup_requests`, `owners` tables |
+| Platform Configuration | PostgreSQL `site_settings` table |
 | Frontend | HTML, CSS, Vanilla JS (Jinja2 templates) |
 | AR | MindAR + Three.js r128 |
 | AI | Google Gemini API (Chatbot, Photo-to-Menu, Help Bot) |
@@ -56,7 +68,10 @@ A **multi-tenant restaurant management platform** with AR menus, real-time order
 zentable/
 ├── main.py                      # App init, lifespan, static mount, utility routes
 ├── database.py                  # PostgreSQL setup + all DB functions (psycopg2)
-├── blog_db.py                   # Blog database operations (SQLite/PostgreSQL)
+├── billing_db.py                # Subscription & Add-ons database operations (PostgreSQL)
+├── blog_db.py                   # Blog database operations (PostgreSQL)
+├── feature_registry.py          # Key-label registry for feature gating (Basic, Pro, Elite)
+├── check_feature_gates.py       # Audit utility for restaurant feature access & subscription gates
 ├── auth.py                      # JWT logic — create/verify token, login functions
 ├── helpers.py                   # Shared helpers — get_client_data, require_auth, etc.
 ├── r2.py                        # Cloudflare R2 client + helper functions
@@ -77,7 +92,9 @@ zentable/
 │   ├── tables.py                # Table activate/close/summary API
 │   ├── orders.py                # Orders + Bills API
 │   ├── login.py                 # Login/logout routes
+│   ├── customer_auth.py         # Customer login & Google OAuth flow
 │   ├── admin.py                 # All admin routes
+│   ├── billing.py               # Subscription plans & add-ons manager API
 │   ├── owner.py                 # Owner operations & branch management
 │   ├── blog.py                  # Blogging platform routes
 │   ├── chatbot.py               # Chatbot logic
@@ -86,6 +103,11 @@ zentable/
 │   └── pages.py                 # All HTML page routes
 │
 ├── templates/                   # Jinja2 HTML templates
+│   ├── staff_delivery.html      # Delivery management panel
+│   ├── customer_orders.html     # Customer tracking dashboard
+│   ├── customer_profile.html    # Customer profile
+│   ├── menu.html                # Digital AR menu
+│   └── ...
 ├── static/
 │   ├── css/
 │   ├── js/
@@ -144,6 +166,7 @@ IS_PROD=false
 GEMINI_API_KEY=your-gemini-api-key
 SMTP_USER=your-smtp-user
 SMTP_PASS=your-smtp-password
+ZENTABLE_UPI_ID=your-upi-id-here
 
 # R2 (optional — local storage when USE_R2=false)
 USE_R2=false
@@ -225,12 +248,11 @@ Config structure stored in the DB:
       "auto_rotate": true,
       "rotate_speed": 8000
     }
-  ],
-  "subscription": {
-    "active": true,
-    "features": ["basic", "ordering", "analytics", "ar_menu"]
-  }
+  ]
 }
+
+> [!NOTE]
+> **Dynamic Feature Gating & Locking**: Feature access is checked in real-time by querying the restaurant's subscription status against global database records (`billing_plans` & `billing_addons`). APIs are dynamically locked/unlocked via backend decorators (`require_feature`), and front-end interface components adjust automatically.
 ```
 
 ---
@@ -244,6 +266,7 @@ Config structure stored in the DB:
 | `kitchen` | Live order queue, mark items as ready |
 | `counter` | Table activate/deactivate, payment collection |
 | `blogger` | Create and manage blog posts |
+| `delivery` | View active deliveries, manage delivery flow, update delivery states |
 
 ---
 
@@ -264,6 +287,28 @@ Config structure stored in the DB:
 - Scale/position/rotation configurable per item in config
 
 Free model sources: Sketchfab, TurboSquid, CGTrader
+
+---
+
+## Testing
+
+ZenTable includes a robust suite of ~133 automated unit and behavioral tests. All database queries and external resources are mocked out, allowing tests to run entirely offline in milliseconds.
+
+To install test dependencies:
+```bash
+pip install pytest httpx
+```
+
+To execute the test suite:
+```bash
+# Run all tests
+SECRET_KEY=test pytest tests/ -v
+
+# Run tests with condensed output
+SECRET_KEY=test pytest tests/ -q
+```
+
+Refer to [PYTEST_GUIDE.md](file:///c:/Users/MOHIT/Desktop/AR%20Menu/Demo/tests/PYTEST_GUIDE.md) for full instructions, including writing smoke and behavioral tests.
 
 ---
 

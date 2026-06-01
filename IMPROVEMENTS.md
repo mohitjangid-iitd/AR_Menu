@@ -55,7 +55,7 @@ ZenTable started as a simple AR menu viewer. It is now a full restaurant managem
 | File Storage | Cloudflare R2 (production) / local (development) |
 | GLB Pipeline | Auto-optimize + audit on upload via gltf-transform |
 | Trash System | Soft-delete with 30-day recovery, metadata in PostgreSQL |
-| Multi-branch ready | DB schema already supports branch_id — upgrade path clear |
+| Multi-branch | Fully implemented across staff, admin panels, and branch-specific QR code generator; public pages (`home`, `menu`, `ar_menu`) are branch-aware |
 
 ---
 

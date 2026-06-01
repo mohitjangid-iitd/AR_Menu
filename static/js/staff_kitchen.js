@@ -1,3 +1,20 @@
+// Global Fetch Interceptor to handle 401 Unauthorized (Expired Cookie)
+const originalFetch = window.fetch;
+window.fetch = async function(...args) {
+    const response = await originalFetch.apply(this, args);
+    if (response.status === 401) {
+        const clone = response.clone();
+        try {
+            const data = await clone.json();
+            if (data.detail === "Invalid or expired token" || data.detail === "Login required") {
+                alert("Aapka session expire ho gaya hai. Kripya dobara login karein.");
+                window.location.href = window.location.pathname.startsWith('/admin') ? '/admin/login' : '/login';
+            }
+        } catch (e) { }
+    }
+    return response;
+};
+
 // clientId, restaurantLogo — HTML template mein inject hote hain
 
 // ── ORDER STATUS UPDATE ──
@@ -233,11 +250,17 @@ async function loadWithNotif() {
                     </label>
                 </div>`).join('')}` : '';
 
+        const isDelivery = o.table_no === 0 || o.source === 'delivery';
+        const tableLabel = isDelivery ? '🛵 Delivery' : `Table ${o.table_no}`;
+        const footButton = (isDelivery && o.status === 'ready') 
+            ? `<button onclick="updateStatus(${o.id}, 'out_for_delivery').then(load)" style="padding: 6px 12px; background: #2e7d32; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.82rem; transition: background 0.2s;" onmouseover="this.style.background='#1b5e20'" onmouseout="this.style.background='#2e7d32'">🛵 Out for Delivery</button>` 
+            : '';
+
         return `<div class="order-card ${o.status}">
             <div class="order-head">
                 <div>
-                    <div class="order-table">Table ${o.table_no}</div>
-                    <div class="order-id"><span style="background:var(--primary);color:var(--secondary);padding:1px 7px;border-radius:5px;font-weight:700;">#${o.id}</span> &nbsp;·&nbsp; ${o.source}</div>
+                    <div class="order-table">${tableLabel}</div>
+                    <div class="order-id"><span style="background:var(--primary);color:var(--secondary);padding:1px 7px;border-radius:5px;font-weight:700;">#${o.id}</span> &nbsp;·&nbsp; ${o.source ? (o.source.charAt(0).toUpperCase() + o.source.slice(1)) : ''}</div>
                 </div>
                 <div class="order-time">${time}</div>
             </div>
@@ -245,8 +268,9 @@ async function loadWithNotif() {
                 ${readySection}
                 ${pendingSection}
             </div>
-            <div class="order-foot">
+            <div class="order-foot" style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
                 <div class="order-total">₹${o.total}</div>
+                ${footButton}
             </div>
         </div>`;
     }).join('');
@@ -271,3 +295,4 @@ async function load() { await loadWithNotif(); }
 requestNotifPermission();
 load();
 setInterval(load, 20000);
+

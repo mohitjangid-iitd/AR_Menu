@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="icon" type="image/x-icon" href="/static/assets/zentable/favicon.ico" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/assets/zentable/favicon_32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/static/assets/zentable/favicon_16.png" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Complete Your Profile — {{ site.name }}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --primary:   {{ site.primary }};
+            --secondary: {{ site.secondary }};
+            --accent:    {{ site.accent }};
+            --bg:        {{ site.bg }};
+            --text:      {{ site.text }};
+            --success:   {{ site.success }};
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 24px 16px;
+        }
+
+        /* ── Card ── */
+        .card {
+            background: white;
+            border-radius: 20px;
+            padding: 36px 32px;
+            width: 100%;
+            max-width: 440px;
+            box-shadow: 0 4px 40px rgba(0,0,0,0.08);
+        }
+
+        /* ── Header ── */
+        .logo {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--primary);
+            letter-spacing: -0.3px;
+            margin-bottom: 28px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .logo span { opacity: 0.4; font-weight: 400; }
+
+        h1 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--secondary);
+            margin-bottom: 6px;
+            letter-spacing: -0.5px;
+        }
+
+        .subtitle {
+            font-size: 0.875rem;
+            color: #888;
+            margin-bottom: 28px;
+            line-height: 1.5;
+        }
+
+        /* ── Google info strip ── */
+        .google-strip {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: #f8f8f8;
+            border-radius: 12px;
+            padding: 12px 16px;
+            margin-bottom: 24px;
+        }
+
+        .google-avatar {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            background: var(--primary);
+            color: white;
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 700;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .google-info { flex: 1; min-width: 0; }
+        .google-name {
+            font-weight: 600;
+            font-size: 0.9rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .google-email {
+            font-size: 0.78rem;
+            color: #888;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .google-badge {
+            font-size: 0.7rem;
+            background: #e8f0fe;
+            color: #4285f4;
+            padding: 3px 8px;
+            border-radius: 20px;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+
+        /* ── Form ── */
+        .field { margin-bottom: 18px; }
+
+        label {
+            display: block;
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: var(--secondary);
+            margin-bottom: 6px;
+            letter-spacing: 0.2px;
+        }
+
+        input, textarea {
+            width: 100%;
+            padding: 12px 14px;
+            border: 1.5px solid #e8e8e8;
+            border-radius: 10px;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.9rem;
+            color: var(--text);
+            background: white;
+            transition: border-color 0.2s;
+            outline: none;
+            resize: none;
+        }
+
+        input:focus, textarea:focus {
+            border-color: var(--primary);
+        }
+
+        textarea { height: 90px; }
+
+        input::placeholder, textarea::placeholder { color: #bbb; }
+
+        /* ── Button ── */
+        .btn {
+            width: 100%;
+            padding: 14px;
+            background: var(--secondary);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.2s, transform 0.15s;
+            margin-top: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn:hover { opacity: 0.88; }
+        .btn:active { transform: scale(0.98); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* ── Error ── */
+        .error-msg {
+            background: #fff0f0;
+            color: #e53e3e;
+            border-radius: 10px;
+            padding: 10px 14px;
+            font-size: 0.85rem;
+            margin-bottom: 16px;
+            display: none;
+        }
+
+        /* ── Success ── */
+        .success-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+        .success-overlay.show { display: flex; }
+        .success-box {
+            background: white;
+            border-radius: 16px;
+            padding: 32px;
+            text-align: center;
+            max-width: 300px;
+        }
+        .success-icon { font-size: 2.5rem; margin-bottom: 12px; }
+        .success-box h3 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.1rem;
+            margin-bottom: 6px;
+        }
+        .success-box p { font-size: 0.85rem; color: #888; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <div class="logo">{{ site.name }} <span>/ Delivery</span></div>
+
+    <h1>Almost there! 🛵</h1>
+    <p class="subtitle">Ek baar phone aur address fill karo — next time seedha order hoga.</p>
+
+    <!-- Google info strip -->
+    <div class="google-strip">
+        <div class="google-avatar">{{ customer.name[0].upper() if customer.name else '?' }}</div>
+        <div class="google-info">
+            <div class="google-name">{{ customer.name or 'Customer' }}</div>
+            <div class="google-email">{{ customer.email or '' }}</div>
+        </div>
+        <div class="google-badge">Google</div>
+    </div>
+
+    <div class="error-msg" id="err"></div>
+
+    <div class="field">
+        <label>📞 Phone Number</label>
+        <input type="tel" id="phone" placeholder="+91 98765 43210"
+               value="{{ customer.phone or '' }}" maxlength="15">
+    </div>
+
+    <div class="field">
+        <label>📍 Delivery Address</label>
+        <textarea id="address" placeholder="House no., Street, Area, City...">{{ customer.address or '' }}</textarea>
+    </div>
+
+    <button class="btn" id="saveBtn" onclick="saveProfile()">
+        Save &amp; Continue →
+    </button>
+</div>
+
+<div style="text-align:center;padding:10px;font-size:0.72rem;color:rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;gap:6px;margin-top:20px;">
+    Powered by
+    <img src="/static/assets/zentable/logo_dark_512.png" alt="{{ site.name }}" style="width:13px;height:13px;object-fit:contain;opacity:0.5;vertical-align:middle;" />
+    <span>{{ site.name }}</span>
+</div>
+
+<!-- Success overlay -->
+<div class="success-overlay" id="successOverlay">
+    <div class="success-box">
+        <div class="success-icon">✅</div>
+        <h3>Profile saved!</h3>
+        <p>Redirecting you back...</p>
+    </div>
+</div>
+
+<script>
+    const NEXT = {{ next | tojson }};
+
+    async function saveProfile() {
+        const phone   = document.getElementById('phone').value.trim();
+        const address = document.getElementById('address').value.trim();
+        const err     = document.getElementById('err');
+        const btn     = document.getElementById('saveBtn');
+
+        err.style.display = 'none';
+
+        if (!phone) { showErr('Phone number required hai.'); return; }
+        if (!address) { showErr('Delivery address required hai.'); return; }
+        if (phone.replace(/\D/g,'').length < 10) { showErr('Valid phone number daalo.'); return; }
+
+        btn.disabled = true;
+        btn.textContent = 'Saving...';
+
+        try {
+            const res = await fetch('/api/customer/profile', {
+                method:  'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body:    JSON.stringify({ phone, address }),
+            });
+
+            if (res.ok) {
+                document.getElementById('successOverlay').classList.add('show');
+                setTimeout(() => { window.location.href = NEXT || '/'; }, 1200);
+            } else {
+                const data = await res.json();
+                showErr(data.detail || 'Kuch galat hua, dobara try karo.');
+                btn.disabled = false;
+                btn.textContent = 'Save & Continue →';
+            }
+        } catch(e) {
+            showErr('Network error — dobara try karo.');
+            btn.disabled = false;
+            btn.textContent = 'Save & Continue →';
+        }
+    }
+
+    function showErr(msg) {
+        const err = document.getElementById('err');
+        err.textContent = msg;
+        err.style.display = 'block';
+    }
+
+    // Enter key support
+    document.addEventListener('keydown', e => {
+        if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') saveProfile();
+    });
+</script>
+
+</body>
+</html>

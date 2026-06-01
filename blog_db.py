@@ -46,7 +46,7 @@ def init_blog_tables():
 
     conn.commit()
     conn.close()
-    print("[OK] Blog tables initialized")
+    print("✅ Blog tables initialized")
 
 
 # ════════════════════════════════

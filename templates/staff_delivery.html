@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="icon" type="image/x-icon" href="/static/assets/zentable/favicon.ico" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
+    <title>Delivery — {{ data.restaurant.name }}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --primary:   {{ data.theme.primary_color }};
+            --secondary: {{ data.theme.secondary_color }};
+            --bg:        #F4F6F9;
+            --radius:    14px;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: #1a1a2e;
+            min-height: 100vh;
+            padding-bottom: 40px;
+        }
+
+        /* ── Topbar ── */
+        .topbar {
+            background: var(--secondary);
+            color: white;
+            padding: 14px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .topbar-left { display: flex; align-items: center; gap: 10px; }
+        .topbar-left img { width: 32px; height: 32px; border-radius: 8px; object-fit: cover; }
+        .topbar-left h1 { font-family: 'Space Grotesk', sans-serif; font-size: 0.95rem; font-weight: 700; }
+        .role-badge {
+            background: rgba(255,255,255,0.15);
+            font-size: 0.65rem;
+            font-weight: 700;
+            padding: 3px 8px;
+            border-radius: 20px;
+            letter-spacing: 1px;
+        }
+        .logout-btn {
+            font-size: 0.8rem;
+            color: rgba(255,255,255,0.7);
+            background: none;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 20px;
+            padding: 5px 12px;
+            cursor: pointer;
+            text-decoration: none;
+        }
+
+        /* ── Toolbar ── */
+        .toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 16px 8px;
+        }
+        .toolbar h2 { font-family: 'Space Grotesk', sans-serif; font-size: 1rem; font-weight: 700; }
+        .refresh-btn {
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 7px 14px;
+            font-size: 0.82rem;
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+            font-weight: 500;
+            color: #555;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* ── Filter pills ── */
+        .filter-bar {
+            display: flex;
+            gap: 8px;
+            padding: 0 16px 14px;
+            overflow-x: auto;
+        }
+        .filter-pill {
+            padding: 6px 14px;
+            border-radius: 20px;
+            border: 1.5px solid #e0e0e0;
+            background: white;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.15s;
+            color: #666;
+        }
+        .filter-pill.active {
+            background: var(--secondary);
+            border-color: var(--secondary);
+            color: white;
+        }
+
+        /* ── Cards ── */
+        .cards { padding: 0 16px; }
+
+        .order-card {
+            background: white;
+            border-radius: var(--radius);
+            margin-bottom: 12px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+            overflow: hidden;
+            animation: fadeUp 0.25s ease both;
+        }
+        @keyframes fadeUp {
+            from { opacity:0; transform:translateY(8px); }
+            to   { opacity:1; transform:translateY(0); }
+        }
+
+        /* Left accent bar by status */
+        .order-card.ready           { border-left: 4px solid #f59e0b; }
+        .order-card.out_for_delivery{ border-left: 4px solid #3b82f6; }
+        .order-card.delivered       { border-left: 4px solid #22c55e; opacity: 0.7; }
+        .order-card.failed          { border-left: 4px solid #ef4444; opacity: 0.7; }
+
+        .card-head {
+            padding: 14px 16px 10px;
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .order-id {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: #aaa;
+            margin-bottom: 4px;
+        }
+
+        .customer-name {
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 700;
+            font-size: 0.95rem;
+            color: #1a1a2e;
+        }
+
+        .customer-meta {
+            font-size: 0.78rem;
+            color: #888;
+            margin-top: 3px;
+        }
+        .customer-meta a { color: #3b82f6; text-decoration: none; }
+
+        .status-badge {
+            font-size: 0.7rem;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 20px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        .badge-ready            { background: #fef3c7; color: #d97706; }
+        .badge-out_for_delivery { background: #dbeafe; color: #1d4ed8; }
+        .badge-delivered        { background: #dcfce7; color: #15803d; }
+        .badge-failed           { background: #fee2e2; color: #dc2626; }
+
+        /* Address */
+        .address-row {
+            padding: 0 16px 10px;
+            font-size: 0.82rem;
+            color: #555;
+            display: flex;
+            align-items: flex-start;
+            gap: 6px;
+            line-height: 1.4;
+        }
+        .address-row i { color: #aaa; margin-top: 2px; flex-shrink: 0; }
+
+        /* Items */
+        .items-list {
+            padding: 0 16px 10px;
+            border-top: 1px dashed #f0f0f0;
+            padding-top: 10px;
+        }
+        .item-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.82rem;
+            color: #555;
+            padding: 3px 0;
+        }
+        .item-total {
+            padding: 8px 16px;
+            background: #fafafa;
+            border-top: 1px solid #f0f0f0;
+            display: flex;
+            justify-content: space-between;
+            font-weight: 700;
+            font-size: 0.88rem;
+            color: #1a1a2e;
+        }
+
+        /* Actions */
+        .card-actions {
+            padding: 12px 16px;
+            display: flex;
+            gap: 8px;
+            border-top: 1px solid #f5f5f5;
+        }
+        .btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 10px;
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: opacity 0.15s, transform 0.1s;
+        }
+        .btn:active { transform: scale(0.97); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-primary   { background: var(--secondary); color: white; }
+        .btn-success   { background: #22c55e; color: white; }
+        .btn-danger    { background: #ef4444; color: white; }
+        .btn-outline   { background: white; border: 1.5px solid #e0e0e0; color: #555; }
+
+        /* Empty */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #aaa;
+        }
+        .empty-state i { font-size: 2.5rem; margin-bottom: 14px; display: block; }
+        .empty-state p { font-size: 0.9rem; }
+
+        /* Toast */
+        #toast {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%) translateY(60px);
+            background: #1a1a2e;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            transition: transform 0.3s ease;
+            z-index: 999;
+            pointer-events: none;
+            white-space: nowrap;
+        }
+        #toast.show { transform: translateX(-50%) translateY(0); }
+
+        /* ZenTable footer */
+        .zt-footer {
+            text-align: center;
+            padding: 16px;
+            font-size: 0.72rem;
+            color: rgba(0,0,0,0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+    </style>
+</head>
+<body>
+
+<!-- Topbar -->
+<div class="topbar">
+    <div class="topbar-left">
+        <img src="{{ data.restaurant.logo }}" alt="logo">
+        <h1>{{ data.restaurant.name }}</h1>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;">
+        <span class="role-badge">🛵 DELIVERY</span>
+        <button class="logout-btn" onclick="doLogout()">Logout</button>
+    </div>
+</div>
+
+<!-- Toolbar -->
+<div class="toolbar">
+    <h2>Delivery Orders</h2>
+    <button class="refresh-btn" onclick="load()">
+        <i class="fas fa-rotate"></i> Refresh
+    </button>
+</div>
+
+<!-- Filter pills -->
+<div class="filter-bar">
+    <button class="filter-pill active" onclick="setFilter('active', this)">🔴 Active</button>
+    <button class="filter-pill" onclick="setFilter('ready', this)">📦 Ready</button>
+    <button class="filter-pill" onclick="setFilter('out_for_delivery', this)">🛵 Out</button>
+    <button class="filter-pill" onclick="setFilter('delivered', this)">✅ Delivered</button>
+    <button class="filter-pill" onclick="setFilter('failed', this)">❌ Failed</button>
+</div>
+
+<!-- Cards -->
+<div class="cards" id="orders-list">
+    <div class="empty-state"><i class="fas fa-spinner fa-spin"></i><p>Loading...</p></div>
+</div>
+
+<div id="toast"></div>
+
+<div class="zt-footer">
+    Powered by
+    <img src="/static/assets/zentable/logo_dark_512.png" alt="{{ site.name }}" style="width:13px;height:13px;object-fit:contain;opacity:0.5;vertical-align:middle;">
+    <span>{{ site.name }}</span>
+</div>
+
+<!-- Variables inject -->
+<script>
+    const CLIENT_ID = "{{ client_id }}";
+    const BRANCH_ID = "{{ branch_id }}";
+</script>
+
+<script>
+// ── Global 401 handler ──
+const _origFetch = window.fetch;
+window.fetch = async function(...args) {
+    const r = await _origFetch.apply(this, args);
+    if (r.status === 401) {
+        const c = r.clone();
+        try {
+            const d = await c.json();
+            if (d.detail === "Invalid or expired token" || d.detail === "Login required") {
+                alert("Session expire ho gaya. Dobara login karein.");
+                window.location.href = '/login';
+            }
+        } catch(e) {}
+    }
+    return r;
+};
+
+let currentFilter = 'active';
+
+function setFilter(f, el) {
+    currentFilter = f;
+    document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
+    el.classList.add('active');
+    load();
+}
+
+function toast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+async function updateStatus(orderId, status, btn) {
+    if (btn) { btn.disabled = true; btn.textContent = '...'; }
+    try {
+        const res = await fetch(`/api/order/${orderId}/status`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status })
+        });
+        if (res.ok) {
+            toast(status === 'out_for_delivery' ? '🛵 Out for delivery!' :
+                  status === 'delivered'         ? '✅ Delivered!'        :
+                  status === 'failed'            ? '❌ Marked as failed'  : 'Updated');
+            setTimeout(load, 400);
+        }
+    } catch(e) {
+        toast('Error — retry karo');
+        if (btn) { btn.disabled = false; }
+    }
+}
+
+async function load() {
+    const list = document.getElementById('orders-list');
+    try {
+        const res    = await fetch(`/api/orders/${CLIENT_ID}/filter?source=delivery&branch_id=${BRANCH_ID}`);
+        const orders = await res.json();
+
+        let filtered;
+        if (currentFilter === 'active') {
+            filtered = orders.filter(o => ['ready','out_for_delivery'].includes(o.status));
+        } else {
+            filtered = orders.filter(o => o.status === currentFilter);
+        }
+
+        if (!filtered.length) {
+            list.innerHTML = `<div class="empty-state">
+                <i class="fas fa-check-circle" style="color:#22c55e"></i>
+                <p>${currentFilter === 'active' ? 'Koi active delivery nahi!' : 'Koi order nahi'}</p>
+            </div>`;
+            return;
+        }
+
+        // Sort — ready first, phir out_for_delivery
+        const statusOrder = { ready: 0, out_for_delivery: 1, delivered: 2, failed: 3 };
+        filtered.sort((a, b) => (statusOrder[a.status] ?? 9) - (statusOrder[b.status] ?? 9) || b.id - a.id);
+
+        list.innerHTML = filtered.map((o, idx) => {
+            const items = typeof o.items === 'string' ? JSON.parse(o.items) : o.items;
+            const name  = o.customer_name || 'Customer';
+            const phone = o.customer_phone || '';
+            const addr  = o.customer_address || '—';
+            const time  = (o.created_at || '').substring(11, 16);
+            const badgeClass = `badge-${o.status}`;
+            const badgeText  = o.status === 'ready'            ? '📦 Ready'         :
+                               o.status === 'out_for_delivery'  ? '🛵 Out for Delivery' :
+                               o.status === 'delivered'         ? '✅ Delivered'      :
+                               o.status === 'failed'            ? '❌ Failed'         : o.status;
+
+            const itemsHtml = items.map(it =>
+                `<div class="item-row">
+                    <span>${it.name} ×${it.qty}</span>
+                    <span>₹${it.qty * it.price}</span>
+                </div>`
+            ).join('');
+
+            // Action buttons by status
+            let actions = '';
+            if (o.status === 'ready') {
+                actions = `
+                    <button class="btn btn-primary" onclick="updateStatus(${o.id}, 'out_for_delivery', this)">
+                        🛵 Pick Up
+                    </button>`;
+            } else if (o.status === 'out_for_delivery') {
+                actions = `
+                    <button class="btn btn-success" onclick="updateStatus(${o.id}, 'delivered', this)">
+                        ✅ Delivered
+                    </button>
+                    <button class="btn btn-danger" onclick="updateStatus(${o.id}, 'failed', this)">
+                        ❌ Failed
+                    </button>`;
+            }
+
+            return `
+            <div class="order-card ${o.status}" style="animation-delay:${idx * 0.04}s">
+                <div class="card-head">
+                    <div>
+                        <div class="order-id">#${o.id} · ${time}</div>
+                        <div class="customer-name">${name}</div>
+                        <div class="customer-meta">
+                            ${phone ? `<a href="tel:${phone}">📞 ${phone}</a>` : ''}
+                        </div>
+                    </div>
+                    <span class="status-badge ${badgeClass}">${badgeText}</span>
+                </div>
+                <div class="address-row">
+                    <i class="fas fa-location-dot"></i>
+                    <span>${addr}</span>
+                </div>
+                <div class="items-list">${itemsHtml}</div>
+                <div class="item-total">
+                    <span>Total</span>
+                    <span>₹${o.total}</span>
+                </div>
+                ${actions ? `<div class="card-actions">${actions}</div>` : ''}
+            </div>`;
+        }).join('');
+
+    } catch(e) {
+        list.innerHTML = `<div class="empty-state"><i class="fas fa-triangle-exclamation"></i><p>Load failed</p></div>`;
+    }
+}
+
+async function doLogout() {
+    await fetch('/api/auth/logout', { method: 'POST' });
+    window.location.replace('/login');
+}
+
+load();
+setInterval(load, 20000);
+</script>
+
+</body>
+</html>

@@ -41,6 +41,7 @@ class PlaceOrderRequest(BaseModel):
     source: Optional[str] = "customer"
     customer_name: Optional[str] = None
     customer_phone: Optional[str] = None
+    customer_address: Optional[str] = None
 
 class UpdateStatusRequest(BaseModel):
     status: str
@@ -66,7 +67,7 @@ class MarkPaidRequest(BaseModel):
 # ── Routes ──
 
 @router.post("/api/order/{client_id}/{table_no}")
-async def api_place_order(client_id: str, table_no: int, body: PlaceOrderRequest,
+async def api_place_order(request: Request, client_id: str, table_no: int, body: PlaceOrderRequest,
                           branch_id: Optional[str] = "__default__"):
     """
     Public endpoint — customer ya waiter order place karta hai.
@@ -75,16 +76,38 @@ async def api_place_order(client_id: str, table_no: int, body: PlaceOrderRequest
     data = get_client_data(client_id)
     if not data:
         raise HTTPException(status_code=404, detail="Restaurant not found")
-    require_feature(data, "ordering")
-    table = get_table_status(client_id, table_no, branch_id)
-    if not table or table["status"] == "inactive":
-        raise HTTPException(status_code=403, detail="Table not active")
+    
+    if table_no == 0 or (body.source and body.source == "delivery"):
+        require_feature(client_id, "delivery")
+    else:
+        require_feature(client_id, "ordering")
+        
+    # Delivery orders ke liye table check skip karo (table_no=0 reserved)
+    if table_no != 0:
+        table = get_table_status(client_id, table_no, branch_id)
+        if not table or table["status"] == "inactive":
+            raise HTTPException(status_code=403, detail="Table not active")
+
+    # customer_token cookie se customer_id extract karo
+    customer_id = None
+    customer_token = request.cookies.get("customer_token")
+    if customer_token:
+        try:
+            from auth import decode_token
+            payload = decode_token(customer_token)
+            if payload and payload.get("role") == "customer":
+                customer_id = payload.get("customer_id")
+        except Exception:
+            pass
+
     items    = [i.dict() for i in body.items]
     order_id = place_order(
         client_id, table_no, items, body.total,
         body.source or "customer",
         body.customer_name, body.customer_phone,
         branch_id,
+        customer_id=customer_id,
+        customer_address=body.customer_address,
     )
     return {"order_id": order_id, "message": "Order placed successfully"}
 
@@ -92,7 +115,7 @@ async def api_place_order(client_id: str, table_no: int, body: PlaceOrderRequest
 @router.get("/api/orders/{client_id}")
 async def api_get_orders(client_id: str, status: str = None, table_no: int = None,
                          auth_token: Optional[str] = Cookie(None)):
-    user = require_auth(auth_token, ["kitchen", "waiter", "counter", "owner", "admin"], client_id)
+    user = require_auth(auth_token, ["kitchen", "waiter", "counter", "owner", "admin", "delivery"], client_id)
     branch_id = user["branch_id"]  # None = owner (all branches), "__default__" = single outlet
     return get_orders(client_id, status=status, table_no=table_no, branch_id=branch_id)
 
@@ -103,7 +126,7 @@ async def api_filter_orders(client_id: str, status: str = None,
                              from_date: str = None,
                              branch_id: str = None,                        # ← line 1: query param add karo
                              auth_token: Optional[str] = Cookie(None)):
-    user = require_auth(auth_token, ["kitchen", "waiter", "counter", "owner", "admin"], client_id)
+    user = require_auth(auth_token, ["kitchen", "waiter", "counter", "owner", "admin", "delivery"], client_id)
     # branch_id: frontend se aaya? use karo. Nahi aaya? owner = all branches (None), staff = apni branch
     if not branch_id:
         branch_id = None if user.get('role') in ('owner', 'admin') else user.get('branch_id')
@@ -116,8 +139,8 @@ async def api_filter_orders(client_id: str, status: str = None,
 @router.patch("/api/order/{order_id}/status")
 async def api_update_order_status(order_id: int, body: UpdateStatusRequest,
                                    auth_token: Optional[str] = Cookie(None)):
-    require_auth(auth_token, ["kitchen", "waiter", "counter", "owner", "admin"])
-    valid = {"pending", "preparing", "ready", "done", "cancelled"}
+    require_auth(auth_token, ["kitchen", "waiter", "counter", "delivery", "owner", "admin"])
+    valid = {"pending", "preparing", "ready", "done", "cancelled", "out_for_delivery", "delivered", "failed"}
     if body.status not in valid:
         raise HTTPException(status_code=400, detail=f"Invalid status. Use: {valid}")
     update_order_status(order_id, body.status)

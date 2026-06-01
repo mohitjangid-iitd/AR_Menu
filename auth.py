@@ -20,6 +20,8 @@ EXPIRY = {
     "counter": timedelta(hours=24),
     "admin":   timedelta(days=7),
     "blogger": timedelta(hours=24),
+    "customer": timedelta(days=30),
+    "delivery": timedelta(hours=24),
 }
 
 # ── Role → redirect path ──
@@ -28,8 +30,9 @@ ROLE_REDIRECT = {
     "kitchen": "/{client_id}/staff/kitchen",
     "waiter":  "/{client_id}/staff/waiter",
     "counter": "/{client_id}/staff/counter",
-    "blogger": "/{client_id}/staff/blog",
-    "admin":   "/admin",
+    "blogger":  "/{client_id}/staff/blog",
+    "delivery": "/{client_id}/staff/delivery",
+    "admin":    "/admin",
 }
 
 def create_token(payload: dict, role: str) -> str:

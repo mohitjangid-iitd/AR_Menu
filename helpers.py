@@ -65,20 +65,94 @@ def get_client_data(client_id: str, branch_id: str = "__default__"):
     return config
 
 
-def has_feature(data: dict, feature: str) -> bool:
-    """Restaurant ke liye feature enabled hai ya nahi"""
-    features = data.get("subscription", {}).get("features", ["basic"])
-    return feature in features
+def has_feature(client_id: str, feature: str) -> bool:
+    """
+    Restaurant ke liye feature enabled hai ya nahi.
+    Naya system: billing_db.has_feature() se check hoga — subscriptions table se.
+    Trial/demo mein sab features on hote hain.
+    """
+    # Feature key mapping to align codebase checks with DB plan feature keys
+    mapping = {
+        "analytics": "owner_analytics",
+        "ordering": "qr_ordering",
+        "chatbot": "ai_chatbot",
+        "image_to_menu": "ai_menu_import",
+    }
+    db_feature = mapping.get(feature, feature)
+    from billing_db import has_feature as _billing_has_feature
+    return _billing_has_feature(client_id, db_feature)
 
 
-def require_feature(data: dict, feature: str):
+def require_feature(client_id: str, feature: str):
     """Feature nahi hai toh 403"""
-    if not has_feature(data, feature):
+    if not has_feature(client_id, feature):
         raise HTTPException(status_code=403, detail=f"Feature '{feature}' not available")
 
 
-def is_restaurant_active(data: dict) -> bool:
-    return data.get("subscription", {}).get("active", True)
+def require_feature_decorator(feature_key: str):
+    """
+    Route pe feature gate lagao — decorator version.
+
+    Usage:
+        @router.get("/owner/analytics")
+        @require_feature_decorator("owner_analytics")
+        async def analytics(request: Request):
+            ...
+
+    - Trial / Demo: sab milta hai (has_feature handles this)
+    - Active: sirf plan + addon check
+    - Expired: 403
+    """
+    from functools import wraps
+
+    def decorator(func):
+        @wraps(func)
+        async def wrapper(*args, **kwargs):
+            # Request ko args ya kwargs se nikalo
+            request = kwargs.get("request")
+            if request is None:
+                for arg in args:
+                    if hasattr(arg, "cookies"):
+                        request = arg
+                        break
+
+            if request is None:
+                raise HTTPException(status_code=500, detail="Request object not found")
+
+            token = request.cookies.get("auth_token")
+            user  = decode_token(token) if token else None
+            if not user:
+                raise HTTPException(status_code=401, detail="Login required")
+
+            client_id = user.get("client_id")
+            if not client_id:
+                raise HTTPException(status_code=400, detail="client_id missing in token")
+
+            if not has_feature(client_id, feature_key):
+                raise HTTPException(
+                    status_code=403,
+                    detail={
+                        "locked":      True,
+                        "feature_key": feature_key,
+                        "message":     "Yeh feature aapke plan mein nahi hai. Upgrade karein.",
+                    }
+                )
+            return await func(*args, **kwargs)
+        return wrapper
+    return decorator
+
+
+def is_restaurant_active(client_id: str) -> bool:
+    """
+    Restaurant active hai ya nahi — subscriptions.status se check karo.
+    expired = inactive, baaki sab = active.
+    Agar subscription nahi hai toh active maano (naye restaurants ke liye).
+    """
+    from billing_db import get_subscription
+    sub = get_subscription(client_id)
+    if not sub:
+        return True   # subscription nahi hai — default active
+    return sub["status"] != "expired"
 
 
 def closed_response(request, data, client_id):

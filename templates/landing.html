@@ -31,6 +31,7 @@
       <li><a href="#product">Product</a></li>
       <li><a href="#features">Features</a></li>
       <li><a href="#how-it-works">How It Works</a></li>
+      <li><a href="#pricing">Pricing</a></li>
       <li><a href="#cta">Contact</a></li>
     </ul>
 
@@ -49,6 +50,7 @@
   <a href="#product">Product</a>
   <a href="#features">Features</a>
   <a href="#how-it-works">How It Works</a>
+  <a href="#pricing">Pricing</a>
   <a href="#cta">Contact</a>
   <div class="mobile-menu-actions">
     <a href="/login" class="btn btn-outline">Login</a>
@@ -791,9 +793,181 @@
 ════════════════════════════════════════════ -->
 
 <!-- ════════════════════════════════════════════
+   PRICING — billing_plans table se live data
+════════════════════════════════════════════ -->
+{% if billing_plans %}
+<section id="pricing">
+  <div class="pricing-bg-blob pricing-blob-1"></div>
+  <div class="pricing-bg-blob pricing-blob-2"></div>
+  <div class="container" style="position:relative;z-index:2;">
+    <div class="section-header reveal">
+      <span class="section-label">Pricing</span>
+      <h2>Simple, Transparent Pricing</h2>
+      <p>No hidden charges. No setup fees. Pick the plan that fits your restaurant — upgrade anytime.</p>
+    </div>
+
+    <!-- Period Toggle -->
+    <div class="pricing-toggle-wrap reveal">
+      <div class="pricing-toggle" role="group" aria-label="Billing period">
+        <button class="ptoggle-btn active" data-period="monthly" id="ptog-monthly">Monthly</button>
+        <button class="ptoggle-btn" data-period="halfyearly" id="ptog-halfyearly">
+          Half-Yearly <span class="ptoggle-disc">−15%</span>
+        </button>
+        <button class="ptoggle-btn" data-period="yearly" id="ptog-yearly">
+          Yearly <span class="ptoggle-disc">−30%</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="pricing-grid" id="pricingGrid">
+      {% for plan in billing_plans %}
+      {% if plan.is_active %}
+      {%- set is_pro = (plan.key == 'pro') -%}
+      <div class="pricing-card{% if is_pro %} pricing-card--highlighted{% endif %} reveal reveal-delay-{{ loop.index0 }}"
+           data-monthly="{{ plan.monthly_price }}">
+        {% if is_pro %}
+        <div class="pricing-badge">⭐ Most Popular</div>
+        {% endif %}
+        <div class="pricing-emoji">{% if plan.key == 'basic' %}🌱{% elif plan.key == 'pro' %}🚀{% else %}💎{% endif %}</div>
+        <div class="pricing-plan-name">{{ plan.name }}</div>
+        {% if plan.tagline %}<div class="pricing-tagline">{{ plan.tagline }}</div>{% endif %}
+
+        <div class="pricing-price">
+          <div class="price-original" style="display:none;"></div>
+          <div style="display:flex;align-items:baseline;gap:4px;">
+            <span class="price-currency">₹</span>
+            <span class="price-amount">{{ "{:,}".format(plan.monthly_price) }}</span>
+            <span class="price-period">/ month</span>
+          </div>
+          <div class="price-period-label" style="font-size:12px;color:rgba(255,255,255,0.35);margin-top:3px;"></div>
+        </div>
+
+        <ul class="pricing-features">
+          {% if plan.features and plan.features.included %}
+            {% for feat_key in plan.features.included %}
+              {% if plan.features.labels and plan.features.labels[feat_key] %}
+                <li><span class="pf-check">✓</span> {{ plan.features.labels[feat_key] }}</li>
+              {% endif %}
+            {% endfor %}
+          {% endif %}
+        </ul>
+        <a href="https://wa.me/{{ config.whatsapp }}" target="_blank" rel="noopener"
+           class="btn {% if is_pro %}btn-primary{% else %}btn-outline{% endif %} pricing-cta">
+          Get Started →
+        </a>
+      </div>
+      {% endif %}
+      {% endfor %}
+    </div>
+
+    <!-- ── SYSTEM ADD-ONS ── -->
+    <div class="pricing-addons-section reveal">
+      <div class="addons-section-header">
+        <span class="section-label">🔌 Optional Power-Ups</span>
+        <h3>Supercharge Your Platform</h3>
+        <p>Select add-ons to customize your plan. You can enable them anytime from your restaurant dashboard.</p>
+      </div>
+
+      <div class="addons-grid">
+        {% for addon in billing_addons %}
+        {% if addon.is_active %}
+        <div class="addon-card">
+          <div class="addon-card-body">
+            <div class="addon-card-header-row">
+              <div class="addon-icon-wrap">
+                {% if addon.key == 'ar_menu' %}🕶️{% elif addon.key == 'kitchen_tab' %}🖥️{% elif addon.key == 'attendance' %}📅{% else %}🔌{% endif %}
+              </div>
+              <div class="addon-price-block">
+                {% if addon.one_time_only %}
+                <div class="addon-price-amount">₹{{ "{:,}".format(addon.one_time_price) }}</div>
+                <div class="addon-price-type one-time">Software · One-time</div>
+                {% else %}
+                <div class="addon-price-amount">₹{{ "{:,}".format(addon.monthly_price) }}<span>/mo</span></div>
+                <div class="addon-price-type">Recurring</div>
+                {% endif %}
+              </div>
+            </div>
+            <h4 class="addon-name">{{ addon.name }}</h4>
+            <p class="addon-desc">{{ addon.description }}</p>
+          </div>
+          <div class="addon-card-footer">
+            {% if addon.one_time_only %}
+            <span class="addon-footer-label">Hardware not included · Quoted per unit</span>
+            <span class="addon-footer-val addon-footer-val--note">Contact us →</span>
+            {% elif addon.one_time_price > 0 %}
+            <span class="addon-footer-label">Setup charge:</span>
+            <span class="addon-footer-val">₹{{ "{:,}".format(addon.one_time_price) }} <small>(one-time)</small></span>
+            {% else %}
+            <span class="addon-footer-label">No setup cost</span>
+            <span class="addon-footer-val addon-footer-val--included">✓ Free setup</span>
+            {% endif %}
+          </div>
+        </div>
+        {% endif %}
+        {% endfor %}
+      </div>
+    </div>
+
+    <p class="pricing-footnote reveal">All plans include a <strong>30-day free trial</strong>. Talk to us on WhatsApp to get started instantly.</p>
+  </div>
+</section>
+
+<script>
+(function(){
+  const DISCOUNTS = { monthly: 0, halfyearly: 15, yearly: 30 };
+  const MONTHS    = { monthly: 1, halfyearly: 6, yearly: 12 };
+  const LABELS    = { monthly: '', halfyearly: 'billed every 6 months', yearly: 'billed annually' };
+
+  function fmt(n){ return n.toLocaleString('en-IN'); }
+
+  function updatePrices(period){
+    const disc    = DISCOUNTS[period];
+    const months  = MONTHS[period];
+    document.querySelectorAll('#pricingGrid .pricing-card').forEach(card => {
+      const monthly  = parseInt(card.dataset.monthly, 10);
+      const effMonth = Math.round(monthly * (1 - disc/100));
+      const total    = effMonth * months;
+
+      const amtEl    = card.querySelector('.price-amount');
+      const periodEl = card.querySelector('.price-period');
+      const origEl   = card.querySelector('.price-original');
+      const labelEl  = card.querySelector('.price-period-label');
+      const priceWrap = card.querySelector('.pricing-price');
+
+      priceWrap.classList.add('switching');
+      setTimeout(()=>{
+        amtEl.textContent    = fmt(effMonth);
+        periodEl.textContent = '/ month';
+
+        if(disc > 0){
+          origEl.textContent = '₹' + fmt(monthly) + '/mo';
+          origEl.style.display = 'block';
+          labelEl.textContent  = LABELS[period] + ' — total ₹' + fmt(total);
+        } else {
+          origEl.style.display = 'none';
+          labelEl.textContent  = '';
+        }
+        priceWrap.classList.remove('switching');
+      }, 180);
+    });
+  }
+
+  document.querySelectorAll('.ptoggle-btn').forEach(btn => {
+    btn.addEventListener('click', function(){
+      document.querySelectorAll('.ptoggle-btn').forEach(b => b.classList.remove('active'));
+      this.classList.add('active');
+      updatePrices(this.dataset.period);
+    });
+  });
+})();
+</script>
+{% endif %}
+
+<!-- ════════════════════════════════════════════
    PRICING — removed completely
    (Baad mein add karna ho to purani version se lo)
 ════════════════════════════════════════════ -->
+
 
 <!-- ════════════════════════════════════════════
    FINAL CTA

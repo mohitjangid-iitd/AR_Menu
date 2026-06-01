@@ -1,3 +1,20 @@
+// Global Fetch Interceptor to handle 401 Unauthorized (Expired Cookie)
+const originalFetch = window.fetch;
+window.fetch = async function(...args) {
+    const response = await originalFetch.apply(this, args);
+    if (response.status === 401) {
+        const clone = response.clone();
+        try {
+            const data = await clone.json();
+            if (data.detail === "Invalid or expired token" || data.detail === "Login required") {
+                alert("Aapka session expire ho gaya hai. Kripya dobara login karein.");
+                window.location.href = window.location.pathname.startsWith('/admin') ? '/admin/login' : '/login';
+            }
+        } catch (e) { }
+    }
+    return response;
+};
+
 // ════════════════════════════════
 // CUSTOM CONFIRM MODAL
 // ════════════════════════════════
@@ -218,7 +235,21 @@ function switchTab(name, btn) {
     document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     document.getElementById('tab-' + name).classList.add('active');
-    btn.classList.add('active');
+    
+    let targetBtn = btn;
+    if (!targetBtn) {
+        // If btn is null/undefined, try to find the button in tab-nav
+        const buttons = document.querySelectorAll('.tab-nav .tab-btn');
+        for (const b of buttons) {
+            const onclickAttr = b.getAttribute('onclick');
+            if (onclickAttr && onclickAttr.includes(`switchTab('${name}'`)) {
+                targetBtn = b;
+                break;
+            }
+        }
+    }
+    if (targetBtn) targetBtn.classList.add('active');
+    
     if (name === 'restaurants') renderRestGrid();
     if (name === 'staff') populateStaffRestSelect();
 }
@@ -379,7 +410,7 @@ function renderRestGrid() {
                 <div class="rest-meta-item" id="rm-tables-wrap-${r.client_id}" style="${isMultiBranch ? 'display:none' : ''}">Tables: <span id="rm-tables-${r.client_id}">${r.num_tables}</span></div>
             </div>
             <div id="rm-features-${r.client_id}" style="display:flex;flex-wrap:wrap;gap:4px;margin-top:8px;">
-                ${(r.features || ['basic']).map(f => `<span style="font-size:0.6rem;padding:2px 7px;border-radius:3px;background:rgba(108,99,255,0.12);color:var(--primary);border:1px solid var(--border);font-family:var(--font-m)">${f}</span>`).join('')}
+                ${_subStatusBadge(r.sub_status, r.sub_plan)}
             </div>
             <button class="btn btn-ghost btn-sm" style="width:100%;margin-top:12px;font-size:0.78rem;" onclick="downloadAllQRs('${r.client_id}')">⬇ Download All QR Codes</button>
             <button class="btn btn-ghost btn-sm" style="width:100%;margin-top:6px;font-size:0.78rem;" onclick="openBranchesModal('${r.client_id}','${r.name.replace(/'/g, "\\'")}')">🏪 Branches</button>
@@ -421,6 +452,11 @@ async function createRestaurant() {
         instagram: document.getElementById('nr-instagram').value.trim(),
         facebook: document.getElementById('nr-facebook').value.trim(),
         twitter: document.getElementById('nr-twitter').value.trim(),
+        sub_status: document.getElementById('nr-sub-status')?.value || 'trial',
+        sub_plan:   document.getElementById('nr-sub-plan')?.value   || 'basic',
+        sub_period: document.getElementById('nr-sub-period')?.value  || 'monthly',
+        sub_discount_percent: parseInt(document.getElementById('nr-sub-dpct')?.value || 0),
+        sub_discount_flat:    parseInt(document.getElementById('nr-sub-dflat')?.value || 0),
     };
     const res = await fetch('/api/admin/restaurant', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
     const d = await res.json();
@@ -594,13 +630,7 @@ function _collectFormIntoEditData() {
     const mindVal = document.getElementById('ei-mind')?.value.trim();
     if (mindVal) currentEditData.targets = mindVal;
 
-    const selectedFeatures = ['basic'];
-    ['ordering', 'analytics', 'ar_menu'].forEach(f => {
-        const cb = document.getElementById(`feat-${f}`);
-        if (cb && cb.checked) selectedFeatures.push(f);
-    });
-    currentEditData.subscription = { features: selectedFeatures };
-
+    // subscription ab billing_db mein manage hoti hai — yahan set nahi karni
     currentEditData.theme = {
         primary_color: document.getElementById('et-primary')?.value.trim() || '',
         secondary_color: document.getElementById('et-secondary')?.value.trim() || '',
@@ -633,12 +663,8 @@ function _fillFormFromEditData() {
     document.getElementById('ei-facebook').value = r.social?.facebook || '';
     document.getElementById('ei-twitter').value = r.social?.twitter || '';
 
-    // Features
-    const activeFeatures = currentEditData.subscription?.features || ['basic'];
-    ['ordering', 'analytics', 'ar_menu'].forEach(f => {
-        const cb = document.getElementById(`feat-${f}`);
-        if (cb) cb.checked = activeFeatures.includes(f);
-    });
+    // Billing summary — subscriptions table se load karo
+    if (currentEditClientId) _loadSubSummary(currentEditClientId);
 
     // Theme
     const t = currentEditData.theme || {};
@@ -979,6 +1005,37 @@ async function deleteItem(index) {
     renderItemsList();
     toast('Dish removed (Save Changes dabao to commit)');
 }
+
+window.addDishesToMenuBulk = function(dishes) {
+    if (!currentEditData) return;
+    if (!currentEditData.items) currentEditData.items = [];
+    
+    dishes.forEach(d => {
+        const item = {
+            name: d.name || 'New Dish',
+            category: d.category || '',
+            description: d.description || '',
+            image: d.image || '',
+            model: d.glb || '',
+            veg: d.veg !== false,
+            featured: false,
+            auto_rotate: true,
+            rotate_speed: 10000,
+            position: '0 0 0',
+            scale: '2 2 2',
+            rotation: '0 0 0'
+        };
+        if (d.sizes && d.sizes.length > 0) {
+            item.sizes = d.sizes;
+        } else {
+            item.price = d.price || '';
+        }
+        currentEditData.items.push(item);
+    });
+    
+    renderItemsList();
+    toast(`✅ ${dishes.length} dishes added (Save Changes dabao to commit)`, 'success');
+};
 
 // ════════════════════════════════
 // STAFF
@@ -1917,10 +1974,8 @@ async function updateRestCardMeta(client_id) {
             if (staffEl) staffEl.textContent = Array.isArray(sRes) ? sRes.length : '—';
 
             if (featuresEl) {
-                const features = defaultData?.subscription?.features || ['basic'];
-                featuresEl.innerHTML = features.map(f =>
-                    `<span style="font-size:0.6rem;padding:2px 7px;border-radius:3px;background:rgba(108,99,255,0.12);color:var(--primary);border:1px solid var(--border);font-family:var(--font-m)">${f}</span>`
-                ).join('');
+                const r = allRestaurants.find(x => x.client_id === client_id);
+                featuresEl.innerHTML = _subStatusBadge(r?.sub_status, r?.sub_plan);
             }
             return;
         }
@@ -1948,11 +2003,75 @@ async function updateRestCardMeta(client_id) {
         }
 
         if (featuresEl) {
-            const features = cData?.subscription?.features || ['basic'];
-            featuresEl.innerHTML = features.map(f =>
-                `<span style="font-size:0.6rem;padding:2px 7px;border-radius:3px;background:rgba(108,99,255,0.12);color:var(--primary);border:1px solid var(--border);font-family:var(--font-m)">${f}</span>`
-            ).join('');
+            const r = allRestaurants.find(x => x.client_id === client_id);
+            featuresEl.innerHTML = _subStatusBadge(r?.sub_status, r?.sub_plan);
         }
     } catch (e) { }
 }
 
+
+
+
+// ════════════════════════════════
+// BILLING HELPERS — admin.js
+// ════════════════════════════════
+
+function _subStatusBadge(status, plan) {
+    const ST = {
+        demo:    { label: 'Demo',    color: '#4dabf7' },
+        trial:   { label: 'Trial',   color: '#ffb347' },
+        active:  { label: 'Active',  color: '#43e97b' },
+        grace:   { label: 'Grace',   color: '#ff6b6b' },
+        expired: { label: 'Expired', color: '#888'    },
+    };
+    const s   = ST[status] || ST.trial;
+    const planLabel = plan ? plan.charAt(0).toUpperCase() + plan.slice(1) : 'Basic';
+    return `
+        <span style="font-size:0.6rem;padding:2px 7px;border-radius:3px;
+            background:${s.color}18;color:${s.color};
+            border:1px solid ${s.color}44;font-family:var(--font-m);font-weight:600;">
+            ${s.label}
+        </span>
+        <span style="font-size:0.6rem;padding:2px 7px;border-radius:3px;
+            background:rgba(108,99,255,0.12);color:var(--primary);
+            border:1px solid var(--border);font-family:var(--font-m);">
+            ${planLabel}
+        </span>`;
+}
+
+async function _loadSubSummary(clientId) {
+    const el = document.getElementById('ei-sub-summary');
+    if (!el || !clientId) return;
+    el.textContent = 'Loading...';
+    try {
+        const res  = await fetch(`/api/billing/subscriptions/${clientId}`, { credentials: 'include' });
+        if (!res.ok) {
+            el.innerHTML = '<span style="color:var(--muted);">No subscription — <a href="#" onclick="switchTab(\'billing\',null);loadBilling();" style="color:var(--primary);">Billing tab se banao</a></span>';
+            return;
+        }
+        const data = await res.json();
+        const sub  = data.subscription;
+        const ST   = { demo:'#4dabf7', trial:'#ffb347', active:'#43e97b', grace:'#ff6b6b', expired:'#888' };
+        const color = ST[sub.status] || '#888';
+        const expiryStr = sub.status === 'demo' ? 'Never expires'
+            : sub.current_period_ends_at ? `Renews: ${sub.current_period_ends_at}`
+            : sub.trial_ends_at && sub.trial_ends_at !== '9999-12-31' ? `Trial ends: ${sub.trial_ends_at}`
+            : '';
+        el.innerHTML = `
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+                <span style="color:${color};font-weight:700;font-size:0.82rem;">${(sub.status||'').toUpperCase()}</span>
+                <span style="color:var(--muted);">•</span>
+                <span style="color:white;font-size:0.82rem;">${sub.plan_key || '—'}</span>
+                <span style="color:var(--muted);">•</span>
+                <span style="font-size:0.82rem;">₹${(sub.final_price||0).toLocaleString()}/${sub.period||'—'}</span>
+                ${expiryStr ? `<span style="margin-left:auto;font-size:0.72rem;color:var(--muted);">${expiryStr}</span>` : ''}
+                <button onclick="closeModal('modal-edit-rest'); Billing.openModal('${clientId}');"
+                    style="font-size:0.7rem;padding:3px 10px;border-radius:6px;border:1px solid var(--border);
+                    background:rgba(108,99,255,0.1);color:var(--primary);cursor:pointer;margin-left:auto;">
+                    💳 Manage →
+                </button>
+            </div>`;
+    } catch(e) {
+        el.textContent = 'Load failed';
+    }
+}

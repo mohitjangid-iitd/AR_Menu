@@ -14,6 +14,13 @@ Restaurant:
   DELETE /api/admin/restaurant/{client_id}
   PATCH  /api/admin/restaurant/{client_id}/toggle
   GET    /api/admin/restaurant/{client_id}/analytics
+  POST   /api/admin/restaurant/{client_id}/repair-default-name
+
+Branches:
+  GET    /api/admin/restaurant/{client_id}/branches
+  POST   /api/admin/restaurant/{client_id}/branch
+  PUT    /api/admin/restaurant/{client_id}/branch/{branch_id}/json
+  DELETE /api/admin/restaurant/{client_id}/branch/{branch_id}
 
 Staff:
   GET    /api/admin/staff/{client_id}
@@ -21,6 +28,21 @@ Staff:
   PATCH  /api/admin/staff/{staff_id}/password
   PATCH  /api/admin/staff/{staff_id}/toggle
   DELETE /api/admin/staff/{staff_id}
+
+Owners:
+  GET    /api/admin/owner/{client_id}
+  PATCH  /api/admin/owner/{owner_id}/toggle
+  PATCH  /api/admin/owner/{owner_id}/password
+
+Signup Requests:
+  GET    /api/admin/signup-requests
+  GET    /api/admin/signup-requests/{req_id}
+  POST   /api/admin/signup-requests/{req_id}/approve
+  POST   /api/admin/signup-requests/{req_id}/reject
+
+Site Settings:
+  GET    /api/admin/site-settings
+  PATCH  /api/admin/site-settings/{key}
 
 Admin account:
   POST   /api/admin/create
@@ -42,6 +64,7 @@ Export:
 """
 
 import os
+import uuid
 import bcrypt
 import shutil
 import tempfile
@@ -125,6 +148,12 @@ class CreateRestaurantRequest(BaseModel):
     instagram: str = ""
     facebook: str = ""
     twitter: str = ""
+    # Billing fields
+    sub_status: str = "trial"        # demo | trial | active
+    sub_plan: str = "basic"          # basic | pro | elite
+    sub_period: str = "monthly"      # monthly | halfyearly | yearly
+    sub_discount_percent: int = 0
+    sub_discount_flat: int = 0
 
 class CreateStaffRequest(BaseModel):
     username: str
@@ -193,7 +222,8 @@ async def api_admin_overview(period: str = "alltime", auth_token: Optional[str] 
             continue
         seen.add(cid)
         rdata = get_client_data(cid) or {}
-        r["active"] = rdata.get("subscription", {}).get("active", True)
+        # sub_status se active determine karo
+        r["active"] = r.get("sub_status", "trial") not in ("expired",)
         # Branches list attach karo
         branches = get_restaurant_branches(cid)
         r["branches"] = [
@@ -224,8 +254,8 @@ async def api_analytics(client_id: str, branch_id: str = None):  # ← add karo
     data = get_client_data(client_id)
     if not data:
         raise HTTPException(status_code=404, detail="Restaurant not found")
-    require_feature(data, "analytics")
-    return get_analytics(client_id, branch_id=branch_id)  # ← pass karo
+    require_feature(client_id, "analytics")
+    return get_analytics(client_id, branch_id=branch_id)
 
 
 @router.get("/api/admin/restaurant/{client_id}/analytics")
@@ -290,7 +320,6 @@ async def api_create_restaurant(body: CreateRestaurantRequest,
             "background": "#ffffff", "font_primary": "Playfair Display",
             "font_secondary": "Poppins",
         },
-        "subscription": {"features": ["basic"]},
         "items": [],
     }
 
@@ -303,6 +332,16 @@ async def api_create_restaurant(body: CreateRestaurantRequest,
 
     save_restaurant_json(client_id, data)
     seed_tables(client_id, body.num_tables)
+    # Naya billing system — subscription create karo
+    from billing_db import create_subscription
+    create_subscription(
+        client_id        = client_id,
+        status           = body.sub_status,
+        plan_key         = body.sub_plan,
+        period           = body.sub_period,
+        discount_percent = body.sub_discount_percent,
+        discount_flat    = body.sub_discount_flat,
+    )
     return {"message": f"Restaurant {client_id} created", "client_id": client_id}
 
 
@@ -332,17 +371,26 @@ async def api_delete_restaurant(client_id: str, auth_token: Optional[str] = Cook
 
 @router.patch("/api/admin/restaurant/{client_id}/toggle")
 async def api_toggle_restaurant(client_id: str, auth_token: Optional[str] = Cookie(None)):
+    """
+    Restaurant ko enable/disable karo.
+    Naya system: restaurants table mein ek is_active column nahi hai —
+    disable karna = subscriptions.status = 'expired' set karna
+    enable karna = subscriptions.status = 'active' (agar subscription hai) ya 'trial'
+    """
     require_auth(auth_token, ["admin"])
-    data = get_client_data(client_id)
-    if not data:
+    if not get_client_data(client_id):
         raise HTTPException(status_code=404, detail="Restaurant not found")
-    current   = data.get("subscription", {}).get("active", True)
-    new_state = not current
-    if "subscription" not in data:
-        data["subscription"] = {"features": ["basic"]}
-    data["subscription"]["active"] = new_state
-    save_restaurant_json(client_id, data)
-    return {"active": new_state}
+    from billing_db import get_subscription, update_subscription
+    sub = get_subscription(client_id)
+    if not sub:
+        raise HTTPException(status_code=404, detail="Subscription not found — pehle billing tab se subscription banao")
+    # Toggle: expired <-> active
+    if sub["status"] == "expired":
+        new_status = "active"
+    else:
+        new_status = "expired"
+    update_subscription(client_id, {"status": new_status})
+    return {"active": new_status != "expired", "status": new_status}
 
 
 # ════════════════════════════════
@@ -469,7 +517,7 @@ async def api_admin_get_staff(client_id: str, auth_token: Optional[str] = Cookie
 async def api_admin_create_staff(client_id: str, body: CreateStaffRequest,
                                   auth_token: Optional[str] = Cookie(None)):
     require_auth(auth_token, ["admin"])
-    valid_roles = {"owner", "kitchen", "waiter", "counter", "blogger"}
+    valid_roles = {"owner", "kitchen", "waiter", "counter", "blogger", "delivery"}
     if body.role not in valid_roles:
         raise HTTPException(status_code=400, detail="Invalid role")
     ok = create_staff(client_id, body.username, body.password, body.name, body.role, body.branch_id)
@@ -573,7 +621,16 @@ async def api_upload_asset(
             detail=f"File bahut badi hai. Max {rule['max_mb']}MB allowed."
         )
 
-    safe_name = rule.get("fixed_name") or os.path.basename(original_name).replace(" ", "_")
+    base_name = os.path.basename(original_name).replace(" ", "_")
+    ext_part  = os.path.splitext(base_name)
+
+    # Dish images: unique UUID prefix taaki alag dishes ki files conflict na karein
+    if type == "image" and not rule.get("fixed_name"):
+        uid       = uuid.uuid4().hex[:8]
+        safe_name = f"{ext_part[0]}_{uid}{ext_part[1]}"
+    else:
+        safe_name = rule.get("fixed_name") or base_name
+
     folder    = os.path.join(rule["folder"], client_id)
     if not USE_R2:
         os.makedirs(folder, exist_ok=True)
@@ -581,25 +638,33 @@ async def api_upload_asset(
     save_path = os.path.join(folder, safe_name)
     r2_key    = f"{client_id}/{safe_name}"
 
-    # ── Purani file trash mein move karo (mind except) ──
+    # ── Purani file (old_path) trash mein move karo (mind except) ──
+    # Note: r2_key ab naya unique naam hai — existing file overwrite nahi hogi.
+    # Sirf old_path wali file trash mein jaani chahiye (agar different path ho).
     if type != "mind":
-        trash_target = r2_key if USE_R2 else save_path
-        move_to_trash(client_id, trash_target, type)
-
         if old_path and old_path.strip().lower() not in ("", "none"):
-            old_path = old_path.strip().lstrip("/")
+            old_path_clean = old_path.strip()
             if USE_R2:
-                old_key = old_path
-                for prefix in ("static/assets/", "private/assets/"):
-                    if old_path.startswith(prefix):
-                        old_key = old_path[len(prefix):]
-                        break
-                if old_key != r2_key:
+                # R2 public URL ya relative path dono handle karo
+                old_key = old_path_clean
+                # Full https:// URL se key nikalo
+                from r2 import R2_PUBLIC_URL
+                if R2_PUBLIC_URL and old_key.startswith(R2_PUBLIC_URL):
+                    old_key = old_key[len(R2_PUBLIC_URL):].lstrip("/")
+                else:
+                    # local-style path prefix strip karo
+                    old_key = old_key.lstrip("/")
+                    for prefix in ("static/assets/", "private/assets/"):
+                        if old_key.startswith(prefix):
+                            old_key = old_key[len(prefix):]
+                            break
+                # Sirf tab trash karo agar genuinely different file hai
+                if old_key and old_key != r2_key and not old_key.startswith("http"):
                     move_to_trash(client_id, old_key, type)
             else:
-                old_full = os.path.join("private/assets", old_path) if type == "model" \
-                           else old_path
-                if os.path.abspath(old_full) != os.path.abspath(save_path):
+                old_full = os.path.join("private/assets", old_path_clean.lstrip("/")) if type == "model" \
+                           else old_path_clean.lstrip("/")
+                if os.path.abspath(old_full) != os.path.abspath(save_path) and os.path.exists(old_full):
                     move_to_trash(client_id, old_full, type)
 
     # ── File save ──
@@ -841,7 +906,6 @@ async def api_approve_signup(req_id: int, body: ApproveSignupRequest,
             "background":    "#ffffff", "font_primary": "Playfair Display",
             "font_secondary": "Poppins",
         },
-        "subscription": {"active": True, "features": ["basic", "ordering", "analytics"]},
         "items": [],
     }
 
@@ -854,6 +918,10 @@ async def api_approve_signup(req_id: int, body: ApproveSignupRequest,
 
     save_restaurant_json(client_id, restaurant_data)
     seed_tables(client_id, body.num_tables)
+
+    # Naya billing system — trial subscription create karo
+    from billing_db import create_subscription
+    create_subscription(client_id=client_id, status="trial", plan_key="basic")
 
     # Owner account banao
     ok = create_owner(
@@ -967,8 +1035,6 @@ zentable.in
     threading.Thread(target=_send_rejection_email, daemon=True).start()
 
     return {"message": "Request rejected"}
-
-
 
 
 # ════════════════════════════════
