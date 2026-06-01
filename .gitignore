@@ -33,8 +33,7 @@ data/*.db-wal
 data/*.db-shm
 
 # Assets
-static/assets/clint_one
-static/assets/clint_two
+static/assets/*
 private/
 
 # Python version
