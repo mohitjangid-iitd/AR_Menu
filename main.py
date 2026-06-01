@@ -35,7 +35,7 @@ from templates_env import templates
 
 def _keep_neon_alive():
     while True:
-        time.sleep(150)  # 2.5 min — Neon 5 min me sota hai, hum pehle ping kar dete hain
+        time.sleep(270)  # 4.5 min — Neon 5 min me sota hai, hum pehle ping kar dete hain
         try:
             conn = get_db()
             conn.execute("SELECT 1;")
