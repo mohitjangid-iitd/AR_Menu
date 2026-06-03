@@ -9,8 +9,8 @@ import json
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from database import (
-    init_db, get_db,
+from db import (
+    init_all, get_db,
     create_staff, get_staff_list,
     update_staff_password, toggle_staff_active, delete_staff,
     seed_tables
@@ -358,7 +358,7 @@ def edit_restaurant_info():
 # ════════════════════════════════
 
 def main():
-    init_db()
+    init_all()
     while True:
         header("MenuAR — Restaurant Manager")
         print("  1. Saare restaurants dekho")

@@ -26,7 +26,7 @@ from fastapi import APIRouter, HTTPException, Cookie
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi import Request
 
-from database import get_table_status, get_summary, get_analytics, get_restaurant_branches
+from db import get_table_status, get_summary, get_analytics, get_restaurant_branches
 from helpers import (
     get_client_data, require_auth,
     is_restaurant_active, closed_response, require_feature, has_feature,
@@ -54,7 +54,7 @@ async def customer_profile(request: Request, next: Optional[str] = "/"):
     payload = decode_token(token)
     if not payload or payload.get("role") != "customer":
         return RedirectResponse(url=f"/auth/google?next={next}")
-    from database import get_customer_by_id
+    from db import get_customer_by_id
     customer = get_customer_by_id(payload["customer_id"])
     if not customer:
         return RedirectResponse(url=f"/auth/google?next={next}")
@@ -80,7 +80,7 @@ async def customer_orders_page(request: Request, next: Optional[str] = "/"):
     payload = decode_token(token)
     if not payload or payload.get("role") != "customer":
         return RedirectResponse(url=f"/auth/google?next=/customer/orders?next={next_encoded}")
-    from database import get_customer_by_id
+    from db import get_customer_by_id
     customer = get_customer_by_id(payload["customer_id"])
     if not customer:
         return RedirectResponse(url=f"/auth/google?next=/customer/orders?next={next_encoded}")

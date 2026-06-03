@@ -21,7 +21,7 @@ from auth import login_staff, login_admin, login_owner, get_redirect_url
 from helpers import get_client_data, get_current_user, is_restaurant_active
 from r2 import IS_PROD
 from site_config import SITE_CONFIG
-from database import create_signup_request
+from db import create_signup_request
 
 router = APIRouter()
 

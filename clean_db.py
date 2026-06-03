@@ -9,7 +9,7 @@ import json
 import shutil
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from database import init_db, get_db
+from db import init_all, get_db
 
 def line():     print("─" * 48)
 def header(t):  print(f"\n{'═'*48}\n  {t}\n{'═'*48}")
@@ -203,7 +203,7 @@ def restaurant_menu():
 # ════════════════════════════════════
 
 def main():
-    init_db()
+    init_all()
     while True:
         header("MenuAR — Database Cleanup Tool")
 

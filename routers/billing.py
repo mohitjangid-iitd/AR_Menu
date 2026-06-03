@@ -24,7 +24,7 @@ Endpoints:
 from fastapi import APIRouter, Request, HTTPException
 from fastapi.responses import JSONResponse
 from auth import decode_token
-from billing_db import (
+from db.billing_db import (
     # plans
     get_all_plans, get_plan, update_plan,
     # addons

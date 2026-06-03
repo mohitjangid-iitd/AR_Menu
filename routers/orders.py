@@ -17,7 +17,7 @@ from typing import Optional, List
 from fastapi import APIRouter, HTTPException, Cookie, Request
 from pydantic import BaseModel
 
-from database import (
+from db import (
     get_db,
     place_order, get_orders, update_order_status,
     update_ready_items, generate_bill, get_bill, mark_bill_paid,

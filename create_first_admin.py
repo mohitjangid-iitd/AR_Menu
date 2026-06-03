@@ -7,10 +7,10 @@ import sys
 import os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from database import init_db, create_admin
+from db import init_all, create_admin
 
 def main():
-    init_db()
+    init_all()
     print("\n" + "═"*50)
     print("  MenuAR — First Time Setup")
     print("═"*50)

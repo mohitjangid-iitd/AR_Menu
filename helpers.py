@@ -10,7 +10,7 @@ from typing import Optional
 from fastapi import HTTPException
 from fastapi.responses import RedirectResponse
 
-from database import get_db
+from db import get_db
 from auth import decode_token, get_redirect_url
 from site_config import SITE_CONFIG
 
@@ -79,7 +79,7 @@ def has_feature(client_id: str, feature: str) -> bool:
         "image_to_menu": "ai_menu_import",
     }
     db_feature = mapping.get(feature, feature)
-    from billing_db import has_feature as _billing_has_feature
+    from db.billing_db import has_feature as _billing_has_feature
     return _billing_has_feature(client_id, db_feature)
 
 
@@ -148,7 +148,7 @@ def is_restaurant_active(client_id: str) -> bool:
     expired = inactive, baaki sab = active.
     Agar subscription nahi hai toh active maano (naye restaurants ke liye).
     """
-    from billing_db import get_subscription
+    from db.billing_db import get_subscription
     sub = get_subscription(client_id)
     if not sub:
         return True   # subscription nahi hai — default active

@@ -52,7 +52,7 @@ Run this twice — once for `SECRET_KEY`, once for `GLB_SECRET`.
 ## 3. Database Setup
 
 ```bash
-python database.py
+python -c "import db; db.init_all()"
 ```
 
 This creates all tables. Safe to run multiple times — uses `CREATE TABLE IF NOT EXISTS`.

@@ -77,7 +77,7 @@ from pydantic import BaseModel
 from starlette.background import BackgroundTask
 from templates_env import templates
 
-from database import (
+from db import (
     get_db,
     get_analytics, get_summary,
     get_all_restaurants_info, get_overall_stats, get_top_dishes_overall,
@@ -333,7 +333,7 @@ async def api_create_restaurant(body: CreateRestaurantRequest,
     save_restaurant_json(client_id, data)
     seed_tables(client_id, body.num_tables)
     # Naya billing system — subscription create karo
-    from billing_db import create_subscription
+    from db.billing_db import create_subscription
     create_subscription(
         client_id        = client_id,
         status           = body.sub_status,
@@ -380,7 +380,7 @@ async def api_toggle_restaurant(client_id: str, auth_token: Optional[str] = Cook
     require_auth(auth_token, ["admin"])
     if not get_client_data(client_id):
         raise HTTPException(status_code=404, detail="Restaurant not found")
-    from billing_db import get_subscription, update_subscription
+    from db.billing_db import get_subscription, update_subscription
     sub = get_subscription(client_id)
     if not sub:
         raise HTTPException(status_code=404, detail="Subscription not found — pehle billing tab se subscription banao")

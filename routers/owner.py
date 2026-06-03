@@ -23,7 +23,7 @@ from fastapi import APIRouter, HTTPException, Cookie, UploadFile, File, Form
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
-from database import (
+from db import (
     get_db,
     get_staff_list,
     create_staff,

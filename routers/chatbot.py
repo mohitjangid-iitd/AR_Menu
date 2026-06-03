@@ -32,7 +32,7 @@ from auth import decode_token
 from helpers import require_feature
 
 # ── DB functions — yeh database.py mein add honge (Task 8)
-from database import (
+from db import (
     get_today_sales,
     get_total_orders_today,
     get_top_selling_items,

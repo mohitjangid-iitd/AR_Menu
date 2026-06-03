@@ -15,7 +15,7 @@ import os
 import httpx
 from fastapi import APIRouter, Request, HTTPException
 from fastapi.responses import RedirectResponse, JSONResponse
-from database import get_or_create_customer, get_customer_by_id
+from db import get_or_create_customer, get_customer_by_id
 from auth import create_token
 from datetime import timedelta
 
@@ -212,7 +212,7 @@ async def save_customer_profile(request: Request):
     if not payload or payload.get("role") != "customer":
         raise HTTPException(status_code=401, detail="Invalid token")
 
-    from database import update_customer_profile
+    from db import update_customer_profile
     body = await request.json()
     phone   = body.get("phone", "").strip()
     address = body.get("address", "").strip()
@@ -237,6 +237,6 @@ async def customer_orders(request: Request):
     if not payload or payload.get("role") != "customer":
         raise HTTPException(status_code=401, detail="Invalid token")
 
-    from database import get_customer_orders
+    from db import get_customer_orders
     orders = get_customer_orders(payload["customer_id"])
     return JSONResponse({"orders": orders})

@@ -30,10 +30,10 @@ class TestHasFeature:
         mock_plan = {
             "features": sub.get("features", {"included": [], "labels": {}})
         }
-        with patch("billing_db.get_subscription", return_value=sub), \
-             patch("billing_db.get_subscription_addons", return_value=addons), \
-             patch("billing_db.get_plan", return_value=mock_plan):
-            from billing_db import has_feature
+        with patch("db.billing_db.get_subscription", return_value=sub), \
+             patch("db.billing_db.get_subscription_addons", return_value=addons), \
+             patch("db.billing_db.get_plan", return_value=mock_plan):
+            from db.billing_db import has_feature
             return has_feature("test_resto", feature_key)
 
     def test_trial_gets_all_features(self):
@@ -69,8 +69,8 @@ class TestHasFeature:
 
     def test_no_subscription_gets_nothing(self):
         """Subscription hi nahi — kuch nahi milna chahiye"""
-        with patch("billing_db.get_subscription", return_value=None):
-            from billing_db import has_feature
+        with patch("db.billing_db.get_subscription", return_value=None):
+            from db.billing_db import has_feature
             assert has_feature("ghost_client", "website") is False
 
     def test_basic_plan_features(self):
@@ -196,9 +196,9 @@ class TestFeatureLockAPI:
     def test_features_me_shows_correct_access(self, owner_client):
         """/features/me — pro plan pe owner_analytics True hona chahiye"""
         mock_plan = {"features": {"included": ["website", "qr_ordering", "owner_analytics", "ai_chatbot"], "labels": {}}}
-        with patch("billing_db.get_subscription", return_value=self.PRO_SUB), \
-             patch("billing_db.get_subscription_addons", return_value=[]), \
-             patch("billing_db.get_plan", return_value=mock_plan):
+        with patch("db.billing_db.get_subscription", return_value=self.PRO_SUB), \
+             patch("db.billing_db.get_subscription_addons", return_value=[]), \
+             patch("db.billing_db.get_plan", return_value=mock_plan):
             r = owner_client.get("/api/billing/features/me")
             assert r.status_code == 200
             data = r.json()
@@ -208,8 +208,8 @@ class TestFeatureLockAPI:
 
     def test_features_me_basic_plan_restricted(self, owner_client):
         """/features/me — basic plan pe owner_analytics False hona chahiye"""
-        with patch("billing_db.get_subscription", return_value=self.BASIC_SUB), \
-             patch("billing_db.get_subscription_addons", return_value=[]):
+        with patch("db.billing_db.get_subscription", return_value=self.BASIC_SUB), \
+             patch("db.billing_db.get_subscription_addons", return_value=[]):
             r = owner_client.get("/api/billing/features/me")
             assert r.status_code == 200
             data = r.json()
@@ -218,8 +218,8 @@ class TestFeatureLockAPI:
     def test_expired_sub_features_all_false(self, owner_client):
         """/features/me — expired subscription pe sab False"""
         expired_sub = {**self.PRO_SUB, "status": "expired", "ends_at": "2020-01-01"}
-        with patch("billing_db.get_subscription", return_value=expired_sub), \
-             patch("billing_db.get_subscription_addons", return_value=[]):
+        with patch("db.billing_db.get_subscription", return_value=expired_sub), \
+             patch("db.billing_db.get_subscription_addons", return_value=[]):
             r = owner_client.get("/api/billing/features/me")
             assert r.status_code == 200
             features = r.json()["features"]
@@ -235,7 +235,7 @@ class TestFeatureLockAPI:
 class TestBillingAdminAPI:
 
     def test_create_subscription(self, admin_client):
-        with patch("billing_db.create_subscription", return_value={
+        with patch("db.billing_db.create_subscription", return_value={
             "client_id": "new_resto", "status": "trial", "plan_key": "basic"
         }):
             r = admin_client.post("/api/billing/subscriptions/new_resto", json={
@@ -254,9 +254,9 @@ class TestBillingAdminAPI:
             "grace_ends_at": None, "admin_notes": None, "payment_method": "manual",
         }
         mock_plan = {"monthly_price": 2999, "features": {"included": [], "labels": {}}}
-        with patch("billing_db.get_subscription", return_value=mock_sub), \
-             patch("billing_db.get_plan", return_value=mock_plan), \
-             patch("billing_db.update_subscription", return_value=mock_sub):
+        with patch("db.billing_db.get_subscription", return_value=mock_sub), \
+             patch("db.billing_db.get_plan", return_value=mock_plan), \
+             patch("db.billing_db.update_subscription", return_value=mock_sub):
             r = admin_client.patch("/api/billing/subscriptions/test_resto", json={
                 "plan_key": "pro"
             })
@@ -271,9 +271,9 @@ class TestBillingAdminAPI:
             "trial_ends_at": None, "current_period_ends_at": "2099-12-31",
             "grace_ends_at": None, "admin_notes": None, "payment_method": "manual",
         }
-        with patch("billing_db.get_subscription", return_value=mock_sub), \
-             patch("billing_db.confirm_payment", return_value={"ok": True}), \
-             patch("billing_db.generate_reference_id", return_value="ZT-TEST-JAN26"):
+        with patch("db.billing_db.get_subscription", return_value=mock_sub), \
+             patch("db.billing_db.confirm_payment", return_value={"ok": True}), \
+             patch("db.billing_db.generate_reference_id", return_value="ZT-TEST-JAN26"):
             r = admin_client.post("/api/billing/subscriptions/test_resto/confirm-payment", json={
                 "amount": 2999,
                 "period": "monthly",
@@ -306,7 +306,7 @@ class TestBillingAdminAPI:
             assert data["multiplier"] == 12
 
     def test_add_addon_to_subscription(self, admin_client):
-        with patch("billing_db.upsert_subscription_addon", return_value={
+        with patch("db.billing_db.upsert_subscription_addon", return_value={
             "base_price": 499, "final_price": 499
         }):
             r = admin_client.post("/api/billing/subscriptions/test_resto/addons", json={
@@ -316,7 +316,7 @@ class TestBillingAdminAPI:
             assert r.status_code == 200
 
     def test_remove_addon(self, admin_client):
-        with patch("billing_db.remove_subscription_addon"):
+        with patch("db.billing_db.remove_subscription_addon"):
             r = admin_client.delete("/api/billing/subscriptions/test_resto/addons/ar_menu")
             assert r.status_code == 200
 

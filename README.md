@@ -67,9 +67,17 @@ A **multi-tenant restaurant management platform** with AR menus, real-time order
 ```
 zentable/
 ├── main.py                      # App init, lifespan, static mount, utility routes
-├── database.py                  # PostgreSQL setup + all DB functions (psycopg2)
-├── billing_db.py                # Subscription & Add-ons database operations (PostgreSQL)
-├── blog_db.py                   # Blog database operations (PostgreSQL)
+├── db/                          # PostgreSQL connection pool & modular DB operations
+│   ├── __init__.py              # Convenience package re-exports
+│   ├── connection.py            # PostgreSQL pool and connection wrapper
+│   ├── admin_db.py              # Platform admin operations
+│   ├── billing_db.py            # Subscription & Billing management
+│   ├── blog_db.py               # Blog database operations
+│   ├── core_db.py               # Core tables, order, and billing operations
+│   ├── customer_db.py           # Customer OAuth profiles & orders
+│   ├── owner_db.py              # Restaurant owner profiles & approval logic
+│   ├── restaurant_db.py         # Restaurant config & trash operations
+│   └── staff_db.py              # Restaurant staff accounts & auth
 ├── feature_registry.py          # Key-label registry for feature gating (Basic, Pro, Elite)
 ├── check_feature_gates.py       # Audit utility for restaurant feature access & subscription gates
 ├── auth.py                      # JWT logic — create/verify token, login functions
@@ -292,7 +300,7 @@ Free model sources: Sketchfab, TurboSquid, CGTrader
 
 ## Testing
 
-ZenTable includes a robust suite of ~133 automated unit and behavioral tests. All database queries and external resources are mocked out, allowing tests to run entirely offline in milliseconds.
+ZenTable includes a robust suite of ~171 automated unit and behavioral tests. All database queries and external resources are mocked out, allowing tests to run entirely offline in milliseconds.
 
 To install test dependencies:
 ```bash

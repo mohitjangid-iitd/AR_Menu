@@ -6,7 +6,7 @@ import os
 from datetime import datetime, timedelta
 from typing import Optional
 from jose import JWTError, jwt
-from database import verify_staff, verify_admin, verify_owner
+from db import verify_staff, verify_admin, verify_owner
 
 # ── Secret key — production mein env variable se lena ──
 SECRET_KEY = os.environ["SECRET_KEY"]

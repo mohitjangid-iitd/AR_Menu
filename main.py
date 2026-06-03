@@ -7,7 +7,7 @@ from fastapi.responses import FileResponse, Response, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
 from site_config import SITE_CONFIG
-from database import get_db,init_db, seed_tables, get_all_restaurants_info, get_all_site_settings
+from db import get_db, init_all, seed_tables, get_all_restaurants_info, get_all_site_settings
 from r2 import USE_R2, r2_public_url, IS_PROD
 from helpers import get_client_data, is_restaurant_active, has_feature
 from trash_utils import purge_expired_trash
@@ -25,8 +25,8 @@ from routers.image_to_menu import router as image_to_menu_router
 from routers.blog import router as blog_router
 from routers.billing import router as billing_router
 from routers.customer_auth import router as customer_auth_router
-from blog_db import init_blog_tables, get_published_posts as get_blog_posts
-from billing_db import init_billing_tables, sync_plan_features, run_daily_billing_cron, get_all_plans, get_all_addons
+from db.blog_db import init_blog_tables, get_published_posts as get_blog_posts
+from db.billing_db import init_billing_tables, sync_plan_features, run_daily_billing_cron, get_all_plans, get_all_addons
 from templates_env import templates
 
 # ════════════════════════════════
@@ -50,7 +50,7 @@ def _keep_neon_alive():
 
 @asynccontextmanager
 async def lifespan(app):
-    init_db()
+    init_all()
     init_billing_tables()
     sync_plan_features()    # Naye features DB mein add karo (safe, idempotent)
     init_blog_tables()
@@ -59,7 +59,7 @@ async def lifespan(app):
         rdata = get_client_data(r["client_id"])
         if rdata and "num_tables" in rdata.get("restaurant", {}):
             # Saari branches ke liye seed karo
-            from database import get_restaurant_branches
+            from db import get_restaurant_branches
             branches = get_restaurant_branches(r["client_id"])
             for branch in branches:
                 branch_config = branch["config"] if isinstance(branch["config"], dict) else {}
