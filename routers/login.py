@@ -21,7 +21,7 @@ from auth import login_staff, login_admin, login_owner, get_redirect_url
 from helpers import get_client_data, get_current_user, is_restaurant_active
 from r2 import IS_PROD
 from site_config import SITE_CONFIG
-from database import create_signup_request
+from db import create_signup_request
 
 router = APIRouter()
 
@@ -36,7 +36,10 @@ class SignupRequest(BaseModel):
     phone: str
     email: str
     restaurant_name: str
+    address: Optional[str] = None
     comment: Optional[str] = None
+    plan: Optional[str] = None
+    duration: Optional[str] = None
 
 def _send_confirmation_email(to_email: str, name: str, restaurant_name: str):
     """Owner ko confirmation email bhejo — background mein fire-and-forget"""
@@ -130,7 +133,10 @@ async def api_signup(body: SignupRequest):
         phone           = body.phone.strip(),
         email           = body.email.strip().lower(),
         restaurant_name = body.restaurant_name.strip(),
+        address         = body.address.strip() if body.address else None,
         comment         = body.comment.strip() if body.comment else None,
+        plan            = body.plan.strip() if body.plan else None,
+        duration        = body.duration.strip() if body.duration else None,
     )
 
     # Email fire-and-forget (thread mein — response block na ho)

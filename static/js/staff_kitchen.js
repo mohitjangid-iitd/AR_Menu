@@ -256,11 +256,16 @@ async function loadWithNotif() {
             ? `<button onclick="updateStatus(${o.id}, 'out_for_delivery').then(load)" style="padding: 6px 12px; background: #2e7d32; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.82rem; transition: background 0.2s;" onmouseover="this.style.background='#1b5e20'" onmouseout="this.style.background='#2e7d32'">🛵 Out for Delivery</button>` 
             : '';
 
-        return `<div class="order-card ${o.status}">
+        const orderTypeClass = isDelivery ? 'order-type-delivery' : 'order-type-table';
+        const deliveryBadge  = isDelivery
+            ? `<span class="order-type-label">DELIVERY</span>`
+            : '';
+
+        return `<div class="order-card ${o.status} ${orderTypeClass}">
             <div class="order-head">
                 <div>
                     <div class="order-table">${tableLabel}</div>
-                    <div class="order-id"><span style="background:var(--primary);color:var(--secondary);padding:1px 7px;border-radius:5px;font-weight:700;">#${o.id}</span> &nbsp;·&nbsp; ${o.source ? (o.source.charAt(0).toUpperCase() + o.source.slice(1)) : ''}</div>
+                    <div class="order-id"><span style="background:var(--primary);color:var(--secondary);padding:1px 7px;border-radius:5px;font-weight:700;">#${o.id}</span> &nbsp;·&nbsp; ${o.source ? (o.source.charAt(0).toUpperCase() + o.source.slice(1)) : ''} ${deliveryBadge}</div>
                 </div>
                 <div class="order-time">${time}</div>
             </div>

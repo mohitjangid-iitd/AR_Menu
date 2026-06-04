@@ -11,7 +11,7 @@ Tables:
   email_log            — expiry email deduplication
 """
 
-from database import _pool, _PgConn          # same pool, no extra connections
+from db.connection import _pool, _PgConn          # same pool, no extra connections
 import json
 from datetime import datetime, date, timedelta
 

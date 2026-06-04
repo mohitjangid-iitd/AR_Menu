@@ -10,7 +10,7 @@ import shutil
 from datetime import datetime, timedelta, timezone
 
 from r2 import USE_R2, _r2_client, R2_BUCKET, r2_copy, r2_delete, r2_presign
-from database import trash_add, trash_get_one, trash_remove, trash_remove_expired
+from db import trash_add, trash_get_one, trash_remove, trash_remove_expired
 
 IST               = timezone(timedelta(hours=5, minutes=30))
 TRASH_DIR         = "private/trash"

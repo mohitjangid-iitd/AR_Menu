@@ -8,7 +8,7 @@ Tables:
 
 import json
 from datetime import datetime
-from database import get_db   # existing pool reuse karo
+from db.connection import get_db   # existing pool reuse karo
 
 
 # ════════════════════════════════

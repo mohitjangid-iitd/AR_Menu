@@ -16,7 +16,7 @@ GET  /api/tables/{client_id}/calls
 from typing import Optional
 from fastapi import APIRouter, HTTPException, Cookie, Query
 
-from database import (
+from db import (
     activate_table, activate_all_tables,
     close_table, close_all_tables,
     get_all_tables, get_table_summary,

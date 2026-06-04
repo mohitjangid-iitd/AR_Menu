@@ -33,9 +33,9 @@ from pydantic import BaseModel
 from typing import Optional
 
 from helpers import get_current_user, get_client_data, has_feature
-from database import get_site_setting
+from db import get_site_setting
 from templates_env import templates
-from blog_db import (
+from db.blog_db import (
     create_blog_post, update_blog_post,
     submit_for_review, publish_post, reject_post,
     archive_post, unarchive_post, delete_post,

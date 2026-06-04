@@ -24,7 +24,7 @@ SITE_CONFIG = {
     # ── Social / Contact (optional) ──
     "support_email": "zentable.in@gmail.com",
     "website":       "https://zentable.in",
-    "whatsapp":      "919587493062",
+    "whatsapp":      "919549677087",
     "instagram":     "https://www.instagram.com/zentable.in",
     "twitter":       "",     # X handle
 }

@@ -120,27 +120,27 @@ def mock_patches():
     """
     patches = [
         # Database
-        patch("database.init_db"),
-        patch("database.seed_tables"),
-        patch("database.get_all_restaurants_info", return_value=[MOCK_RESTAURANT]),
-        patch("database.get_all_site_settings", return_value={}),
-        patch("database.get_db", return_value=MagicMock()),
+        patch("db.init_all"),
+        patch("db.seed_tables"),
+        patch("db.get_all_restaurants_info", return_value=[MOCK_RESTAURANT]),
+        patch("db.get_all_site_settings", return_value={}),
+        patch("db.get_db", return_value=MagicMock()),
 
         # Billing DB
-        patch("billing_db.init_billing_tables"),
-        patch("billing_db.sync_plan_features"),
-        patch("billing_db.run_daily_billing_cron"),
-        patch("billing_db.get_all_plans", return_value=MOCK_PLANS),
-        patch("billing_db.get_all_addons", return_value=MOCK_ADDONS),
-        patch("billing_db.get_subscription", return_value=MOCK_SUBSCRIPTION),
-        patch("billing_db.get_all_subscriptions", return_value=[MOCK_SUBSCRIPTION]),
-        patch("billing_db.get_plan", side_effect=lambda key: next((p for p in MOCK_PLANS if p["key"] == key), None)),
-        patch("billing_db.get_addon", side_effect=lambda key: next((a for a in MOCK_ADDONS if a["key"] == key), None)),
-        patch("billing_db.get_subscription_addons", return_value=[]),
+        patch("db.billing_db.init_billing_tables"),
+        patch("db.billing_db.sync_plan_features"),
+        patch("db.billing_db.run_daily_billing_cron"),
+        patch("db.billing_db.get_all_plans", return_value=MOCK_PLANS),
+        patch("db.billing_db.get_all_addons", return_value=MOCK_ADDONS),
+        patch("db.billing_db.get_subscription", return_value=MOCK_SUBSCRIPTION),
+        patch("db.billing_db.get_all_subscriptions", return_value=[MOCK_SUBSCRIPTION]),
+        patch("db.billing_db.get_plan", side_effect=lambda key: next((p for p in MOCK_PLANS if p["key"] == key), None)),
+        patch("db.billing_db.get_addon", side_effect=lambda key: next((a for a in MOCK_ADDONS if a["key"] == key), None)),
+        patch("db.billing_db.get_subscription_addons", return_value=[]),
 
         # Blog DB
-        patch("blog_db.init_blog_tables"),
-        patch("blog_db.get_published_posts", return_value=[]),
+        patch("db.blog_db.init_blog_tables"),
+        patch("db.blog_db.get_published_posts", return_value=[]),
 
         # Helpers
         patch("helpers.get_client_data", return_value={
@@ -175,7 +175,7 @@ def mock_patches():
         patch("r2.r2_public_url", return_value="http://fake-r2/file.glb"),
 
         # Database branches
-        patch("database.get_restaurant_branches", return_value=[
+        patch("db.get_restaurant_branches", return_value=[
             {"branch_id": "__default__", "config": {}}
         ]),
     ]

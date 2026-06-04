@@ -17,7 +17,7 @@ from typing import Optional, List
 from fastapi import APIRouter, HTTPException, Cookie, Request
 from pydantic import BaseModel
 
-from database import (
+from db import (
     get_db,
     place_order, get_orders, update_order_status,
     update_ready_items, generate_bill, get_bill, mark_bill_paid,
@@ -124,17 +124,32 @@ async def api_get_orders(client_id: str, status: str = None, table_no: int = Non
 async def api_filter_orders(client_id: str, status: str = None,
                              table_no: int = None, source: str = None,
                              from_date: str = None,
-                             branch_id: str = None,                        # ← line 1: query param add karo
+                             branch_id: str = None,
+                             limit: int = None,
+                             offset: int = 0,
+                             before_id: int = None,
                              auth_token: Optional[str] = Cookie(None)):
+    """
+    Pagination params:
+      limit     — kitne orders chahiye (default: sab)
+      offset    — kitne skip karo
+      before_id — snapshot anchor: sirf id <= before_id wale orders
+                  (naye orders aane se page shift nahi hogi)
+    """
     user = require_auth(auth_token, ["kitchen", "waiter", "counter", "owner", "admin", "delivery"], client_id)
     # branch_id: frontend se aaya? use karo. Nahi aaya? owner = all branches (None), staff = apni branch
     if not branch_id:
         branch_id = None if user.get('role') in ('owner', 'admin') else user.get('branch_id')
     if status == "kitchen":
+        # kitchen view ke liye pagination nahi — live view hai
         p = get_orders(client_id, status="pending",   table_no=table_no, source=source, from_date=from_date, branch_id=branch_id)
         r = get_orders(client_id, status="preparing", table_no=table_no, source=source, from_date=from_date, branch_id=branch_id)
-        return sorted(p + r, key=lambda x: x["created_at"], reverse=True)
-    return get_orders(client_id, status=status, table_no=table_no, source=source, from_date=from_date, branch_id=branch_id)
+        return sorted(p + r, key=lambda x: x["id"], reverse=True)
+    return get_orders(
+        client_id, status=status, table_no=table_no, source=source,
+        from_date=from_date, branch_id=branch_id,
+        limit=limit, offset=offset, before_id=before_id,
+    )
 
 @router.patch("/api/order/{order_id}/status")
 async def api_update_order_status(order_id: int, body: UpdateStatusRequest,
