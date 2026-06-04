@@ -1,6 +1,4 @@
 import os
-import threading
-import time
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import FileResponse, Response, RedirectResponse
@@ -28,21 +26,6 @@ from routers.customer_auth import router as customer_auth_router
 from db.blog_db import init_blog_tables, get_published_posts as get_blog_posts
 from db.billing_db import init_billing_tables, sync_plan_features, run_daily_billing_cron, get_all_plans, get_all_addons
 from templates_env import templates
-
-# ════════════════════════════════
-# NEON KEEP-ALIVE
-# ════════════════════════════════
-
-def _keep_neon_alive():
-    while True:
-        time.sleep(270)  # 4.5 min — Neon 5 min me sota hai, hum pehle ping kar dete hain
-        try:
-            conn = get_db()
-            conn.execute("SELECT 1;")
-            conn.close()
-            print("[keep-alive] Neon pinged successfully")
-        except Exception as e:
-            print(f"[keep-alive] Failed: {e}")
 
 # ════════════════════════════════
 # LIFESPAN
@@ -81,10 +64,6 @@ async def lifespan(app):
     except Exception:
         templates.env.globals["billing_plans"] = []
         templates.env.globals["billing_addons"] = []
-
-    # Neon ko jaagta rakhne wala thread
-    t = threading.Thread(target=_keep_neon_alive, daemon=True)
-    t.start()
 
     run_daily_billing_cron()
 

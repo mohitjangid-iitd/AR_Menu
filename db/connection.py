@@ -39,9 +39,15 @@ class _PgConn:
         self._conn.autocommit = False
 
     def execute(self, sql, params=()):
-        cur = self._conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-        cur.execute(sql, params)
-        return cur
+        try:
+            cur = self._conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+            cur.execute(sql, params)
+            return cur
+        except psycopg2.OperationalError:
+            self._conn = _pool.getconn()
+            cur = self._conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+            cur.execute(sql, params)
+            return cur
 
     def commit(self):
         self._conn.commit()
