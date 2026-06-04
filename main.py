@@ -83,8 +83,8 @@ async def lifespan(app):
         templates.env.globals["billing_addons"] = []
 
     # Neon ko jaagta rakhne wala thread
-    t = threading.Thread(target=_keep_neon_alive, daemon=True)
-    t.start()
+    # t = threading.Thread(target=_keep_neon_alive, daemon=True)
+    # t.start()
 
     run_daily_billing_cron()
 
