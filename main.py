@@ -30,21 +30,6 @@ from db.billing_db import init_billing_tables, sync_plan_features, run_daily_bil
 from templates_env import templates
 
 # ════════════════════════════════
-# NEON KEEP-ALIVE
-# ════════════════════════════════
-
-# def _keep_neon_alive():
-#     while True:
-#         time.sleep(270)  # 4.5 min — Neon 5 min me sota hai, hum pehle ping kar dete hain
-#         try:
-#             conn = get_db()
-#             conn.execute("SELECT 1;")
-#             conn.close()
-#             print("[keep-alive] Neon pinged successfully")
-#         except Exception as e:
-#             print(f"[keep-alive] Failed: {e}")
-
-# ════════════════════════════════
 # LIFESPAN
 # ════════════════════════════════
 
@@ -81,10 +66,6 @@ async def lifespan(app):
     except Exception:
         templates.env.globals["billing_plans"] = []
         templates.env.globals["billing_addons"] = []
-
-    # Neon ko jaagta rakhne wala thread
-    # t = threading.Thread(target=_keep_neon_alive, daemon=True)
-    # t.start()
 
     run_daily_billing_cron()
 
