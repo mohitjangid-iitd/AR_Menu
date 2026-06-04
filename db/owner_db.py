@@ -28,7 +28,10 @@ def init_owner_tables():
             phone             TEXT NOT NULL,
             email             TEXT NOT NULL,
             restaurant_name   TEXT NOT NULL,
+            address           TEXT,
             comment           TEXT,
+            plan              TEXT,
+            duration          TEXT,
             status            TEXT DEFAULT 'pending',
             client_id         TEXT,
             rejection_reason  TEXT,
@@ -62,16 +65,18 @@ def init_owner_tables():
 # ════════════════════════════════
 
 def create_signup_request(name: str, phone: str, email: str,
-                          restaurant_name: str, comment: str = None) -> int:
+                          restaurant_name: str, address: str = None,
+                          comment: str = None, plan: str = None,
+                          duration: str = None) -> int:
     """Naya owner signup request create karo — pending status mein"""
     conn = get_db()
     cur  = conn._conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
     cur.execute("""
         INSERT INTO owner_signup_requests
-            (name, phone, email, restaurant_name, comment)
-        VALUES (%s, %s, %s, %s, %s)
+            (name, phone, email, restaurant_name, address, comment, plan, duration)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
         RETURNING id
-    """, (name, phone, email, restaurant_name, comment))
+    """, (name, phone, email, restaurant_name, address, comment, plan, duration))
     req_id = cur.fetchone()["id"]
     conn.commit()
     conn.close()

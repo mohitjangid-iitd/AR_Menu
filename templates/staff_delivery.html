@@ -346,6 +346,10 @@ window.fetch = async function(...args) {
 
 let currentFilter = 'active';
 
+function getTodayStr() {
+    return new Date().toISOString().split('T')[0];
+}
+
 function setFilter(f, el) {
     currentFilter = f;
     document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
@@ -382,15 +386,23 @@ async function updateStatus(orderId, status, btn) {
 
 async function load() {
     const list = document.getElementById('orders-list');
+    list.innerHTML = `<div class="empty-state"><i class="fas fa-spinner fa-spin"></i><p>Loading...</p></div>`;
     try {
         const res    = await fetch(`/api/orders/${CLIENT_ID}/filter?source=delivery&branch_id=${BRANCH_ID}`);
         const orders = await res.json();
 
+        // ── Date filter: sirf aaj ke orders ──
+        const todayStr = getTodayStr();
+        const dateFiltered = orders.filter(o => {
+            if (!o.created_at) return false;
+            return (o.created_at || '').substring(0, 10) === todayStr;
+        });
+
         let filtered;
         if (currentFilter === 'active') {
-            filtered = orders.filter(o => ['ready','out_for_delivery'].includes(o.status));
+            filtered = dateFiltered.filter(o => ['ready','out_for_delivery'].includes(o.status));
         } else {
-            filtered = orders.filter(o => o.status === currentFilter);
+            filtered = dateFiltered.filter(o => o.status === currentFilter);
         }
 
         if (!filtered.length) {

@@ -139,6 +139,13 @@
             font-size: clamp(0.7rem, 2vw, 0.8rem);
             padding: clamp(6px, 1.4vw, 8px) clamp(10px, 2.8vw, 16px);
         }
+
+        /* Orders Pagination */
+        .orders-page-bar { display:flex; align-items:center; justify-content:center; gap:12px; padding:16px 0 8px; }
+        .page-btn { padding:7px 18px; border-radius:10px; border:1.5px solid #eee; background:white; font-size:0.8rem; font-weight:700; cursor:pointer; font-family:var(--font-secondary); color:var(--secondary); transition:all 0.15s; }
+        .page-btn:hover:not(:disabled) { background:var(--primary); border-color:var(--primary); }
+        .page-btn:disabled { opacity:0.35; cursor:default; }
+        .page-info { font-size:0.82rem; font-weight:600; color:#888; min-width:60px; text-align:center; }
     </style>
 
     <!-- Static CSS -->
@@ -277,10 +284,10 @@
     <!-- ORDERS -->
     <div id="tab-orders" style="display:none">
         <div class="filter-bar">
-            <select class="filter-sel" id="f-orders-branch" onchange="loadOrders()" style="display:none;width:140px;flex-shrink:0;">
+            <select class="filter-sel" id="f-orders-branch" onchange="resetAndLoadOrders()" style="display:none;width:140px;flex-shrink:0;">
                 <option value="">🏪 All Branches</option>
             </select>
-            <select class="filter-sel" id="f-status" onchange="loadOrders()" style="width:120px;flex-shrink:0;">
+            <select class="filter-sel" id="f-status" onchange="resetAndLoadOrders()" style="width:120px;flex-shrink:0;">
                 <option value="">All Status</option>
                 <option value="kitchen">In Kitchen</option>
                 <option value="ready">Ready</option>
@@ -291,24 +298,25 @@
                 <option value="paid">Paid</option>
                 <option value="cancelled">Cancelled</option>
             </select>
-            <select class="filter-sel" id="f-source" onchange="loadOrders()" style="width:120px;flex-shrink:0;">
+            <select class="filter-sel" id="f-source" onchange="resetAndLoadOrders()" style="width:120px;flex-shrink:0;">
                 <option value="">All Sources</option>
                 <option value="customer">Customer</option>
                 <option value="waiter">Staff</option>
                 <option value="delivery">Delivery</option>
             </select>
-            <select class="filter-sel" id="f-time" onchange="loadOrders()" style="width:120px;flex-shrink:0;">
+            <select class="filter-sel" id="f-time" onchange="resetAndLoadOrders()" style="width:120px;flex-shrink:0;">
                 <option value="">All Time</option>
                 <option value="today">Today</option>
                 <option value="week">This Week</option>
                 <option value="month">This Month</option>
                 <option value="year">This Year</option>
             </select>
-            <button class="refresh-btn" onclick="loadOrders()" style="flex-shrink:0;"><i class="fas fa-rotate"></i></button>
+            <button class="refresh-btn" onclick="resetAndLoadOrders()" style="flex-shrink:0;"><i class="fas fa-rotate"></i></button>
         </div>
         <div id="orders-list">
             <div class="empty-state"><i class="fas fa-receipt"></i>Loading...</div>
         </div>
+        <div id="orders-pagination"></div>
     </div>
 
     <!-- TABLES -->

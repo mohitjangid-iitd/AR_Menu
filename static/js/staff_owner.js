@@ -47,7 +47,7 @@ function switchTab(tab, btn) {
     btn.classList.add('active');
     if (tab === 'overview')  { loadAll(); }
     if (tab === 'analytics') { if (!analyticsData) loadAll(); else renderAnalyticsTab(); }
-    if (tab === 'orders')    loadOrders();
+    if (tab === 'orders')    resetAndLoadOrders();
     if (tab === 'tables')    { loadTables(); if (!ownerRestData) loadOwnerRestData(); }
     if (tab === 'staff')     loadStaff();
     if (tab === 'manage')    initManageTab();
@@ -149,7 +149,7 @@ function renderAnalyticsTab() {
     renderBarChart ('chart-daily-orders', days, dayOrds, 'Orders',       SECONDARY, 150);
 
     // Top items
-    const items  = d.top_items || [];
+    const items  = (d.top_items || []).slice(0, 5);
     const maxQty = items[0]?.qty || 1;
     const rankCls = ['gold','silver','bronze'];
     document.getElementById('top-items-list').innerHTML = items.length
@@ -220,32 +220,45 @@ function renderLineChart(id, labels, data, label, color) {
     });
 }
 
-// ── ORDERS ──
+// ── ORDERS — Paginated (snapshot anchor via before_id) ──
+const ORDERS_PAGE_SIZE = 25;
+let _ordersPage       = 0;       // current page (0-indexed)
+let _ordersAnchorId   = null;    // before_id — Page 1 load ke time ka max order id
+let _ordersHasMore    = true;    // kya aur pages hain?
+
+// Filter change hone pe reset karo aur fresh load karo
+function resetAndLoadOrders() {
+    _ordersPage     = 0;
+    _ordersAnchorId = null;
+    _ordersHasMore  = true;
+    loadOrders();
+}
+
 async function loadOrders() {
     const status  = (document.getElementById('f-status')  || {value:''}).value;
     const source  = (document.getElementById('f-source')  || {value:''}).value;
     const time    = (document.getElementById('f-time')    || {value:''}).value;
 
     const selectedBranch = getTabBranch('orders');
-    let url = selectedBranch
+    let baseUrl = selectedBranch
         ? `/api/orders/${clientId}/filter?branch_id=${selectedBranch}&`
         : `/api/orders/${clientId}/filter?`;
 
-    // "kitchen" = pending + preparing — dono fetch karke merge
+    // Status filter
     if (status === 'kitchen') {
-        url += `status=pending&`;
+        baseUrl += `status=pending&`;
     } else if (status === 'paid') {
-        // paid = done orders jinke table paid hain — all done for now
-        url += `status=done&`;
+        baseUrl += `status=done&`;
     } else if (status) {
-        url += `status=${status}&`;
+        baseUrl += `status=${status}&`;
     }
+
+    // Source filter
     if (source === 'waiter') {
-        // waiter filter — 'waiter' (purane orders) aur 'Staff' (naye orders) dono
-        url += `source=waiter&`;
+        baseUrl += `source=waiter&`;
         window._fetchStaffAlso = true;
     } else if (source) {
-        url += `source=${source}&`;
+        baseUrl += `source=${source}&`;
         window._fetchStaffAlso = false;
     } else {
         window._fetchStaffAlso = false;
@@ -263,33 +276,50 @@ async function loadOrders() {
             fromDate = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
         } else if (time === 'month') fromDate = `${now.getFullYear()}-${pad(now.getMonth()+1)}-01`;
         else if (time === 'year')  fromDate = `${now.getFullYear()}-01-01`;
-        if (fromDate) url += `from_date=${fromDate}&`;
+        if (fromDate) baseUrl += `from_date=${fromDate}&`;
     }
+
+    // Pagination params
+    const offset = _ordersPage * ORDERS_PAGE_SIZE;
+    let url = baseUrl + `limit=${ORDERS_PAGE_SIZE}&offset=${offset}&`;
+    // Snapshot anchor — Page 1 ke baad set hota hai, naye orders se shift nahi hogi
+    if (_ordersAnchorId) url += `before_id=${_ordersAnchorId}&`;
 
     const summaryBranch = selectedBranch || branchId;
     let [ordersRes, summaryRes] = await Promise.all([
         fetch(url), fetch(`/api/tables/${clientId}/summary?branch_id=${summaryBranch}`)
     ]);
     let orders = await ordersRes.json();
-    // Staff filter — merge 'waiter' + 'Staff' source orders
+
+    // Staff filter — merge 'waiter' + 'Staff' source orders (only page 1 for simplicity)
     if (window._fetchStaffAlso) {
         const staffUrl = url.replace('source=waiter&', 'source=Staff&');
         const staffRes = await fetch(staffUrl);
         const staffOrders = await staffRes.json();
-        orders = [...orders, ...staffOrders].sort((a,b) => b.id - a.id);
+        orders = [...orders, ...staffOrders].sort((a,b) => b.id - a.id).slice(0, ORDERS_PAGE_SIZE);
     }
+
+    // Page 1 load pe anchor set karo — yahi snapshot fix karega
+    if (_ordersPage === 0 && orders.length > 0 && !_ordersAnchorId) {
+        _ordersAnchorId = orders[0].id;  // sabse bada id (ORDER BY id DESC)
+    }
+
+    // Agar ORDERS_PAGE_SIZE se kam aaye — last page hai
+    _ordersHasMore = orders.length === ORDERS_PAGE_SIZE;
+
     const summary = await summaryRes.json();
     const tMap = {};
     summary.forEach(t => tMap[String(t.table_no)] = t);
 
     const list = document.getElementById('orders-list');
-    if (!orders.length) {
+    if (!orders.length && _ordersPage === 0) {
         list.innerHTML = '<div class="empty-state"><i class="fas fa-receipt"></i><p>No orders found</p></div>';
+        renderOrdersPagination();
         return;
     }
     list.innerHTML = orders.map(o => {
         const items = typeof o.items === 'string' ? JSON.parse(o.items) : o.items;
-        const itemsText = items.map(i => `${i.name} ×${i.qty}`).join(', ');
+        const itemsText = items.map(i => `${i.name} x${i.qty}`).join(', ');
         const tInfo = tMap[String(o.table_no)] || {};
         const payBadge = tInfo.payment_status === 'paid'
             ? `<span class="badge pay-paid">PAID</span>`
@@ -309,9 +339,36 @@ async function loadOrders() {
                 <div class="order-meta">T${o.table_no} · #${o.id}<br>${(o.created_at||'').substring(0,16)}</div>
             </div>
             <div class="order-items-text">${itemsText}</div>
-            <div class="order-foot"><div class="order-total">₹${o.total}</div></div>
+            <div class="order-foot"><div class="order-total">&#8377;${o.total}</div></div>
         </div>`;
     }).join('');
+
+    renderOrdersPagination();
+
+    // Page change hone pe scroll to top (orders tab ke upar tak)
+    const ordersTab = document.getElementById('tab-orders');
+    if (ordersTab) ordersTab.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function renderOrdersPagination() {
+    const el = document.getElementById('orders-pagination');
+    if (!el) return;
+    const page = _ordersPage + 1; // 1-indexed display
+    const prevDisabled = _ordersPage === 0 ? 'disabled' : '';
+    const nextDisabled = !_ordersHasMore   ? 'disabled' : '';
+    el.innerHTML = `
+        <div class="orders-page-bar">
+            <button class="page-btn" ${prevDisabled} onclick="ordersGoPage(${_ordersPage - 1})">&#8592; Prev</button>
+            <span class="page-info">Page ${page}</span>
+            <button class="page-btn" ${nextDisabled} onclick="ordersGoPage(${_ordersPage + 1})">Next &#8594;</button>
+        </div>`;
+}
+
+function ordersGoPage(page) {
+    if (page < 0) return;
+    if (page > _ordersPage && !_ordersHasMore) return;
+    _ordersPage = page;
+    loadOrders();
 }
 
 // ── TABLES ──

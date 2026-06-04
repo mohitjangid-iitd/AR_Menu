@@ -28,8 +28,53 @@
 
     <!-- Static CSS -->
     <link rel="stylesheet" href="/static/css/staff_kitchen.css?v={{ static_v('css/staff_kitchen.css') }}">
+
+    <style>
+        /* Delivery order — orange-amber left border, distinct from table orders */
+        .order-card.order-type-delivery {
+            border-left: 4px solid #F59E0B !important;
+        }
+        .order-card.order-type-delivery .order-type-label {
+            background: #FEF3C7;
+            color: #92400E;
+            border-radius: 6px;
+            padding: 2px 8px;
+            font-size: 0.72rem;
+            font-weight: 600;
+            letter-spacing: 0.04em;
+        }
+
+        /* 3-way toggle */
+        .order-filter-toggle {
+            display: inline-flex;
+            background: rgba(0,0,0,0.07);
+            border-radius: 10px;
+            padding: 3px;
+            gap: 2px;
+        }
+        .order-filter-toggle button {
+            border: none;
+            background: transparent;
+            border-radius: 8px;
+            padding: 6px 14px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            cursor: pointer;
+            color: rgba(0,0,0,0.5);
+            transition: background 0.18s, color 0.18s;
+            white-space: nowrap;
+        }
+        .order-filter-toggle button.active {
+            background: #fff;
+            color: rgba(0,0,0,0.85);
+            box-shadow: 0 1px 4px rgba(0,0,0,0.10);
+        }
+        /* Hide order cards based on active filter */
+        body[data-order-filter="delivery"] .order-card.order-type-table { display: none !important; }
+        body[data-order-filter="table"]    .order-card.order-type-delivery { display: none !important; }
+    </style>
 </head>
-<body>
+<body data-order-filter="all">
 
 <div class="topbar">
     <div class="topbar-left">
@@ -45,7 +90,20 @@
 <div class="body">
     <div class="toolbar">
         <h2>🔥 Live Orders</h2>
-        <button class="refresh-btn" onclick="load()"><i class="fas fa-rotate"></i> Refresh</button>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+            <div class="order-filter-toggle" id="orderFilterToggle">
+                <button class="active" data-filter="all" onclick="setOrderFilter('all', this)">
+                    <i class="fas fa-border-all" style="margin-right:5px;font-size:0.75rem;"></i>All
+                </button>
+                <button data-filter="delivery" onclick="setOrderFilter('delivery', this)">
+                    <i class="fas fa-motorcycle" style="margin-right:5px;font-size:0.75rem;"></i>Delivery
+                </button>
+                <button data-filter="table" onclick="setOrderFilter('table', this)">
+                    <i class="fas fa-utensils" style="margin-right:5px;font-size:0.75rem;"></i>Table
+                </button>
+            </div>
+            <button class="refresh-btn" onclick="load()"><i class="fas fa-rotate"></i> Refresh</button>
+        </div>
     </div>
     <div id="orders-list">
         <div class="empty-state"><i class="fas fa-spinner fa-spin"></i><p>Loading...</p></div>
@@ -67,6 +125,12 @@
 async function doLogout() {
     await fetch('/api/auth/logout', { method: 'POST' });
     window.location.replace('/login');
+}
+
+function setOrderFilter(filter, btn) {
+    document.body.setAttribute('data-order-filter', filter);
+    document.querySelectorAll('#orderFilterToggle button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
 }
 </script>
 

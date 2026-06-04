@@ -37,7 +37,7 @@
 
     <div class="nav-actions">
       <a href="/login" class="nav-login">Login</a>
-      <a href="https://wa.me/{{ config.whatsapp }}" target="_blank" rel="noopener" class="btn btn-primary btn-nav hide-mobile">Get Started →</a>
+      <a href="#pricing" class="btn btn-primary btn-nav hide-mobile">Get Started →</a>
     </div>
 
     <button class="hamburger" id="hamburger" aria-label="Toggle menu">
@@ -54,7 +54,7 @@
   <a href="#cta">Contact</a>
   <div class="mobile-menu-actions">
     <a href="/login" class="btn btn-outline">Login</a>
-    <a href="https://wa.me/{{ config.whatsapp }}" target="_blank" rel="noopener" class="btn btn-primary">Get Started →</a>
+    <a href="#pricing" class="btn btn-primary">Get Started →</a>
   </div>
 </div>
 
@@ -77,10 +77,9 @@
         </div>
 
         <h1>
-          Transform Your<br/>
-          Restaurant with<br/>
-          <span class="grad">Smart Digital</span><br/>
-          Management
+          Zero Chaos.<br/>
+          Faster Orders.<br/>
+          <span class="grad">Happier Tables.</span>
         </h1>
 
         <p class="hero-sub">
@@ -91,7 +90,7 @@
           <a href="https://wa.me/{{ config.whatsapp }}" target="_blank" rel="noopener" class="btn btn-primary btn-lg">Get Started on WhatsApp →</a>
           <a href="#demo" class="btn-play">
             <div class="play-circle">▶</div>
-            See the Panels
+            See It in Action
           </a>
         </div>
       </div>
@@ -186,6 +185,7 @@
           <li><span class="chk">✓</span>Real-time kitchen order dashboard with instant alerts</li>
           <li><span class="chk">✓</span>Waiter app for table-side order management</li>
           <li><span class="chk">✓</span>Counter &amp; billing with multi-payment support</li>
+          <li><span class="chk">✓</span>Online ordering &amp; delivery panel with rider management</li>
           <li><span class="chk">✓</span>Owner analytics with daily/weekly revenue insights</li>
         </ul>
       </div>
@@ -213,6 +213,12 @@
           <div class="fn-icon">💳</div>
           <div><div class="fn-title">Counter &amp; Billing</div><div class="fn-desc">Payments, receipts &amp; settlements</div></div>
           <div class="fn-badge">Counter</div>
+        </div>
+        <div class="flow-connector"></div>
+        <div class="flow-node">
+          <div class="fn-icon">🛵</div>
+          <div><div class="fn-title">Delivery Panel</div><div class="fn-desc">Online orders, rider dispatch &amp; tracking</div></div>
+          <div class="fn-badge">Delivery</div>
         </div>
         <div class="flow-connector"></div>
         <div class="flow-node">
@@ -269,7 +275,7 @@
       </div>
       <div class="feat-card reveal reveal-delay-2">
         <div class="feat-icon">💳</div>
-        <h3>Billing &amp; Counter Management</h3>
+        <h3>Lightning-Fast Billing</h3>
         <p>Itemized bills, payment processing, discounts, split bills, and digital receipts — all from a single counter interface. Supports UPI, card, and cash.</p>
         <span class="feat-link">Explore feature →</span>
       </div>
@@ -290,6 +296,24 @@
         <h3>Smart Push Notifications</h3>
         <p>Keep your entire team in sync with intelligent alerts for new orders, delays, table requests, and inventory warnings. Everyone stays in the loop.</p>
         <span class="feat-link">Explore feature →</span>
+      </div>
+      <div class="feat-card reveal">
+        <div class="feat-icon">🛒</div>
+        <h3>Online Ordering</h3>
+        <p>Let customers order directly from your restaurant's branded page — for dine-in, takeaway, or delivery. Orders flow straight into the kitchen dashboard with zero manual entry.</p>
+        <span class="feat-link">Start accepting orders →</span>
+      </div>
+      <div class="feat-card accent-card reveal reveal-delay-1">
+        <div class="feat-icon">🤖</div>
+        <h3>AI Chatbot Assistant</h3>
+        <p>An always-on AI assistant answers customer questions, suggests dishes, handles FAQs, and helps with reservations — 24/7, in multiple languages. Every conversation is tracked in the Owner Panel: top queries, upsell rate, busiest hours, and customer satisfaction score.</p>
+        <span class="feat-link">Meet your AI host →</span>
+      </div>
+      <div class="feat-card reveal reveal-delay-2">
+        <div class="feat-icon">📸</div>
+        <h3>AI Photo → Menu</h3>
+        <p>Snap a photo of any dish and our AI instantly generates a complete menu entry — name, description, price suggestion, and dietary tags. Your menu builds itself in seconds.</p>
+        <span class="feat-link">Try it now →</span>
       </div>
     </div>
   </div>
@@ -348,7 +372,7 @@
             <p>The kitchen dashboard lights up with the new order in real-time. Chefs see exactly what's needed, with priority flagging and preparation timers.</p>
           </div>
         </div>
-        <div class="step-item reveal reveal-delay-2" data-step="5">
+        <div class="step-item reveal" data-step="5">
           <div class="step-num-wrap"><div class="step-num">6</div></div>
           <div class="step-content-inner">
             <span class="step-emoji">🍽️</span>
@@ -473,9 +497,10 @@
     </div>
 
     <div class="demo-tabs-row">
-      <button class="dtab active" data-panel="kitchen">🔥 Kitchen</button>
-      <button class="dtab" data-panel="owner">📊 Owner</button>
-      <button class="dtab" data-panel="waiter">🪑 Waiter</button>
+      <button class="dtab active" data-panel="kitchen"><span class="dtab-icon">🔥</span><span class="dtab-text"> Kitchen</span></button>
+      <button class="dtab" data-panel="owner"><span class="dtab-icon">📊</span><span class="dtab-text"> Owner</span></button>
+      <button class="dtab" data-panel="waiter"><span class="dtab-icon">🪑</span><span class="dtab-text"> Waiter</span></button>
+      <button class="dtab" data-panel="delivery"><span class="dtab-icon">🛵</span><span class="dtab-text"> Delivery</span></button>
     </div>
 
     <div class="demo-frame-wrap">
@@ -497,62 +522,133 @@
               </div>
               <span style="font-size:0.65rem;background:var(--primary);color:#1E1E2E;padding:3px 10px;border-radius:20px;font-weight:700;">KITCHEN</span>
             </div>
-            <div style="padding:12px 16px 6px;display:flex;justify-content:space-between;align-items:center;">
+            <div style="padding:12px 16px 6px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
               <span style="font-weight:700;color:#1E1E2E;font-size:0.9rem;">🔥 Live Orders</span>
-              <span style="font-size:0.7rem;color:#aaa;background:white;padding:5px 12px;border-radius:8px;border:1px solid #eee;">↻ Refresh</span>
+              <div style="display:flex;align-items:center;gap:6px;">
+                <div style="display:inline-flex;background:rgba(0,0,0,0.07);border-radius:8px;padding:2px;gap:2px;">
+                  <span style="font-size:0.75rem;font-weight:600;background:white;color:rgba(0,0,0,0.85);padding:4px 10px;border-radius:6px;box-shadow:0 1px 3px rgba(0,0,0,0.1);cursor:pointer;">All</span>
+                  <span style="font-size:0.75rem;font-weight:500;color:rgba(0,0,0,0.5);padding:4px 10px;border-radius:6px;cursor:pointer;">Delivery</span>
+                  <span style="font-size:0.75rem;font-weight:500;color:rgba(0,0,0,0.5);padding:4px 10px;border-radius:6px;cursor:pointer;">Table</span>
+                </div>
+                <span style="font-size:0.7rem;color:#aaa;background:white;padding:5px 12px;border-radius:8px;border:1px solid #eee;cursor:pointer;">↻ Refresh</span>
+              </div>
             </div>
             <div style="padding:10px 16px 16px;" class="rp-kitchen-grid-wrap">
 
+              <!-- Order 1: Table 7 (Pending) -->
               <div class="rp-order-card rp-pending">
-                <div class="rp-order-head"><span class="rp-table">Table 7</span><span class="rp-time">2 min ago</span></div>
-                <div class="rp-order-id">#ORD-041</div>
-                <div class="rp-items">
-                  <div class="rp-item-row"><span class="rp-item-name">Paneer Tikka</span><span class="rp-item-qty">×2</span></div>
-                  <div class="rp-item-row"><span class="rp-item-name">Dal Makhani</span><span class="rp-item-qty">×1</span></div>
-                  <div class="rp-item-row"><span class="rp-item-name">Garlic Naan</span><span class="rp-item-qty">×3</span></div>
+                <div class="rp-order-head">
+                  <div>
+                    <div class="rp-table">Table 7</div>
+                    <div class="rp-order-id">#ORD-041</div>
+                  </div>
+                  <span class="rp-time">2 min ago</span>
                 </div>
-                <div class="rp-order-foot">
-                  <span class="rp-total">₹840</span>
-                  <select class="rp-status-sel"><option selected>Pending</option><option>Preparing</option><option>Ready</option></select>
+                <div class="rp-items" style="display:flex; flex-direction:column; gap:4px; margin-top:8px;">
+                  <!-- Master row -->
+                  <div style="display:flex; align-items:center; justify-content:space-between; padding:6px; background:#f9f9f9; border-radius:6px; margin-bottom:4px;">
+                    <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-weight:700; font-size:0.8rem; color:#1E1E2E;">
+                      <input type="checkbox" style="width:16px; height:16px; accent-color:var(--primary);">
+                      <span>All Items Ready</span>
+                    </label>
+                    <span style="font-size:0.68rem; font-weight:700; background:#f5f5f5; color:#999; padding:2px 8px; border-radius:10px;">0/3 Ready</span>
+                  </div>
+                  <div style="border-top:1.5px dashed #eee; margin:2px 0 6px;"></div>
+                  <div style="display:flex; align-items:center; padding:4px 0; border-bottom:1px solid #f5f5f5;">
+                    <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.82rem; color:#1E1E2E; width:100%;">
+                      <input type="checkbox" style="width:16px; height:16px; accent-color:var(--primary);">
+                      <span style="flex:1;">Paneer Tikka ×2</span>
+                    </label>
+                  </div>
+                  <div style="display:flex; align-items:center; padding:4px 0; border-bottom:1px solid #f5f5f5;">
+                    <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.82rem; color:#1E1E2E; width:100%;">
+                      <input type="checkbox" style="width:16px; height:16px; accent-color:var(--primary);">
+                      <span style="flex:1;">Dal Makhani ×1</span>
+                    </label>
+                  </div>
+                  <div style="display:flex; align-items:center; padding:4px 0;">
+                    <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.82rem; color:#1E1E2E; width:100%;">
+                      <input type="checkbox" style="width:16px; height:16px; accent-color:var(--primary);">
+                      <span style="flex:1;">Garlic Naan ×3</span>
+                    </label>
+                  </div>
+                </div>
+                <div class="rp-order-foot" style="margin-top:10px; padding-top:8px; border-top:1px solid #eee;">
+                  <span class="rp-total">Total: ₹840</span>
                 </div>
               </div>
 
-              <div class="rp-order-card rp-preparing">
-                <div class="rp-order-head"><span class="rp-table">Table 12</span><span class="rp-time">8 min ago</span></div>
-                <div class="rp-order-id">#ORD-038</div>
-                <div class="rp-items">
-                  <div class="rp-item-row"><span class="rp-item-name">Butter Chicken</span><span class="rp-item-qty">×1</span></div>
-                  <div class="rp-item-row"><span class="rp-item-name">Biryani</span><span class="rp-item-qty">×2</span></div>
+              <!-- Order 2: Table 12 (Preparing) -->
+              <div class="rp-order-card rp-preparing hide-mobile-card">
+                <div class="rp-order-head">
+                  <div>
+                    <div class="rp-table">Table 12</div>
+                    <div class="rp-order-id">#ORD-038</div>
+                  </div>
+                  <span class="rp-time">8 min ago</span>
                 </div>
-                <div class="rp-order-foot">
-                  <span class="rp-total">₹1,140</span>
-                  <select class="rp-status-sel"><option>Pending</option><option selected>Preparing</option><option>Ready</option></select>
+                <div class="rp-items" style="display:flex; flex-direction:column; gap:4px; margin-top:8px;">
+                  <!-- Master row -->
+                  <div style="display:flex; align-items:center; justify-content:space-between; padding:6px; background:#fff3e0; border-radius:6px; margin-bottom:4px;">
+                    <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-weight:700; font-size:0.8rem; color:#1E1E2E;">
+                      <input type="checkbox" style="width:16px; height:16px; accent-color:var(--primary);" indeterminate>
+                      <span>All Items Ready</span>
+                    </label>
+                    <span style="font-size:0.68rem; font-weight:700; background:#fff3e0; color:#e65100; padding:2px 8px; border-radius:10px;">1/2 Ready</span>
+                  </div>
+                  <div style="border-top:1.5px dashed #eee; margin:2px 0 6px;"></div>
+                  <div style="display:flex; align-items:center; padding:4px 0; border-bottom:1px solid #f5f5f5;">
+                    <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.82rem; color:#1E1E2E; width:100%;">
+                      <input type="checkbox" style="width:16px; height:16px; accent-color:var(--primary);" checked disabled style="opacity:0.4;">
+                      <span style="flex:1; text-decoration:line-through; color:#bbb;">Butter Chicken ×1</span>
+                    </label>
+                  </div>
+                  <div style="display:flex; align-items:center; padding:4px 0;">
+                    <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.82rem; color:#1E1E2E; width:100%;">
+                      <input type="checkbox" style="width:16px; height:16px; accent-color:var(--primary);">
+                      <span style="flex:1;">Biryani ×2</span>
+                    </label>
+                  </div>
+                </div>
+                <div class="rp-order-foot" style="margin-top:10px; padding-top:8px; border-top:1px solid #eee;">
+                  <span class="rp-total">Total: ₹1,140</span>
                 </div>
               </div>
 
-              <div class="rp-order-card rp-ready">
-                <div class="rp-order-head"><span class="rp-table">Table 4</span><span class="rp-time">14 min ago</span></div>
-                <div class="rp-order-id">#ORD-033</div>
-                <div class="rp-items">
-                  <div class="rp-item-row"><span class="rp-item-name">Masala Dosa</span><span class="rp-item-qty">×1</span></div>
-                  <div class="rp-item-row"><span class="rp-item-name">Filter Coffee</span><span class="rp-item-qty">×2</span></div>
+              <!-- Order 3: Table 4 (Ready) -->
+              <div class="rp-order-card rp-ready hide-mobile-card">
+                <div class="rp-order-head">
+                  <div>
+                    <div class="rp-table">Table 4</div>
+                    <div class="rp-order-id">#ORD-033</div>
+                  </div>
+                  <span class="rp-time">14 min ago</span>
                 </div>
-                <div class="rp-order-foot">
-                  <span class="rp-total">₹420</span>
-                  <select class="rp-status-sel"><option>Pending</option><option>Preparing</option><option selected>Ready ✓</option></select>
+                <div class="rp-items" style="display:flex; flex-direction:column; gap:4px; margin-top:8px;">
+                  <!-- Master row -->
+                  <div style="display:flex; align-items:center; justify-content:space-between; padding:6px; background:#e8f5e9; border-radius:6px; margin-bottom:4px;">
+                    <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-weight:700; font-size:0.8rem; color:#1E1E2E;">
+                      <input type="checkbox" style="width:16px; height:16px; accent-color:var(--primary);" checked disabled style="opacity:0.4;">
+                      <span>All Items Ready</span>
+                    </label>
+                    <span style="font-size:0.68rem; font-weight:700; background:#e8f5e9; color:#2e7d32; padding:2px 8px; border-radius:10px;">2/2 Ready</span>
+                  </div>
+                  <div style="border-top:1.5px dashed #eee; margin:2px 0 6px;"></div>
+                  <div style="display:flex; align-items:center; padding:4px 0; border-bottom:1px solid #f5f5f5;">
+                    <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.82rem; color:#1E1E2E; width:100%;">
+                      <input type="checkbox" style="width:16px; height:16px; accent-color:var(--primary);" checked disabled style="opacity:0.4;">
+                      <span style="flex:1; text-decoration:line-through; color:#bbb;">Masala Dosa ×1</span>
+                    </label>
+                  </div>
+                  <div style="display:flex; align-items:center; padding:4px 0;">
+                    <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.82rem; color:#1E1E2E; width:100%;">
+                      <input type="checkbox" style="width:16px; height:16px; accent-color:var(--primary);" checked disabled style="opacity:0.4;">
+                      <span style="flex:1; text-decoration:line-through; color:#bbb;">Filter Coffee ×2</span>
+                    </label>
+                  </div>
                 </div>
-              </div>
-
-              <div class="rp-order-card rp-pending">
-                <div class="rp-order-head"><span class="rp-table">Table 9</span><span class="rp-time">1 min ago</span></div>
-                <div class="rp-order-id">#ORD-042</div>
-                <div class="rp-items">
-                  <div class="rp-item-row"><span class="rp-item-name">Tandoori Platter</span><span class="rp-item-qty">×1</span></div>
-                  <div class="rp-item-row"><span class="rp-item-name">Lassi</span><span class="rp-item-qty">×2</span></div>
-                </div>
-                <div class="rp-order-foot">
-                  <span class="rp-total">₹680</span>
-                  <select class="rp-status-sel"><option selected>Pending</option><option>Preparing</option><option>Ready</option></select>
+                <div class="rp-order-foot" style="margin-top:10px; padding-top:8px; border-top:1px solid #eee;">
+                  <span class="rp-total">Total: ₹420</span>
                 </div>
               </div>
 
@@ -577,13 +673,13 @@
               </div>
               <span style="font-size:0.65rem;background:var(--primary);color:#1E1E2E;padding:3px 10px;border-radius:20px;font-weight:700;">OWNER</span>
             </div>
-            <!-- tab nav — matches staff_owner.css .tab-nav -->
+            <!-- tab nav — matches staff_owner.html tab-nav -->
             <div style="background:white;border-bottom:1px solid #eee;display:flex;overflow-x:auto;">
-              <div class="rp-tab active">📊 Overview</div>
-              <div class="rp-tab">📈 Analytics</div>
+              <div class="rp-tab active">📈 Analytics</div>
               <div class="rp-tab">🧾 Orders</div>
               <div class="rp-tab">🪑 Tables</div>
               <div class="rp-tab">👥 Staff</div>
+              <div class="rp-tab">🏪 My Restaurant</div>
             </div>
             <div style="padding:14px 16px;">
               <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
@@ -616,8 +712,24 @@
                   <div class="rp-stat-lbl">Pending Now</div>
                 </div>
               </div>
-              <div class="rp-section-hd">🕐 Orders by Hour</div>
-              <div class="rp-chart-card">
+              
+              <div class="rp-section-hd hide-mobile-card">📱 Order Sources — Today</div>
+              <div style="background:white; border-radius:12px; box-shadow:0 2px 16px rgba(0,0,0,0.07); padding:14px; margin-bottom:12px;" class="hide-mobile-card">
+                <div style="font-size:0.75rem; color:#666; margin-bottom:6px;">Customer app vs Waiter-placed vs Delivery</div>
+                <div style="display:flex; height:12px; border-radius:6px; overflow:hidden;">
+                  <div style="width:40%; background:#2196f3;"></div>
+                  <div style="width:35%; background:#9c27b0;"></div>
+                  <div style="width:25%; background:#f59e0b;"></div>
+                </div>
+                <div style="display:flex; justify-content:space-between; font-size:0.68rem; margin-top:8px; color:#555;">
+                  <span>🔵 Customer: 40%</span>
+                  <span>🟣 Waiter: 35%</span>
+                  <span>🟠 Delivery: 25%</span>
+                </div>
+              </div>
+
+              <div class="rp-section-hd hide-mobile-card">🕐 Orders by Hour — Today</div>
+              <div class="rp-chart-card hide-mobile-card">
                 <div class="rp-bar-chart">
                   <div class="rp-bar" style="height:35%"></div>
                   <div class="rp-bar" style="height:52%"></div>
@@ -632,8 +744,8 @@
                   <span>12p</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7p</span>
                 </div>
               </div>
-              <div class="rp-section-hd">🏆 Top Items Today</div>
-              <div class="rp-items-list">
+              <div class="rp-section-hd hide-mobile-card">🏅 Top Selling Items</div>
+              <div class="rp-items-list hide-mobile-card">
                 <div class="rp-item-list-row">
                   <span class="rp-rank rp-gold">1</span>
                   <span class="rp-iname">Butter Chicken</span>
@@ -681,7 +793,6 @@
             <div style="background:white;border-bottom:1px solid #eee;display:flex;">
               <div class="rp-tab active">🪑 Tables</div>
               <div class="rp-tab">📋 Orders</div>
-              <div class="rp-tab">➕ Place Order</div>
             </div>
             <div style="padding:14px 16px;">
               <!-- legend — matches .legend -->
@@ -690,6 +801,7 @@
                 <span><span class="rp-ldot" style="background:#ffb74d"></span>Pending</span>
                 <span><span class="rp-ldot" style="background:#4caf50"></span>Ready ✨</span>
                 <span><span class="rp-ldot" style="background:#90caf9"></span>Delivered</span>
+                <span><span class="rp-ldot" style="background:var(--primary)"></span>Billed</span>
                 <span><span class="rp-ldot" style="background:#bdbdbd"></span>Paid</span>
               </div>
               <!-- tables grid — matches staff_waiter.css .tables-grid -->
@@ -705,7 +817,7 @@
                 <div class="rp-table-box rp-t-occupied"><div class="rp-t-num">9</div><div class="rp-t-status">Pending</div></div>
               </div>
               <!-- order detail card — matches .order-row.ready from staff_waiter.css -->
-              <div style="margin-top:14px;">
+              <div style="margin-top:14px;" class="hide-mobile-card">
                 <div class="rp-group-lbl">Table 2 — Ready to Serve</div>
                 <div class="rp-waiter-order-row rp-wo-ready">
                   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
@@ -720,6 +832,90 @@
                     <span style="font-weight:700;color:var(--primary);font-size:0.9rem;">₹940</span>
                     <button class="rp-deliver-btn">Mark Delivered ✓</button>
                   </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── DELIVERY ── -->
+      <div class="demo-panel" id="panel-delivery">
+        <div class="demo-window">
+          <div class="dw-bar">
+            <div class="dw-dots"><span></span><span></span><span></span></div>
+            <span class="dw-title">Delivery Dashboard — Active Orders</span>
+            <span class="dw-badge dw-badge-accent">🛵 2 Active</span>
+          </div>
+          <div class="dw-body" style="padding:0;background:#f4f4f6;">
+            <!-- topbar — matches staff_delivery.html -->
+            <div style="background:#1E1E2E;color:white;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;">
+              <div style="display:flex;align-items:center;gap:10px;">
+                <div style="width:30px;height:30px;border-radius:50%;background:var(--primary);display:flex;align-items:center;justify-content:center;font-size:14px;">🍽️</div>
+                <span style="font-size:0.9rem;font-weight:700;">The Grand Spice</span>
+              </div>
+              <span style="font-size:0.65rem;background:rgba(255,255,255,0.15);color:white;padding:3px 10px;border-radius:20px;font-weight:700;letter-spacing:1px;">🛵 DELIVERY</span>
+            </div>
+            <!-- filter bar — matches staff_delivery.html -->
+            <div style="background:white;border-bottom:1px solid #eee;display:flex;overflow-x:auto;padding:10px 14px 10px;gap:8px;">
+              <span class="rp-delivery-pill active">🔴 Active</span>
+              <span class="rp-delivery-pill">📦 Ready</span>
+              <span class="rp-delivery-pill">🛵 Out</span>
+              <span class="rp-delivery-pill">✅ Delivered</span>
+              <span class="rp-delivery-pill">❌ Failed</span>
+            </div>
+            <!-- cards grid -->
+            <div style="padding:14px 16px;" class="rp-delivery-grid-wrap">
+              <!-- Order 1: Ready -->
+              <div class="rp-delivery-card rp-ready">
+                <div class="rp-card-head">
+                  <div>
+                    <div class="rp-order-id">#ORD-051 · 19:42</div>
+                    <div class="rp-customer-name">Pankaj Sharma</div>
+                    <div class="rp-customer-phone">📞 9876543210</div>
+                  </div>
+                  <span class="rp-status-badge rp-badge-ready">📦 Ready</span>
+                </div>
+                <div class="rp-address-row">
+                  <i class="fas fa-location-dot"></i>
+                  <span>12 Green Glen Layout, Sector 4</span>
+                </div>
+                <div class="rp-items">
+                  <div class="rp-item-row"><span class="rp-item-name">Paneer Tikka</span><span class="rp-item-qty">×2</span></div>
+                  <div class="rp-item-row"><span class="rp-item-name">Garlic Naan</span><span class="rp-item-qty">×3</span></div>
+                </div>
+                <div class="rp-order-foot" style="margin-top:8px; padding-top:8px; border-top:1px dashed #eee;">
+                  <span class="rp-total">Total: ₹740</span>
+                </div>
+                <div style="margin-top:12px; display:flex; gap:8px;">
+                  <button class="rp-delivery-btn-primary" style="flex:1;">🛵 Pick Up</button>
+                </div>
+              </div>
+
+              <!-- Order 2: Out for Delivery -->
+              <div class="rp-delivery-card rp-out hide-mobile-card">
+                <div class="rp-card-head">
+                  <div>
+                    <div class="rp-order-id">#ORD-050 · 19:30</div>
+                    <div class="rp-customer-name">Anjali Singh</div>
+                    <div class="rp-customer-phone">📞 9123456789</div>
+                  </div>
+                  <span class="rp-status-badge rp-badge-out">🛵 Out</span>
+                </div>
+                <div class="rp-address-row">
+                  <i class="fas fa-location-dot"></i>
+                  <span>Pocket B, Sector 6, Dwarka</span>
+                </div>
+                <div class="rp-items">
+                  <div class="rp-item-row"><span class="rp-item-name">Butter Chicken</span><span class="rp-item-qty">×1</span></div>
+                  <div class="rp-item-row"><span class="rp-item-name">Roti</span><span class="rp-item-qty">×4</span></div>
+                </div>
+                <div class="rp-order-foot" style="margin-top:8px; padding-top:8px; border-top:1px dashed #eee;">
+                  <span class="rp-total">Total: ₹460</span>
+                </div>
+                <div style="margin-top:12px; display:flex; gap:8px; width: 100%;">
+                  <button class="rp-delivery-btn-success">✅ Delivered</button>
+                  <button class="rp-delivery-btn-danger" style="border: 1.5px solid #ef4444; background: white; color: #ef4444; border-radius: 8px; font-weight: 700; font-size: 0.78rem; padding: 8px 12px; cursor: pointer;">❌ Failed</button>
                 </div>
               </div>
             </div>
@@ -851,8 +1047,10 @@
             {% endfor %}
           {% endif %}
         </ul>
-        <a href="https://wa.me/{{ config.whatsapp }}" target="_blank" rel="noopener"
-           class="btn {% if is_pro %}btn-primary{% else %}btn-outline{% endif %} pricing-cta">
+        <a href="/signup"
+           class="btn {% if is_pro %}btn-primary{% else %}btn-outline{% endif %} pricing-cta"
+           data-plan="{{ plan.key }}"
+           onclick="sessionStorage.setItem('zt_plan','{{ plan.key }}'); sessionStorage.setItem('zt_duration', document.querySelector('.ptoggle-btn.active')?.dataset.period || 'monthly');">
           Get Started →
         </a>
       </div>
@@ -933,6 +1131,7 @@
       const origEl   = card.querySelector('.price-original');
       const labelEl  = card.querySelector('.price-period-label');
       const priceWrap = card.querySelector('.pricing-price');
+      const ctaEl    = card.querySelector('.pricing-cta');
 
       priceWrap.classList.add('switching');
       setTimeout(()=>{
@@ -977,7 +1176,7 @@
   <div class="container" style="position:relative;z-index:2;">
     <div class="cta-box reveal">
       <span class="section-label">Get Started Today</span>
-      <h2>Ready to Modernize Your Restaurant?</h2>
+      <h2>Take Control of Your Restaurant Today.</h2>
       <p>Let's get your restaurant set up on {{ config.name }}. Reach out on WhatsApp and we'll walk you through everything — personally.</p>
       <div class="cta-btns">
         <a href="https://wa.me/{{ config.whatsapp }}" target="_blank" rel="noopener" class="btn btn-primary btn-lg">

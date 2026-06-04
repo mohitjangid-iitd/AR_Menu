@@ -56,7 +56,7 @@
         </button>
 
         <button class="tab-btn" 
-            onclick="window.open('/admin/blog', '_self')"
+            onclick="window.open(location.hostname === '127.0.0.1' ? '/admin/blog' : 'https://zentable.in/admin/blog', '_self')"
             style="background:var(--primary); color:#fff; border:none; padding:8px 15px; border-radius:6px;">
             ✍️ Blog
         </button>

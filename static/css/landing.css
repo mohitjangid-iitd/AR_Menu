@@ -614,7 +614,10 @@ h1,h2,h3,h4,h5 { font-family: var(--font-display); font-weight: 700; line-height
 }
 
 /* ── PRODUCT OVERVIEW ── */
-#product { padding: 100px 24px; }
+#product {
+  padding: 100px 24px;
+  background: linear-gradient(180deg, var(--bg2) 0%, var(--bg) 100%);
+}
 
 .product-inner {
   display: grid;
@@ -1500,6 +1503,26 @@ footer {
 
   /* Footer */
   .footer-grid { gap: 32px; }
+
+  /* Pricing period toggle bar responsiveness */
+  .pricing-toggle-wrap {
+    padding: 0 4px !important;
+  }
+  .pricing-toggle {
+    width: 100% !important;
+    justify-content: space-between !important;
+  }
+  .ptoggle-btn {
+    flex: 1 !important;
+    justify-content: center !important;
+    padding: 8px 6px !important;
+    font-size: 11px !important;
+    gap: 4px !important;
+  }
+  .ptoggle-disc {
+    font-size: 8px !important;
+    padding: 1px 4px !important;
+  }
 }
 
 /* ════════════════════════════════════════════
@@ -2381,4 +2404,206 @@ footer {
   font-size: 11px;
   color: rgba(255,255,255,0.3);
   line-height: 1.4;
+}
+
+/* ── Delivery panel mockup ── */
+.rp-delivery-filters {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.rp-delivery-filters::-webkit-scrollbar { display: none; }
+
+.rp-delivery-pill {
+  padding: 6px 12px;
+  border-radius: 20px;
+  border: 1.5px solid #e0e0e0;
+  background: white;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #666;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s;
+}
+.rp-delivery-pill.active {
+  background: var(--secondary);
+  border-color: var(--secondary);
+  color: white;
+}
+
+.rp-delivery-card {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  padding: 14px;
+  border-left: 4px solid #ddd;
+  margin-bottom: 12px;
+  text-align: left;
+}
+.rp-delivery-card.rp-ready { border-left-color: #f59e0b; }
+.rp-delivery-card.rp-out { border-left-color: #3b82f6; }
+.rp-delivery-card.rp-delivered { border-left-color: #22c55e; }
+
+.rp-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.rp-customer-name {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #1E1E2E;
+}
+.rp-customer-phone {
+  font-size: 0.75rem;
+  color: #888;
+  margin-top: 2px;
+}
+.rp-status-badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 20px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.rp-badge-ready { background: #fef3c7; color: #d97706; }
+.rp-badge-out { background: #dbeafe; color: #1d4ed8; }
+
+.rp-address-row {
+  font-size: 0.78rem;
+  color: #555;
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  line-height: 1.4;
+  margin-bottom: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px dashed #f0f0f0;
+}
+.rp-address-row i { color: #aaa; margin-top: 2px; }
+
+.rp-delivery-btn-primary {
+  background: var(--secondary);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 8px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.rp-delivery-btn-success {
+  background: #22c55e;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  flex: 1;
+}
+.rp-delivery-btn-danger {
+  background: #ef4444;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.rp-delivery-grid-wrap {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+@media (max-width: 600px) {
+  .rp-delivery-grid-wrap { grid-template-columns: 1fr; }
+}
+
+/* Make the entire mockup windows completely static, inert & visual-only */
+.demo-window {
+  pointer-events: none !important;
+  user-select: none !important;
+}
+
+/* ── Mobile Layout Polish for Demo Frame & Tabs ── */
+@media (max-width: 768px) {
+  /* Tabs icon-only view on mobile */
+  .dtab-text {
+    display: none !important;
+  }
+  .dtab {
+    padding: 12px 18px !important;
+    font-size: 20px !important;
+    border-radius: 12px !important;
+    line-height: 1 !important;
+  }
+  .demo-tabs-row {
+    gap: 12px !important;
+    justify-content: center !important;
+    flex-wrap: wrap !important;
+    overflow-x: visible !important;
+    padding-bottom: 0 !important;
+  }
+
+  /* Smartphone size wrapper for a realistic app layout on mobile viewports */
+  .demo-window {
+    max-width: 360px !important;
+    height: 580px !important; /* Proportioned mobile layout height (+20% increase) */
+    margin: 0 auto !important;
+    border-radius: 36px !important;
+    border: 8px solid #2D2D3A !important; /* Phone bezel effect */
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.15) !important;
+    overflow: hidden !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+  
+  .dw-bar {
+    padding: 10px 16px !important;
+    background: #2D2D3A !important;
+    border-bottom: none !important;
+  }
+  
+  .dw-dots {
+    display: none !important; /* Hide standard window buttons on mobile */
+  }
+  
+  .dw-title {
+    color: #fff !important;
+    font-size: 11px !important;
+    margin-left: 0 !important;
+    text-align: center !important;
+    flex: 1 !important;
+  }
+  
+  .dw-badge {
+    display: none !important; /* Hide badge in header for a clean title bar */
+  }
+  
+  /* Restructure inner grids to 1 column for smartphone scale */
+  .rp-kitchen-grid-wrap,
+  .rp-delivery-grid-wrap {
+    grid-template-columns: 1fr !important;
+    padding: 10px 12px 12px !important;
+  }
+  
+  .dw-body {
+    padding: 0 !important;
+    flex: 1 !important;
+    overflow: hidden !important; /* Completely static and non-scrollable mockup layout */
+  }
+
+  .hide-mobile-card {
+    display: none !important; /* Hide excess content elements on mobile frames */
+  }
 }

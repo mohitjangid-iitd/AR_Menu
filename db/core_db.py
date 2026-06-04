@@ -345,7 +345,13 @@ def place_order(client_id: str, table_no: int, items: list,
 
 
 def get_orders(client_id: str, status: str = None, table_no: int = None,
-               source: str = None, from_date: str = None, branch_id: str = None):
+               source: str = None, from_date: str = None, branch_id: str = None,
+               limit: int = None, offset: int = 0, before_id: int = None):
+    """
+    limit / offset / before_id — pagination ke liye.
+    before_id: snapshot anchor — sirf wahi orders jinki id <= before_id
+    (naye orders aane se page shift nahi hogi)
+    """
     conn = get_db()
     query = "SELECT * FROM orders WHERE client_id=%s"
     params = [client_id]
@@ -359,7 +365,11 @@ def get_orders(client_id: str, status: str = None, table_no: int = None,
         query += " AND source=%s"; params.append(source)
     if from_date:
         query += " AND DATE(created_at::timestamp) >= %s"; params.append(from_date)
-    query += " ORDER BY created_at DESC"
+    if before_id:
+        query += " AND id <= %s"; params.append(before_id)
+    query += " ORDER BY id DESC"
+    if limit:
+        query += " LIMIT %s OFFSET %s"; params.extend([limit, offset])
     cur = conn.execute(query, params)
     rows = cur.fetchall()
     conn.close()
