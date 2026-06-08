@@ -41,6 +41,18 @@ def _block_on_admin_subdomain(request: Request):
         raise HTTPException(status_code=404)
 
 # ════════════════════════════════
+# LEGAL PAGES
+# ════════════════════════════════
+
+@router.get("/terms", response_class=HTMLResponse)
+async def terms_page(request: Request):
+    return templates.TemplateResponse("terms.html", {"request": request, "site": SITE_CONFIG})
+
+@router.get("/privacy", response_class=HTMLResponse)
+async def privacy_page(request: Request):
+    return templates.TemplateResponse("privacy.html", {"request": request, "site": SITE_CONFIG})
+
+# ════════════════════════════════
 # CUSTOMER PAGES
 # ════════════════════════════════
 
