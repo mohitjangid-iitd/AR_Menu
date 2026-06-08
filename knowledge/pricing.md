@@ -25,20 +25,25 @@ ZenTable ke plans flexible hain aur restaurant ki zaroorat ke hisaab se customiz
 
 | Feature | Basic | Pro | Elite |
 |---------|-------|-----|-------|
-| Digital Menu & QR Code | ✅ | ✅ | ✅ |
-| Customer Direct Ordering | ❌ | ✅ | ✅ |
-| Staff Roles (Waiter, Kitchen) | ❌ | ✅ | ✅ |
-| Billing & Payments | ❌ | ✅ | ✅ |
-| Staff Push Notifications | ❌ | ✅ | ✅ |
-| Analytics Dashboard | ❌ | ✅ | ✅ |
-| AR Menu (3D models) | ❌ | ❌ | ✅ |
-| AI Chatbot (Gemini) | ❌ | ❌ | ✅ |
-| AI Photo-to-Menu Import | ❌ | ❌ | ✅ |
+| Digital Menu & QR Ordering | ✅ | ✅ | ✅ |
+| Staff Panel & Basic POS | ✅ | ✅ | ✅ |
+| AI Photo-to-Menu Import | ✅ | ✅ | ✅ |
+| Personal Website & Blog | ✅ | ✅ | ✅ |
+| Owner Analytics Dashboard | ❌ | ✅ | ✅ |
+| AI Chat Support (Chatbot) | ❌ | ✅ | ✅ |
+| Multi-branch & Delivery | ❌ | ✅ | ✅ |
+| Centralized Reporting | ❌ | ❌ | ✅ |
+| Dedicated Account Manager | ❌ | ❌ | ✅ |
 
 ---
 
 ## Add-ons
-Agar aap kisi plan (jaise Pro) par hain, aur aapko sirf AR Menu ya AI features chahiye, toh aap unhe **Add-ons** ke roop mein subscribe kar sakte hain. Inhe Admin dashboard se dynamically lock/unlock kiya jata hai.
+Kuch premium features alag se **Add-ons** ki tarah available hain (kisi bhi plan ke saath liye ja sakte hain):
+- **AR Menu (3D Dish Preview)**
+- **Kitchen Display Tab**
+- **Staff Attendance & Shift Mgmt**
+
+Inhe Admin dashboard se dynamically subscribe aur unlock kiya ja sakta hai.
 
 ---
 
@@ -53,14 +58,14 @@ Exact pricing aur best plan recommendation ke liye ZenTable team se directly baa
 
 ## Common Questions
 
-**Q: Kya sirf digital menu ke liye bhi use kar sakte hain?**
-A: Haan — **Basic plan** sirf digital menu + QR code ke liye banaya gaya hai.
+**Q: Kya Basic plan mein staff panel aur ordering milti hai?**
+A: Haan! Basic plan mein ab QR ordering, staff panel (waiter/kitchen), aur basic POS shamil hain.
 
-**Q: AR menu aur AI Chatbot ke liye alag charge hoga?**
-A: AR menu aur AI features **Elite plan** ka hissa hain. Agar aap dusre plan mein hain toh inhe Add-on ki tarah le sakte hain.
+**Q: AR menu aur Kitchen Tab ke liye alag charge hoga?**
+A: Haan, AR menu aur Kitchen Tab **Add-ons** hain. Aap inhe kisi bhi base plan ke upar add kar sakte hain.
+
+**Q: Multi-branch aur Delivery system kaunse plan mein aata hai?**
+A: Yeh dono features **Pro** aur **Elite** plans mein available hain.
 
 **Q: Contract kitne time ka hota hai?**
 A: Flexible plans hain — monthly aur annual dono options discuss ho sakte hain.
-
-**Q: Agar zyada tables hain to alag pricing hogi?**
-A: ZenTable team aapke restaurant ke size ke hisaab se best plan suggest karegi.

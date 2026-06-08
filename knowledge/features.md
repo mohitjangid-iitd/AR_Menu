@@ -84,6 +84,16 @@ Live platform: https://zentable.in
 - **AI Chatbot** — customers apne sawaal puch sakte hain menu, timings, restaurant info ke baare mein
 - **Help Bot** — owners ko platform use karne mein madad karta hai
 
+### 13. Customer Portal & Easy Login
+- Customer Google Login ke zariye apna account bana sakte hain
+- Personal profile dashboard jahan customer apna order status live track kar sakte hain
+- Purane orders ki history (Order History) aur active orders ko check karne ka simple UI
+
+### 14. Integrated Delivery System (Rider Panel)
+- Platform me native delivery rider dashboard support hai jahan active deliveries ko track aur manage kiya ja sakta hai
+- Rider ke liye simple mobile view jahan wo customer ka address aur phone dekh kar order status (Out for Delivery / Delivered / Failed) update kar sakte hain
+- Kitchen queue me delivery orders automatically alag color code me highlight ho jate hain
+
 ---
 
 ## Subscription Features
