@@ -13,7 +13,7 @@ A **multi-tenant restaurant management platform** with AR menus, real-time order
 - **Interactive Controls** — Rotate and explore dishes before ordering
 - **Digital Menu** — Clean, fast, mobile-friendly branch-aware menu browsing
 - **Branch Awareness** — Dynamic layout and data adjustments on public pages (`home`, `menu`, `ar_menu`) based on the selected branch
-- **Customer Portal & OAuth** — Secure, dynamic login using Google OAuth2 to access the personalized customer profile
+- **Customer Portal & OAuth** — Secure, dynamic login using Google OAuth2 to access the personalized customer profile (with T&C and Privacy Policy compliance integrated)
 - **Order History & Active Tracking** — Real-time order tracking dashboard divided into `🟢 Active Orders` and `📜 Order History` with color-coded status badges, tracking details, and direct redirects back to the originating menu URL
 
 ### For Restaurant Staff
@@ -21,7 +21,7 @@ A **multi-tenant restaurant management platform** with AR menus, real-time order
 - **Kitchen** — Live order queue, mark items ready (branch-isolated)
 - **Counter** — Table activation/deactivation, payment collection (branch-isolated)
 - **In-house Delivery Flow** — Specialized `delivery` staff role, dedicated delivery management dashboard (`staff_delivery.html`) to view active/assigned orders, and real-time state updates (Dispatched, Delivered) synchronized live across customer and staff views
-- **Owner** — Analytics, branch-specific QR generator, staff management, order history, full menu control (add/edit/delete items, categories), restaurant info management, AI-powered **bulk photo-to-menu import** (parse and save entire menus in one action), platform help bot, **Multi-Branch Support**, **Self-Signup with Admin Approval**
+- **Owner** — Analytics, branch-specific QR generator, staff management, order history, full menu control (add/edit/delete items, categories), restaurant info management, AI-powered **bulk photo-to-menu import** (parse and save entire menus in one action), platform help bot, **Multi-Branch Support**, **Self-Signup with Admin Approval (including integrated T&C / Legal compliance)**
 - **Session Protection** — Automatic mid-session expiry detection (`401` handler) across all staff portals that prompts a graceful redirect to login, preventing broken UI states
 
 ### For Platform Admins (ZenTable)
