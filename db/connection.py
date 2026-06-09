@@ -44,6 +44,12 @@ class _PgConn:
             cur.execute(sql, params)
             return cur
         except psycopg2.OperationalError:
+            # purana dead connection wapas pool mein do
+            try:
+                _pool.putconn(self._conn)
+            except Exception:
+                pass
+            # fresh connection lo
             self._conn = _pool.getconn()
             cur = self._conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
             cur.execute(sql, params)

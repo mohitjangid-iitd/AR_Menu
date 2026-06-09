@@ -1343,7 +1343,7 @@ footer {
 
 .footer-grid {
   display: grid;
-  grid-template-columns: 2fr 1fr 1fr;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
   gap: 48px;
   margin-bottom: 48px;
 }
@@ -1417,7 +1417,7 @@ footer {
   .benefits-visual-side { display: none; }
   .testi-grid { grid-template-columns: 1fr 1fr; }
   .pricing-grid { grid-template-columns: 1fr; max-width: 420px; margin: 0 auto; }
-  .footer-grid { grid-template-columns: 1fr 1fr 1fr; gap: 24px; }
+  .footer-grid { grid-template-columns: 2fr 1fr 1fr 1fr; gap: 24px; }
   .kitchen-grid { grid-template-columns: repeat(2, 1fr); }
   .od-kpis { grid-template-columns: repeat(2, 1fr); }
 }
