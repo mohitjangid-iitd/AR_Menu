@@ -230,7 +230,11 @@
 
     <!-- Google info strip -->
     <div class="google-strip">
+        {% if customer.picture %}
+        <img src="{{ customer.picture }}" alt="Profile" class="google-avatar" style="object-fit: cover; border: none; background: transparent;">
+        {% else %}
         <div class="google-avatar">{{ customer.name[0].upper() if customer.name else '?' }}</div>
+        {% endif %}
         <div class="google-info">
             <div class="google-name">{{ customer.name or 'Customer' }}</div>
             <div class="google-email">{{ customer.email or '' }}</div>

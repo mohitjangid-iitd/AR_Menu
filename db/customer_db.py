@@ -25,6 +25,15 @@ def init_customer_tables():
             created_at TIMESTAMP DEFAULT NOW()
         )
     """)
+    cur.execute("""
+        DO $$
+        BEGIN
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                           WHERE table_name='customers' AND column_name='picture') THEN
+                ALTER TABLE customers ADD COLUMN picture TEXT;
+            END IF;
+        END $$;
+    """)
     conn.commit()
     conn.close()
     print("[OK] Customer tables initialized")
@@ -34,16 +43,17 @@ def init_customer_tables():
 # CRUD
 # ════════════════════════════════
 
-def get_or_create_customer(google_id: str, name: str, email: str) -> dict:
+def get_or_create_customer(google_id: str, name: str, email: str, picture: str = "") -> dict:
     """Google login ke baad customer upsert karo — pehli baar create, baad mein fetch"""
     conn = get_db()
     conn.execute("""
-        INSERT INTO customers (google_id, name, email)
-        VALUES (%s, %s, %s)
+        INSERT INTO customers (google_id, name, email, picture)
+        VALUES (%s, %s, %s, %s)
         ON CONFLICT (google_id) DO UPDATE
-            SET name  = EXCLUDED.name,
-                email = EXCLUDED.email
-    """, (google_id, name, email))
+            SET name    = EXCLUDED.name,
+                email   = EXCLUDED.email,
+                picture = EXCLUDED.picture
+    """, (google_id, name, email, picture))
     conn.commit()
     cur = conn.execute("SELECT * FROM customers WHERE google_id=%s", (google_id,))
     row = cur.fetchone()

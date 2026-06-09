@@ -306,6 +306,7 @@
         <!-- Logged in -->
         <div id="cwb-user" style="display:none;width:100%;align-items:center;gap:10px;">
             <div id="cwb-initials" style="width:32px;height:32px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:0.88rem;font-family:'Space Grotesk',sans-serif;border:2px solid rgba(255,255,255,0.3);"></div>
+            <img id="cwb-avatar" style="display:none;width:32px;height:32px;border-radius:50%;flex-shrink:0;object-fit:cover;border:none;">
             <div style="flex:1;min-width:0;">
                 <div id="cwb-name" style="font-weight:700;font-size:0.82rem;color:white;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:'Space Grotesk',sans-serif;"></div>
                 <div id="cwb-address" style="font-size:0.7rem;color:rgba(255,255,255,0.55);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">📍 </div>
@@ -316,7 +317,8 @@
 
     <!-- Plate content (shown when items in cart) -->
     <div id="cwb-plate-content">
-        <div id="cwb-plate-initials" style="display:none;width:26px;height:26px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:0.75rem;font-family:'Space Grotesk',sans-serif;border:1.5px solid rgba(255,255,255,0.3);margin-right:2px;"></div>
+        <div id="cwb-plate-initials" style="display:none;width:26px;height:26px;border-radius:50%;flex-shrink:0;align-items:center;justify-content:center;font-weight:800;font-size:0.75rem;font-family:'Space Grotesk',sans-serif;border:1.5px solid rgba(255,255,255,0.3);margin-right:2px;"></div>
+        <img id="cwb-plate-avatar" style="display:none;width:26px;height:26px;border-radius:50%;flex-shrink:0;object-fit:cover;margin-right:2px;border:none;">
         <i class="fas fa-utensils" id="cwb-plate-icon" style="color:white;font-size:0.95rem;"></i>
         <span style="color:white;font-weight:700;font-size:0.9rem;">My Plate</span>
         <span id="plate-count" style="background:rgba(255,255,255,0.2);color:white;font-size:0.75rem;font-weight:700;padding:2px 8px;border-radius:20px;min-width:22px;text-align:center;">0</span>
@@ -366,21 +368,37 @@ function cwBarClick() {
         }
         var name   = data.name || '?';
         var colors = cwColorFor(name);
-        var el     = document.getElementById('cwb-initials');
-        el.textContent      = name.trim()[0].toUpperCase();
-        el.style.background = colors[0];
-        el.style.color      = colors[1];
+        if (data.picture) {
+            document.getElementById('cwb-initials').style.display = 'none';
+            var av = document.getElementById('cwb-avatar');
+            av.src = data.picture;
+            av.style.display = 'block';
+        } else {
+            var el = document.getElementById('cwb-initials');
+            el.textContent      = name.trim()[0].toUpperCase();
+            el.style.background = colors[0];
+            el.style.color      = colors[1];
+            el.style.display    = 'flex';
+        }
         document.getElementById('cwb-name').textContent    = name;
         document.getElementById('cwb-address').textContent = '📍 ' + (data.address || 'Address add karo');
         document.getElementById('cwb-user').style.display  = 'flex';
 
-        // Set plate initials and hide default utensils icon
-        var pEl = document.getElementById('cwb-plate-initials');
-        if (pEl) {
-            pEl.textContent      = name.trim()[0].toUpperCase();
-            pEl.style.background = colors[0];
-            pEl.style.color      = colors[1];
-            pEl.style.display    = 'flex';
+        // Set plate initials/avatar and hide default utensils icon
+        if (data.picture) {
+            var pav = document.getElementById('cwb-plate-avatar');
+            if (pav) {
+                pav.src = data.picture;
+                pav.style.display = 'block';
+            }
+        } else {
+            var pEl = document.getElementById('cwb-plate-initials');
+            if (pEl) {
+                pEl.textContent      = name.trim()[0].toUpperCase();
+                pEl.style.background = colors[0];
+                pEl.style.color      = colors[1];
+                pEl.style.display    = 'flex';
+            }
         }
         var pIcon = document.getElementById('cwb-plate-icon');
         if (pIcon) {
