@@ -101,12 +101,13 @@ async def google_callback(request: Request, code: str = None, state: str = "/", 
     google_id = userinfo.get("sub")
     name      = userinfo.get("name", "")
     email     = userinfo.get("email", "")
+    picture   = userinfo.get("picture", "")
 
     if not google_id:
         raise HTTPException(status_code=400, detail="Invalid Google response")
 
     # DB mein customer upsert karo
-    customer = get_or_create_customer(google_id, name, email)
+    customer = get_or_create_customer(google_id, name, email, picture)
 
     # Customer JWT token banao
     token = create_token({
@@ -184,6 +185,7 @@ async def customer_me(request: Request):
         "id":               customer["id"],
         "name":             customer["name"],
         "email":            customer["email"],
+        "picture":          customer.get("picture"),
         "phone":            customer.get("phone"),
         "address":          customer.get("address"),
         "profile_complete": bool(customer.get("phone") and customer.get("address")),
