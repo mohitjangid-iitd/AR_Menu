@@ -1398,9 +1398,17 @@ async function _generateBranchQRBlobs(clientId, branchId, numTables, rest, theme
 
     const blobs = [];
     for (let n = 1; n <= numTables; n++) {
-        const url = branchId && branchId !== '__default__'
-            ? `${window.location.origin}/${clientId}/table/${n}/ar-menu?branch_id=${branchId}`
-            : `${window.location.origin}/${clientId}/table/${n}/ar-menu`;
+        let sigParam = '';
+        try {
+            const sigRes = await fetch(`/api/table/${clientId}/${n}/qr-sig`);
+            if (sigRes.ok) {
+                const sigData = await sigRes.json();
+                sigParam = `?sig=${sigData.sig}`;
+            }
+        } catch(e) { console.error('Error fetching qr sig', e); }
+
+        const bParam = branchId && branchId !== '__default__' ? (sigParam ? '&' : '?') + `branch_id=${branchId}` : '';
+        const url = `${window.location.origin}/${clientId}/table/${n}/ar-menu${sigParam}${bParam}`;
 
         const blob = await new Promise(resolve => {
             const wrap = document.createElement('div');

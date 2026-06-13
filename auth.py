@@ -106,3 +106,23 @@ def get_redirect_url(role: str, client_id: str = None) -> str:
     if client_id:
         path = path.replace("{client_id}", client_id)
     return path
+
+def create_table_token(client_id: str, table_no: int, branch_id: str) -> str:
+    """Table ke liye secure signature token banao (No expiry for static QR codes)"""
+    data = {
+        "client_id": client_id,
+        "table_no": table_no,
+        "branch_id": branch_id,
+        "type": "table_session"
+    }
+    return jwt.encode(data, SECRET_KEY, algorithm=ALGORITHM)
+
+def decode_table_token(token: str) -> Optional[dict]:
+    """Table token decode karo — invalid/expired hone pe None return karo"""
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        if payload.get("type") == "table_session":
+            return payload
+        return None
+    except JWTError:
+        return None
