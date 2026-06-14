@@ -267,6 +267,9 @@ function switchEditTab(name, btn) {
 // ════════════════════════════════
 function toast(msg, type = '') {
     const el = document.getElementById('toast');
+    if (Array.isArray(msg) && msg.length > 0 && msg[0].msg) {
+        msg = msg[0].msg.replace('Value error, ', '');
+    }
     el.textContent = msg;
     el.className = 'show ' + type;
     setTimeout(() => el.className = '', 2800);
