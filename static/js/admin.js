@@ -1382,7 +1382,9 @@ async function _generateBranchQRBlobs(clientId, branchId, numTables, rest, theme
     function resolveLogoUrl(url) {
         if (!url) return url;
         const R2_BASE = 'https://assets.zentable.in/';
-        if (url.startsWith(R2_BASE) && window.location.hostname !== 'zentable.in') {
+        const mainHost = window.location.hostname;
+        const isMainDomain = mainHost === 'zentable.in' || mainHost === 'www.zentable.in';
+        if (url.startsWith(R2_BASE) && !isMainDomain) {
             return '/static/assets/' + url.slice(R2_BASE.length);
         }
         return url;
@@ -1411,7 +1413,8 @@ async function _generateBranchQRBlobs(clientId, branchId, numTables, rest, theme
         } catch(e) { console.error('Error fetching qr sig', e); }
 
         const bParam = branchId && branchId !== '__default__' ? (sigParam ? '&' : '?') + `branch_id=${branchId}` : '';
-        const url = `${window.location.origin}/${clientId}/table/${n}/ar-menu${sigParam}${bParam}`;
+        const baseOrigin = 'https://zentable.in';
+        const url = `${baseOrigin}/${clientId}/table/${n}/ar-menu${sigParam}${bParam}`;
 
         const blob = await new Promise(resolve => {
             const wrap = document.createElement('div');

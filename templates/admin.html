@@ -56,7 +56,7 @@
         </button>
 
         <button class="tab-btn" 
-            onclick="window.open(location.hostname === '127.0.0.1' ? '/admin/blog' : 'https://zentable.in/admin/blog', '_self')"
+            onclick="window.open(location.hostname === '127.0.0.1' ? '/admin/blog' : 'https://zentable.in/admin/blog', '_blank')"
             style="background:var(--primary); color:#fff; border:none; padding:8px 15px; border-radius:6px;">
             ✍️ Blog
         </button>
@@ -532,7 +532,7 @@
             <div class="modal-foot">
                 <button class="btn btn-ghost" onclick="closeModal('modal-add-rest')">Cancel</button>
                 <button class="btn btn-ghost" id="preview-new-btn" style="display:none"
-                    onclick="window.open('/'+lastCreatedClientId, '_blank')">👁 Preview</button>
+                    onclick="window.open('https://zentable.in/'+lastCreatedClientId, '_blank')">👁 Preview</button>
                 <button class="btn btn-primary" id="create-rest-btn" onclick="createRestaurant()">Create
                     Restaurant</button>
             </div>
@@ -762,7 +762,7 @@
             </div>
             <div class="modal-foot">
                 <button class="btn btn-ghost" onclick="closeModal('modal-edit-rest')">Cancel</button>
-                <button class="btn btn-ghost" onclick="window.open('/'+currentEditClientId, '_blank')">👁
+                <button class="btn btn-ghost" onclick="window.open('https://zentable.in/'+currentEditClientId, '_blank')">👁
                     Preview</button>
                 <button class="btn btn-primary" onclick="saveRestaurant()">Save Changes</button>
             </div>
