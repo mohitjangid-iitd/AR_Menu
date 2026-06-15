@@ -1385,7 +1385,10 @@ async function _generateBranchQRBlobs(clientId, branchId, numTables, rest, theme
         const mainHost = window.location.hostname;
         const isMainDomain = mainHost === 'zentable.in' || mainHost === 'www.zentable.in';
         if (url.startsWith(R2_BASE) && !isMainDomain) {
-            return '/static/assets/' + url.slice(R2_BASE.length);
+            return '/static/assets/' + url.slice(R2_BASE.length) + '?proxy=1';
+        }
+        if (url.startsWith('/static/assets/') && !isMainDomain) {
+            return url + (url.includes('?') ? '&' : '?') + 'proxy=1';
         }
         return url;
     }

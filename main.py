@@ -92,6 +92,21 @@ async def serve_asset(request: Request, client_id: str, filename: str):
     if not get_client_data(client_id):
         raise HTTPException(status_code=404, detail="Restaurant not found")
     if USE_R2:
+        if request.query_params.get("proxy") == "1":
+            import httpx
+            async with httpx.AsyncClient() as client:
+                r2_url = r2_public_url(f"{client_id}/{filename}")
+                try:
+                    r = await client.get(r2_url)
+                    if r.status_code == 200:
+                        media_type = "image/png"
+                        if ext in (".jpg", ".jpeg"):
+                            media_type = "image/jpeg"
+                        elif ext == ".webp":
+                            media_type = "image/webp"
+                        return Response(content=r.content, media_type=media_type)
+                except Exception as e:
+                    print(f"Error proxying asset: {e}")
         return RedirectResponse(url=r2_public_url(f"{client_id}/{filename}"), status_code=302)
     file_path = f"static/assets/{client_id}/{filename}"
     if not os.path.exists(file_path):
