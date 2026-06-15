@@ -484,7 +484,7 @@ async function downloadAllQRs() {
 
 // ── Single QR → Blob (shared by single + bulk download) ──
 function _renderTableQRBlob(tableNo, branchOverride) {
-    return new Promise(resolve => {
+    return new Promise(async resolve => {
         const SCALE  = 4;
         const qrSize = 280;
         const pad    = 32;
@@ -493,8 +493,19 @@ function _renderTableQRBlob(tableNo, branchOverride) {
         const H = textH + qrSize + pad * 2;
 
         const branch = branchOverride || getTabBranch('tables') || branchId;
-        const bParam = (branch && branch !== '__default__') ? `?branch_id=${branch}` : '';
-        const url = `${window.location.origin}/${clientId}/table/${tableNo}/ar-menu${bParam}`;
+        
+        let sigParam = '';
+        try {
+            const sigRes = await fetch(`/api/table/${clientId}/${tableNo}/qr-sig`);
+            if (sigRes.ok) {
+                const sigData = await sigRes.json();
+                sigParam = `?sig=${sigData.sig}`;
+            }
+        } catch(e) { console.error('Error fetching qr sig', e); }
+
+        const bParam = (branch && branch !== '__default__') ? (sigParam ? '&' : '?') + `branch_id=${branch}` : '';
+        const url = `${window.location.origin}/${clientId}/table/${tableNo}/ar-menu${sigParam}${bParam}`;
+
 
         const wrap = document.createElement('div');
         wrap.style.cssText = 'position:fixed;left:-9999px;top:-9999px';

@@ -34,6 +34,7 @@ from helpers import (
 from r2 import USE_R2, IS_PROD, r2_public_url
 from site_config import SITE_CONFIG
 from templates_env import templates
+from auth import decode_table_token
 
 router = APIRouter()
 def _block_on_admin_subdomain(request: Request):
@@ -176,11 +177,52 @@ async def ar_menu(request: Request, client_id: str, branch_id: Optional[str] = "
         "features": features,
     })
 
+def check_table_security(request: Request, client_id: str, table_no: int, sig: Optional[str] = None):
+    cookie_name = f"table_session_{client_id}"
+    
+    if sig:
+        payload = decode_table_token(sig)
+        if payload and payload.get("client_id") == client_id and payload.get("table_no") == table_no:
+            query_params = dict(request.query_params)
+            query_params.pop("sig", None)
+            import urllib.parse
+            query_string = urllib.parse.urlencode(query_params)
+            redirect_url = request.url.path
+            if query_string:
+                redirect_url += "?" + query_string
+                
+            response = RedirectResponse(url=redirect_url, status_code=303)
+            response.set_cookie(
+                key=cookie_name, value=sig, max_age=30*60, httponly=True, secure=True, samesite="Lax"
+            )
+            return response
+
+    table_session = request.cookies.get(cookie_name)
+    if table_session:
+        payload = decode_table_token(table_session)
+        if payload and payload.get("client_id") == client_id:
+            if payload.get("table_no") == table_no:
+                return None
+            else:
+                authorized_table = payload.get("table_no")
+                parts = request.url.path.strip("/").split("/")
+                if len(parts) >= 3 and parts[1] == "table":
+                    parts[2] = str(authorized_table)
+                    new_path = "/" + "/".join(parts)
+                    if request.url.query:
+                        new_path += "?" + str(request.url.query)
+                    return RedirectResponse(url=new_path, status_code=303)
+
+    return RedirectResponse(url=f"/{client_id}", status_code=303)
+
 
 @router.get("/{client_id}/table/{table_no}", response_class=HTMLResponse)
 async def table_home(request: Request, client_id: str, table_no: int,
-                     branch_id: Optional[str] = "__default__"):
+                     branch_id: Optional[str] = "__default__",
+                     sig: Optional[str] = None):
     _block_on_admin_subdomain(request)
+    sec_resp = check_table_security(request, client_id, table_no, sig)
+    if sec_resp: return sec_resp
     data = get_client_data(client_id, branch_id)
     if not data:
         raise HTTPException(status_code=404, detail="Restaurant not found")
@@ -206,8 +248,11 @@ async def table_home(request: Request, client_id: str, table_no: int,
 
 @router.get("/{client_id}/table/{table_no}/menu", response_class=HTMLResponse)
 async def table_menu(request: Request, client_id: str, table_no: int,
-                     branch_id: Optional[str] = "__default__"):
+                     branch_id: Optional[str] = "__default__",
+                     sig: Optional[str] = None):
     _block_on_admin_subdomain(request)
+    sec_resp = check_table_security(request, client_id, table_no, sig)
+    if sec_resp: return sec_resp
     data = get_client_data(client_id, branch_id)
     if not data:
         raise HTTPException(status_code=404, detail="Restaurant not found")
@@ -233,8 +278,11 @@ async def table_menu(request: Request, client_id: str, table_no: int,
 
 @router.get("/{client_id}/table/{table_no}/ar-menu", response_class=HTMLResponse)
 async def table_ar_menu(request: Request, client_id: str, table_no: int,
-                        branch_id: Optional[str] = "__default__"):
+                        branch_id: Optional[str] = "__default__",
+                        sig: Optional[str] = None):
     _block_on_admin_subdomain(request)
+    sec_resp = check_table_security(request, client_id, table_no, sig)
+    if sec_resp: return sec_resp
     data = get_client_data(client_id, branch_id)
     if not data:
         raise HTTPException(status_code=404, detail="Restaurant not found")

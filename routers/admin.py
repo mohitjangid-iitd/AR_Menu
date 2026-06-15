@@ -70,12 +70,13 @@ import shutil
 import tempfile
 import zipfile
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Literal
 from fastapi import APIRouter, HTTPException, Cookie, UploadFile, File, Form, Request
 from fastapi.responses import HTMLResponse, FileResponse, RedirectResponse, JSONResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr, field_validator
 from starlette.background import BackgroundTask
 from templates_env import templates
+from email_validator import validate_email as val_email, EmailNotValidError
 
 from db import (
     get_db,
@@ -140,7 +141,7 @@ class CreateRestaurantRequest(BaseModel):
     description: str = ""
     cuisine_type: str = ""
     phone: str = ""
-    email: str = ""
+    email: Optional[EmailStr] = None
     address: str = ""
     lunch: str = ""
     dinner: str = ""
@@ -149,11 +150,29 @@ class CreateRestaurantRequest(BaseModel):
     facebook: str = ""
     twitter: str = ""
     # Billing fields
-    sub_status: str = "trial"        # demo | trial | active
-    sub_plan: str = "basic"          # basic | pro | elite
+    sub_status: Literal["demo", "trial", "active", "expired"] = "trial"        # demo | trial | active
+    sub_plan: Literal["basic", "pro", "elite"] = "basic"          # basic | pro | elite
     sub_period: str = "monthly"      # monthly | halfyearly | yearly
     sub_discount_percent: int = 0
     sub_discount_flat: int = 0
+
+    @field_validator("email", mode="before")
+    @classmethod
+    def check_empty_email(cls, v):
+        if v == "" or v is None:
+            return None
+        try:
+            val_email(v)
+        except EmailNotValidError:
+            raise ValueError("Please enter a valid email address")
+        return v
+
+    @field_validator("phone")
+    @classmethod
+    def validate_phone(cls, v):
+        if v and not v.replace("+", "").replace("-", "").replace(" ", "").isdigit():
+            raise ValueError("Please enter a valid phone number")
+        return v
 
 class CreateStaffRequest(BaseModel):
     username: str
@@ -299,7 +318,13 @@ async def api_save_restaurant_json(client_id: str, body: SaveRestaurantRequest,
 async def api_create_restaurant(body: CreateRestaurantRequest,
                                  auth_token: Optional[str] = Cookie(None)):
     require_auth(auth_token, ["admin"])
-    client_id = body.client_id.lower().replace(" ", "_")
+    client_id = body.client_id.lower().replace(" ", "_").strip()
+    if not client_id:
+        raise HTTPException(status_code=400, detail="Restaurant ID cannot be empty")
+    if not body.name.strip():
+        raise HTTPException(status_code=400, detail="Restaurant name cannot be empty")
+    if body.num_tables <= 0:
+        raise HTTPException(status_code=400, detail="Number of tables must be at least 1")
     if get_client_data(client_id):
         raise HTTPException(status_code=409, detail="Restaurant already exists")
 

@@ -24,6 +24,7 @@ from db import (
     create_waiter_call, get_active_calls, resolve_waiter_call,
 )
 from helpers import get_client_data, require_auth, require_feature
+from auth import create_table_token
 
 router = APIRouter()
 
@@ -96,6 +97,15 @@ async def api_table_detail(client_id: str, table_no: int,
     user = require_auth(auth_token, ["waiter", "counter", "owner", "admin"], client_id)
     branch_id = user["branch_id"] or "__default__"
     return get_table_orders_detail(client_id, table_no, branch_id)
+
+
+@router.get("/api/table/{client_id}/{table_no}/qr-sig")
+async def api_get_qr_sig(client_id: str, table_no: int,
+                          auth_token: Optional[str] = Cookie(None)):
+    user = require_auth(auth_token, ["counter", "owner", "admin"], client_id)
+    branch_id = user["branch_id"] or "__default__"
+    sig = create_table_token(client_id, table_no, branch_id)
+    return {"sig": sig}
 
 
 # ════════════════════════════════
