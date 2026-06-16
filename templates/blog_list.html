@@ -560,6 +560,7 @@
 
         <div class="post-card-actions">
           <a href="/blog/editor/{{ post.id }}" class="action-btn">Edit</a>
+          <a href="/blog/preview/{{ post.id }}" class="action-btn">Preview</a>
 
           {% if post.status == 'draft' and user.role in ('blogger', 'owner') %}
             <button class="action-btn" onclick="submitForReview({{ post.id }})">Submit</button>
@@ -612,7 +613,7 @@
           </p>
         </div>
         <div class="review-card-actions">
-          <a href="/blog/editor/{{ post.id }}" class="action-btn">Preview</a>
+          <a href="/blog/preview/{{ post.id }}" class="action-btn">Preview</a>
           {% if user.role == 'admin' %}
             <button class="action-btn publish" onclick="publishPost({{ post.id }}, true)">Publish</button>
             <button class="action-btn danger" onclick="openRejectModal({{ post.id }})">Reject</button>

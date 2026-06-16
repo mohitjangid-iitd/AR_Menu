@@ -371,7 +371,7 @@
     <span class="save-status" id="saveStatus">Saved</span>
 
     <!-- Save Draft -->
-    <button class="btn" id="btnSaveDraft" onclick="saveDraft()">Save Draft</button>
+    <button class="btn" id="saveDraftBtn" onclick="saveDraft()">Save Draft</button>
 
     <!-- Submit for Review (blogger/owner, draft only) -->
     {% if post and post.status == 'draft' and user.role in ('blogger', 'owner') %}
@@ -517,7 +517,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/quill/1.3.7/quill.min.js"></script>
 <script>
   // ── State ──
-  const POST_ID   = {{ post.id if post else 'null' }};
+  let POST_ID = {{ post.id if post else 'null' }};
   const USER_ROLE = '{{ user.role }}';
   const CLIENT_ID = '{{ post.client_id if post and post.client_id else client_id or "" }}';
 
@@ -627,26 +627,50 @@
     const data = getFormData();
     if (!data.title) { showToast('Title is required', 'error'); return; }
 
-    let res, json;
-    if (POST_ID) {
-      res  = await fetch(`/api/blog/update/${POST_ID}`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(data) });
-      json = await res.json();
-      if (json.success) setSaveStatus('Saved ✓');
-      else showToast(json.detail || 'Error saving', 'error');
-    } else {
-      res  = await fetch('/api/blog/create', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(data) });
-      json = await res.json();
-      if (json.success) {
-        setSaveStatus('Saved ✓');
-        window.location.href = `/blog/editor/${json.post_id}`;
-      } else showToast(json.detail || 'Error creating post', 'error');
+    const btn = document.getElementById('saveDraftBtn');
+    if (btn) btn.disabled = true;
+
+    const backUrl = USER_ROLE === 'admin' ? '/admin/blog' : `/${CLIENT_ID}/staff/blog`;
+
+    try {
+      if (POST_ID) {
+        await fetch(`/api/blog/update/${POST_ID}`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(data) });
+        window.location.href = backUrl;
+      } else {
+        const res  = await fetch('/api/blog/create', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(data) });
+        const json = await res.json();
+        if (json.success) {
+          window.location.href = backUrl;
+        } else {
+          showToast(json.detail || 'Error creating post', 'error');
+          if (btn) btn.disabled = false;
+        }
+      }
+    } catch (e) {
+      showToast('Network error', 'error');
+      if (btn) btn.disabled = false;
     }
+  }
+
+  // ── Save silently (for submit/publish flows — no redirect) ──
+  async function saveSilent() {
+    const data = getFormData();
+    if (!data.title) { showToast('Title is required', 'error'); return false; }
+    if (POST_ID) {
+      await fetch(`/api/blog/update/${POST_ID}`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(data) });
+    } else {
+      const res  = await fetch('/api/blog/create', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(data) });
+      const json = await res.json();
+      if (json.success) { POST_ID = json.post_id; }
+      else { showToast(json.detail || 'Error saving', 'error'); return false; }
+    }
+    return true;
   }
 
   // ── Submit for Review ──
   async function submitForReview() {
-    await saveDraft();
-    if (!POST_ID) return;
+    const ok = await saveSilent();
+    if (!ok || !POST_ID) return;
     const res  = await fetch(`/api/blog/submit/${POST_ID}`, { method: 'POST' });
     const json = await res.json();
     if (json.success) {
@@ -657,8 +681,8 @@
 
   // ── Publish (admin) ──
   async function publishPost() {
-    await saveDraft();
-    if (!POST_ID) return;
+    const ok = await saveSilent();
+    if (!ok || !POST_ID) return;
     const res  = await fetch(`/api/blog/publish/${POST_ID}`, { method: 'POST' });
     const json = await res.json();
     if (json.success) {
