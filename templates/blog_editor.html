@@ -164,6 +164,35 @@
       color: var(--muted) !important;
     }
 
+    /* ── QUILL TOOLBAR TOOLTIPS ── */
+    .ql-toolbar button,
+    .ql-toolbar .ql-picker-label {
+      position: relative;
+    }
+    .ql-toolbar button::after,
+    .ql-toolbar .ql-picker-label::after {
+      content: attr(data-tooltip);
+      position: absolute;
+      bottom: calc(100% + 6px);
+      left: 50%;
+      transform: translateX(-50%);
+      background: #1A1814;
+      color: #fff;
+      font-size: .7rem;
+      font-family: var(--font-body);
+      white-space: nowrap;
+      padding: 3px 8px;
+      border-radius: 4px;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity .15s;
+      z-index: 200;
+    }
+    .ql-toolbar button:hover::after,
+    .ql-toolbar .ql-picker-label:hover::after {
+      opacity: 1;
+    }
+
     /* ── SIDEBAR ── */
     .editor-sidebar {
       background: var(--bg);
@@ -359,7 +388,7 @@
 <!-- ── TOP BAR ── -->
 <div class="topbar">
   <div class="topbar-left">
-    <a href="{% if user.role == 'admin' %}/admin/blog{% elif user.role == 'owner' %}/{{ post.client_id or client_id }}/staff/blog{% else %}/{{ client_id }}/staff/blog{% endif %}" class="back-link">
+    <a href="#" class="back-link" id="backBtn">
       ← Back
     </a>
     <span class="topbar-title">{% if post %}Editing post{% else %}New post{% endif %}</span>
@@ -378,12 +407,14 @@
       <button class="btn accent" onclick="submitForReview()">Submit for Review</button>
     {% endif %}
 
-    <!-- Publish (admin only) -->
+    <!-- Preview / Update (admin only) -->
     {% if user.role == 'admin' %}
       {% if post and post.status == 'published' %}
         <button class="btn success" onclick="saveDraft()">Update</button>
+      {% elif post %}
+        <a class="btn success" id="previewBtn" href="/blog/preview/{{ post.id }}">Preview &#8599;</a>
       {% else %}
-        <button class="btn success" onclick="publishPost()">Publish</button>
+        <button class="btn success" id="previewBtn" onclick="saveAndPreview()">Preview &#8599;</button>
       {% endif %}
     {% endif %}
   </div>
@@ -521,6 +552,15 @@
   const USER_ROLE = '{{ user.role }}';
   const CLIENT_ID = '{{ post.client_id if post and post.client_id else client_id or "" }}';
 
+  // ── Back button ──
+  const _defaultBack = USER_ROLE === 'admin' ? '/admin/blog' :
+                       `/${CLIENT_ID}/staff/blog`;
+  const _ref = document.referrer;
+  const _backUrl = (_ref && new URL(_ref).pathname.startsWith('/blog/preview/'))
+                   ? _ref
+                   : _defaultBack;
+  document.getElementById('backBtn').href = _backUrl;
+
   // ── Init Quill ──
   const quill = new Quill('#quill-editor', {
     theme: 'snow',
@@ -535,6 +575,32 @@
         [{ align: [] }],
         ['clean']
       ]
+    }
+  });
+
+  // ── Quill toolbar tooltips ──
+  const _tooltips = {
+    'ql-header':      'Heading',
+    'ql-bold':        'Bold',
+    'ql-italic':      'Italic',
+    'ql-underline':   'Underline',
+    'ql-strike':      'Strikethrough',
+    'ql-blockquote':  'Blockquote',
+    'ql-code-block':  'Code Block',
+    'ql-list':        'List',
+    'ql-link':        'Insert Link',
+    'ql-image':       'Insert Image',
+    'ql-align':       'Align',
+    'ql-clean':       'Clear Formatting',
+  };
+document.querySelectorAll('.ql-toolbar button, .ql-toolbar .ql-picker-label').forEach(el => {
+    const cls = [...el.classList].find(c => _tooltips[c]);
+    if (cls === 'ql-list') {
+      el.dataset.tooltip = el.value === 'ordered' ? 'Numbered List' : 'Bullet List';
+    } else if (cls === 'ql-align') {
+      el.dataset.tooltip = 'Justify';
+    } else if (cls) {
+      el.dataset.tooltip = _tooltips[cls];
     }
   });
 
@@ -677,6 +743,27 @@
       showToast('Submitted for review!', 'success');
       setTimeout(() => location.reload(), 1200);
     } else showToast('Error submitting', 'error');
+  }
+
+  // ── Save and go to Preview (new post) ──
+  async function saveAndPreview() {
+    const data = getFormData();
+    if (!data.title) { showToast('Title is required', 'error'); return; }
+    const btn = document.getElementById('previewBtn');
+    if (btn) btn.disabled = true;
+    try {
+      const res  = await fetch('/api/blog/create', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(data) });
+      const json = await res.json();
+      if (json.success) {
+        window.location.href = `/blog/preview/${json.post_id}`;
+      } else {
+        showToast(json.detail || 'Error saving', 'error');
+        if (btn) btn.disabled = false;
+      }
+    } catch (e) {
+      showToast('Network error', 'error');
+      if (btn) btn.disabled = false;
+    }
   }
 
   // ── Publish (admin) ──
