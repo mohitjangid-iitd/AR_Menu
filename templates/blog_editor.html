@@ -593,15 +593,17 @@
     'ql-align':       'Align',
     'ql-clean':       'Clear Formatting',
   };
-document.querySelectorAll('.ql-toolbar button, .ql-toolbar .ql-picker-label').forEach(el => {
+  document.querySelectorAll('.ql-toolbar button, .ql-toolbar .ql-picker-label').forEach(el => {
     const cls = [...el.classList].find(c => _tooltips[c]);
     if (cls === 'ql-list') {
       el.dataset.tooltip = el.value === 'ordered' ? 'Numbered List' : 'Bullet List';
-    } else if (cls === 'ql-align') {
-      el.dataset.tooltip = 'Justify';
     } else if (cls) {
       el.dataset.tooltip = _tooltips[cls];
     }
+  });
+  // align picker-label alag se — parent span ke andar
+  document.querySelectorAll('.ql-toolbar .ql-align .ql-picker-label').forEach(el => {
+    el.dataset.tooltip = 'Align';
   });
 
   // ── Tags ──
