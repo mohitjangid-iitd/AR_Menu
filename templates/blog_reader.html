@@ -16,6 +16,9 @@
   <meta property="og:image" content="{{ post.cover_image }}" />
   {% endif %}
   <meta property="og:type" content="article" />
+  {% if preview %}
+  <meta name="robots" content="noindex,nofollow" />
+  {% endif %}
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
@@ -279,6 +282,59 @@
       .article-wrap { padding: 32px 16px 60px; }
       .prose { font-size: 1rem; }
     }
+    /* \u2500\u2500 PREVIEW BANNER \u2500\u2500 */
+    .preview-banner {
+      background: #1A1814;
+      color: #fff;
+      padding: 10px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      font-size: .85rem;
+      position: sticky;
+      top: 56px;  /* nav height ke neeche */
+      z-index: 99;
+    }
+    .preview-banner-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .preview-badge {
+      background: var(--accent);
+      color: #fff;
+      font-size: .7rem;
+      font-weight: 700;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      padding: 3px 8px;
+      border-radius: 6px;
+    }
+    .preview-status {
+      color: rgba(255,255,255,.6);
+      font-size: .8rem;
+    }
+    .preview-actions { display: flex; gap: 8px; align-items: center; }
+    .preview-btn {
+      font-size: .8rem;
+      font-weight: 500;
+      padding: 5px 14px;
+      border-radius: 6px;
+      border: 1px solid rgba(255,255,255,.25);
+      background: rgba(255,255,255,.1);
+      color: #fff;
+      cursor: pointer;
+      text-decoration: none;
+      transition: background .15s;
+      font-family: var(--font-body);
+    }
+    .preview-btn:hover { background: rgba(255,255,255,.2); }
+    .preview-btn.accent { background: var(--accent); border-color: var(--accent); }
+    .preview-btn.accent:hover { background: #b5741f; }
+    .preview-btn.success { background: #2E7D55; border-color: #2E7D55; }
+    .preview-btn.success:hover { background: #256145; }
   </style>
 </head>
 <body>
@@ -293,6 +349,31 @@
     {% endif %}
   </div>
 </nav>
+
+{% if preview %}
+<!-- PREVIEW BANNER -->
+<div class="preview-banner">
+  <div class="preview-banner-left">
+    <span class="preview-badge">👁 Preview</span>
+    <span>This post is not published yet</span>
+    <span class="preview-status">Status: {{ post.status | replace('_', ' ') }}</span>
+  </div>
+  <div class="preview-actions">
+    {% if user and user.role == 'admin' %}
+      <a href="/admin/blog" class="preview-btn">Dashboard</a>
+    {% endif %}
+    <a href="/blog/editor/{{ post.id }}" class="preview-btn">Edit Post</a>
+    {% if user and user.role == 'admin' %}
+      {% if post.status != 'published' %}
+        <button class="preview-btn success" onclick="publishFromPreview({{ post.id }})">Publish</button>
+      {% endif %}
+    {% endif %}
+    {% if user and post.status == 'draft' and user.role in ('blogger', 'owner') %}
+      <button class="preview-btn accent" onclick="submitFromPreview({{ post.id }})">Submit for Review</button>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
 
 <!-- ── HERO ── -->
 <div class="hero">
@@ -363,6 +444,18 @@
       btn.textContent = 'Copied!';
       setTimeout(() => btn.textContent = orig, 1800);
     });
+  }
+
+  // Preview mode actions
+  async function publishFromPreview(id) {
+    const res  = await fetch(`/api/blog/publish/${id}`, { method: 'POST' });
+    const json = await res.json();
+    if (json.success) window.location.href = `/blog/${json.slug}`;
+  }
+  async function submitFromPreview(id) {
+    const res  = await fetch(`/api/blog/submit/${id}`, { method: 'POST' });
+    const json = await res.json();
+    if (json.success) location.reload();
   }
 </script>
 </body>

@@ -34,7 +34,7 @@ from helpers import (
 from r2 import USE_R2, IS_PROD, r2_public_url
 from site_config import SITE_CONFIG
 from templates_env import templates
-from auth import decode_table_token
+from auth import decode_table_token, verify_table_token
 
 router = APIRouter()
 def _block_on_admin_subdomain(request: Request):
@@ -179,10 +179,10 @@ async def ar_menu(request: Request, client_id: str, branch_id: Optional[str] = "
 
 def check_table_security(request: Request, client_id: str, table_no: int, sig: Optional[str] = None):
     cookie_name = f"table_session_{client_id}"
+    branch_id = request.query_params.get("branch_id", "__default__")
     
     if sig:
-        payload = decode_table_token(sig)
-        if payload and payload.get("client_id") == client_id and payload.get("table_no") == table_no:
+        if verify_table_token(sig, client_id, table_no, branch_id):
             query_params = dict(request.query_params)
             query_params.pop("sig", None)
             import urllib.parse
@@ -199,12 +199,19 @@ def check_table_security(request: Request, client_id: str, table_no: int, sig: O
 
     table_session = request.cookies.get(cookie_name)
     if table_session:
+        # Check current table
+        if verify_table_token(table_session, client_id, table_no, branch_id):
+            return None
+            
+        # Current table check failed, let's see if cookie has a valid authorized_table
         payload = decode_table_token(table_session)
-        if payload and payload.get("client_id") == client_id:
-            if payload.get("table_no") == table_no:
-                return None
-            else:
-                authorized_table = payload.get("table_no")
+        if payload and payload.get("table_no"):
+            authorized_table = payload.get("table_no")
+            
+            # Optionally we could fully verify it if we wanted to be strict:
+            # if verify_table_token(table_session, client_id, authorized_table, branch_id):
+            # But the cookie is relatively secure and the worst they can do is redirect.
+            if verify_table_token(table_session, client_id, authorized_table, branch_id):
                 parts = request.url.path.strip("/").split("/")
                 if len(parts) >= 3 and parts[1] == "table":
                     parts[2] = str(authorized_table)

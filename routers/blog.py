@@ -210,10 +210,35 @@ async def blog_editor_edit(request: Request, post_id: int):
         "post":    post,
     })
 
+@router.get("/blog/preview/{post_id}", response_class=HTMLResponse)
+async def blog_post_preview(request: Request, post_id: int):
+    """Auth-gated preview — koi bhi status dikha sakta hai (draft, pending, published)"""
+    user = _require_blog_access(request)
+    post = get_post_by_id(post_id)
+    if not post:
+        raise HTTPException(status_code=404, detail="Post not found")
+    if not _can_edit(user, post):
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    restaurant = None
+    if post.get("client_id"):
+        rdata = get_client_data(post["client_id"])
+        if rdata:
+            restaurant = rdata.get("restaurant")
+
+    return templates.TemplateResponse("blog_reader.html", {
+        "request":    request,
+        "post":       post,
+        "restaurant": restaurant,
+        "preview":    True,
+        "user":       user,
+    })
+
+
 @router.get("/blog/{slug}", response_class=HTMLResponse)
 async def blog_post_reader(request: Request, slug: str):
-    # slug 'editor' nahi hona chahiye — warna editor route ke saath conflict
-    if slug in ("editor",):
+    # slug 'editor' ya 'preview' nahi hona chahiye — warna route conflict
+    if slug in ("editor", "preview"):
         raise HTTPException(status_code=404)
 
     post = get_post_by_slug(slug)
