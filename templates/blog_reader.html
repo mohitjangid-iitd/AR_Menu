@@ -360,7 +360,7 @@
   </div>
   <div class="preview-actions">
     {% if user and user.role == 'admin' %}
-      <a href="/admin/blog" class="preview-btn">🏠 Admin Home</a>
+      <a href="/admin/blog" class="preview-btn">Dashboard</a>
     {% endif %}
     <a href="/blog/editor/{{ post.id }}" class="preview-btn">Edit Post</a>
     {% if user and user.role == 'admin' %}

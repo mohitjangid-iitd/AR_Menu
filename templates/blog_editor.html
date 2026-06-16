@@ -50,16 +50,7 @@
       z-index: 100;
     }
     .topbar-left { display: flex; align-items: center; gap: 16px; }
-    .back-link {
-      font-size: .85rem;
-      color: var(--muted);
-      text-decoration: none;
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      transition: color .15s;
-    }
-    .back-link:hover { color: var(--text); }
+
     .topbar-title {
       font-size: .9rem;
       font-weight: 500;
@@ -388,9 +379,7 @@
 <!-- ── TOP BAR ── -->
 <div class="topbar">
   <div class="topbar-left">
-    <a href="#" class="back-link" id="backBtn">
-      ← Back
-    </a>
+
     <span class="topbar-title">{% if post %}Editing post{% else %}New post{% endif %}</span>
     {% if post %}
       <span class="status-badge status-{{ post.status }}">{{ post.status | replace('_', ' ') }}</span>
@@ -552,16 +541,7 @@
   const USER_ROLE = '{{ user.role }}';
   const CLIENT_ID = '{{ post.client_id if post and post.client_id else client_id or "" }}';
 
-  // ── Back button ──
-  const _defaultBack = USER_ROLE === 'admin' ? '/admin/blog' :
-                       `/${CLIENT_ID}/staff/blog`;
-  const _ref = document.referrer;
-  const _backUrl = (_ref && new URL(_ref).pathname.startsWith('/blog/preview/'))
-                   ? _ref
-                   : _defaultBack;
-  document.getElementById('backBtn').href = _backUrl;
-
-  // ── Init Quill ──
+// ── Init Quill ──
   const quill = new Quill('#quill-editor', {
     theme: 'snow',
     placeholder: 'Write your story...',
