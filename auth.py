@@ -7,6 +7,8 @@ from datetime import datetime, timedelta
 from typing import Optional
 from jose import JWTError, jwt
 from db import verify_staff, verify_admin, verify_owner
+import hashlib
+import hmac
 
 # ── Secret key — production mein env variable se lena ──
 SECRET_KEY = os.environ["SECRET_KEY"]
@@ -108,21 +110,22 @@ def get_redirect_url(role: str, client_id: str = None) -> str:
     return path
 
 def create_table_token(client_id: str, table_no: int, branch_id: str) -> str:
-    """Table ke liye secure signature token banao (No expiry for static QR codes)"""
-    data = {
-        "client_id": client_id,
-        "table_no": table_no,
-        "branch_id": branch_id,
-        "type": "table_session"
-    }
-    return jwt.encode(data, SECRET_KEY, algorithm=ALGORITHM)
+    """Table ke liye secure short signature token banao"""
+    msg = f"{client_id}:{table_no}:{branch_id}".encode("utf-8")
+    sig = hmac.new(SECRET_KEY.encode("utf-8"), msg, hashlib.sha256).hexdigest()[:8]
+    return f"{table_no}.{sig}"
 
-def decode_table_token(token: str) -> Optional[dict]:
-    """Table token decode karo — invalid/expired hone pe None return karo"""
+def decode_table_token(token: str):
+    """Short token se authorized table_no nikalne ke liye (baaki validation bahar hogi)"""
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        if payload.get("type") == "table_session":
-            return payload
-        return None
-    except JWTError:
-        return None
+        parts = token.split(".")
+        if len(parts) == 2:
+            return {"table_no": int(parts[0]), "hash": parts[1]}
+    except Exception:
+        pass
+    return None
+
+def verify_table_token(token: str, client_id: str, table_no: int, branch_id: str) -> bool:
+    """Check karta hai ki token valid hai ya nahi"""
+    expected = create_table_token(client_id, table_no, branch_id)
+    return hmac.compare_digest(token, expected)
