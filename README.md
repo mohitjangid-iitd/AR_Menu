@@ -176,6 +176,10 @@ SMTP_USER=your-smtp-user
 SMTP_PASS=your-smtp-password
 ZENTABLE_UPI_ID=your-upi-id-here
 
+# Google OAuth
+GOOGLE_CLIENT_ID=your-google-client-id
+GOOGLE_CLIENT_SECRET=your-google-client-secret
+
 # R2 (optional — local storage when USE_R2=false)
 USE_R2=false
 R2_ACCOUNT_ID=
@@ -300,7 +304,7 @@ Free model sources: Sketchfab, TurboSquid, CGTrader
 
 ## Testing
 
-ZenTable includes a robust suite of ~171 automated unit and behavioral tests. All database queries and external resources are mocked out, allowing tests to run entirely offline in milliseconds.
+ZenTable features over **140 API routes and endpoints**. It includes a robust suite of **~171 automated unit and behavioral tests (90%+ core coverage)**. All database queries and external resources are mocked out, allowing tests to run entirely offline in milliseconds.
 
 To install test dependencies:
 ```bash

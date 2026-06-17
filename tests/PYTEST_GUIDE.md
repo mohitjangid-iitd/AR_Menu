@@ -1,6 +1,6 @@
 # ZenTable — Pytest Master Guide (Pytest Ki Complete Guide) 🧪
 
-ZenTable ek fully-tested multi-tenant platform hai jismein **~166 automated unit & behavioral tests** likhe gaye hain. Ye tests fast, offline, aur completely secure hain kyunki ye main database (Neon PostgreSQL) ko touch nahi karte, balki use mock karte hain.
+ZenTable ek fully-tested multi-tenant platform hai jismein **~171 automated unit & behavioral tests (90%+ core coverage)** likhe gaye hain. Ye tests fast, offline, aur completely secure hain kyunki ye main database (Neon PostgreSQL) ko touch nahi karte, balki use mock karte hain.
 
 ---
 

@@ -27,3 +27,7 @@ static/assets
 
 # test cache
 .pytest_cache/
+htmlcov/
+coverage.xml
+.coverage
+.coverage*
