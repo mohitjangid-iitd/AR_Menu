@@ -10,7 +10,9 @@
 
     <!-- A-Frame & MindAR — head mein hone chahiye (scene render se pehle) -->
     <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
+    {% if table_no %}
     <script src="/static/js/mindar-image-aframe.prod.js?v={{ static_v('js/mindar-image-aframe.prod.js') }}"></script>
+    {% endif %}
     
     <!-- Static CSS -->
     <link rel="stylesheet" href="/static/css/ar_menu.css?v={{ static_v('css/ar_menu.css') }}">
@@ -84,6 +86,7 @@
     <div id="loader-sub">LOADING EXPERIENCE</div>
 </div>
 
+{% if table_no %}
 <a-scene style="position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;"
     mindar-image="imageTargetSrc: {{ mind_url }}; autoStart: true; uiLoading: no; filterMinCF: 0.0001; filterBeta: 0.001;"
     color-space="sRGB" renderer="colorManagement:true, physicallyCorrectLights:true" vr-mode-ui="enabled:false"
@@ -99,11 +102,38 @@
     <a-entity light="type:directional; intensity:0.8" position="1 2 1"></a-entity>
 
 </a-scene>
+{% else %}
+<video id="camera-feed" autoplay playsinline muted style="position:fixed; top:0; left:0; width:100%; height:100%; object-fit:cover; z-index:-1;"></video>
+
+<a-scene style="position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;"
+    color-space="sRGB" renderer="colorManagement:true, physicallyCorrectLights:true, alpha:true" vr-mode-ui="enabled:false"
+    device-orientation-permission-ui="enabled:false">
+
+    <a-camera position="0 1.5 4" look-controls="enabled:false"></a-camera>
+
+    <a-entity id="target-anchor" position="0 1 0">
+        <a-gltf-model id="ar-model"></a-gltf-model>
+    </a-entity>
+
+    <a-entity light="type:ambient; intensity:1.2"></a-entity>
+    <a-entity light="type:directional; intensity:0.8" position="1 2 1"></a-entity>
+
+</a-scene>
+
+<script>
+    // Start camera feed for markerless AR
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+        .then(stream => {
+            document.getElementById('camera-feed').srcObject = stream;
+        })
+        .catch(err => console.error("Camera error:", err));
+</script>
+{% endif %}
 
 <!-- Jinja2 variable inject — static JS se PEHLE -->
 <script>
     const clientId = "{{ client_id }}";
-    const tableNo = {{ table_no if table_no else 'null' }};
+    const tableNo = {{ table_no if table_no is not none else '0' }};
     const branchId = "{{ branch_id | default('__default__') }}";
 </script>
 
