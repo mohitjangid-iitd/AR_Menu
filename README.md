@@ -9,6 +9,7 @@ A **multi-tenant restaurant management platform** with AR menus, real-time order
 ## Features
 
 ### For Customers
+
 - **AR Menu** — Scan branch-specific QR codes to view dishes as 3D models in augmented reality
 - **Interactive Controls** — Rotate and explore dishes before ordering
 - **Digital Menu** — Clean, fast, mobile-friendly branch-aware menu browsing
@@ -17,6 +18,7 @@ A **multi-tenant restaurant management platform** with AR menus, real-time order
 - **Order History & Active Tracking** — Real-time order tracking dashboard divided into `🟢 Active Orders` and `📜 Order History` with color-coded status badges, tracking details, and direct redirects back to the originating menu URL
 
 ### For Restaurant Staff
+
 - **Waiter** — Table management, order placement, billing, payments (branch-isolated)
 - **Kitchen** — Live order queue, mark items ready (branch-isolated)
 - **Counter** — Table activation/deactivation, payment collection (branch-isolated)
@@ -25,6 +27,7 @@ A **multi-tenant restaurant management platform** with AR menus, real-time order
 - **Session Protection** — Automatic mid-session expiry detection (`401` handler) across all staff portals that prompts a graceful redirect to login, preventing broken UI states
 
 ### For Platform Admins (ZenTable)
+
 > Accessible at [admin.zentable.in](https://admin.zentable.in)
 
 - **Admin Panel** — Manage all restaurants from one place
@@ -44,21 +47,148 @@ A **multi-tenant restaurant management platform** with AR menus, real-time order
 
 ## Tech Stack
 
-| Layer | Technology |
-|---|---|
-| Backend | Python — FastAPI (with background keep-alive threads) |
-| Database | PostgreSQL (psycopg2, ThreadedConnectionPool, Neon DB keep-alive support) |
-| Restaurant Config | PostgreSQL `restaurants` table (JSONB) |
-| Subscriptions & Add-ons | PostgreSQL `billing_plans`, `billing_addons`, `subscriptions`, `subscription_addons`, `payment_history`, `email_log` |
-| Blog Operations | PostgreSQL `blog_posts` table |
-| Trash & Auto-Purge | PostgreSQL `trash_meta` table |
-| Owner Signup & Approvals| PostgreSQL `owner_signup_requests`, `owners` tables |
-| Platform Configuration | PostgreSQL `site_settings` table |
-| Frontend | HTML, CSS, Vanilla JS (Jinja2 templates) |
-| AR | MindAR + Three.js r128 |
-| AI | Google Gemini API (Chatbot, Photo-to-Menu, Help Bot) |
-| Auth | bcrypt + JWT (cookie-based) |
-| File Storage | Cloudflare R2 (production) / local (development) |
+| Layer                    | Technology                                                                                                           |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------- |
+| Backend                  | Python — FastAPI (with background keep-alive threads)                                                                |
+| Database                 | PostgreSQL (psycopg2, ThreadedConnectionPool, Neon DB keep-alive support)                                            |
+| Restaurant Config        | PostgreSQL `restaurants` table (JSONB)                                                                               |
+| Subscriptions & Add-ons  | PostgreSQL `billing_plans`, `billing_addons`, `subscriptions`, `subscription_addons`, `payment_history`, `email_log` |
+| Blog Operations          | PostgreSQL `blog_posts` table                                                                                        |
+| Trash & Auto-Purge       | PostgreSQL `trash_meta` table                                                                                        |
+| Owner Signup & Approvals | PostgreSQL `owner_signup_requests`, `owners` tables                                                                  |
+| Platform Configuration   | PostgreSQL `site_settings` table                                                                                     |
+| Frontend                 | HTML, CSS, Vanilla JS (Jinja2 templates)                                                                             |
+| AR                       | MindAR + Three.js r128                                                                                               |
+| AI                       | Google Gemini API (Chatbot, Photo-to-Menu, Help Bot)                                                                 |
+| Auth                     | bcrypt + JWT (cookie-based)                                                                                          |
+| File Storage             | Cloudflare R2 (production) / local (development)                                                                     |
+
+---
+
+## Key Features:
+
+- **Staff Portals**: Role-based access for Waiter, Kitchen, Counter, In-house Delivery, Owner.
+- **AR Menu**: 3D menu experience via MindAR + Three.js.
+- **AI Integration**: Google Gemini for photo-to-menu import, chatbots, and help bots.
+- **Restaurant Management**: Full CRUD operations for menus, items, orders, staff, and restaurants.
+- **Admin Dashboard**: Global management for ZenTable platform.
+- **Multi-Branch Support**: Restaurants can have multiple branches with isolated data.
+- **Subscriptions & Billing**: Full billing lifecycle management with Stripe integration.
+- **Trash & Recovery System**: Smart trash management for files and database entries.
+- **Owner Self-Signup**: Integrated T&C/Privacy Policy compliance and approval flow.
+- **Security**: JWT-based auth, file security, subscription gating, and session management.
+
+---
+
+## Architecture
+
+```mermaid
+graph TB
+    subgraph Clients ["👥 Client Interfaces"]
+        C1["🍽️ Customer<br/>(Menu · AR Menu · Tracking)"]
+        C2["🧑‍🍳 Waiter<br/>(Tables · Orders · Billing)"]
+        C3["👨‍🍳 Kitchen<br/>(Live Order Queue)"]
+        C4["🧾 Counter<br/>(Tables · Payments)"]
+        C5["🚚 Delivery<br/>(Dispatch · Status)"]
+        C6["👔 Owner<br/>(Analytics · QR · Staff · Menu)"]
+        C7["✍️ Blogger<br/>(Draft · Submit)"]
+        C8["🛡️ Platform Admin<br/>(Restaurants · Billing · Blog Publish)"]
+    end
+
+    subgraph Frontend ["🖥️ Frontend (Jinja2 + Vanilla JS)"]
+        templates["HTML Templates & UI"]
+        ar["MindAR + Three.js (AR Engine)"]
+        ai_chat["AI Chat / Help Bot / Photo-to-Menu"]
+        qr_share["Smart QR & Web Share API"]
+        editor["Quill Blog Editor<br/>(Draft → Preview → Publish)"]
+    end
+
+    subgraph Auth ["🔐 Security & Routing"]
+        jwt["JWT Cookie Auth<br/>(role + client_id + branch_id)"]
+        oauth["Google OAuth2 (Customer)"]
+        gates["Dynamic Feature Gating<br/>(require_feature decorator)"]
+    end
+
+    subgraph API ["⚙️ FastAPI Backend (routers/)"]
+        direction LR
+        r_menu["Menu / Tables / Orders API"]
+        r_staff["Staff & Admin API"]
+        r_owner["Owner & Branch API"]
+        r_blog["Blog API"]
+        r_billing["Billing API"]
+        r_ai["AI & Chatbot API"]
+        bg_tasks["Background Keep-alive +<br/>Daily Billing Cron"]
+    end
+
+    subgraph Core ["🧰 Core Modules"]
+        glb["GLB Optimizer<br/>(gltf-transform, on upload)"]
+        trash["Trash & Auto-Purge"]
+        feat["Feature Registry"]
+        qr_gen["Dynamic QR / UPI Gen"]
+        email["Email Notifications<br/>(7d/1d/grace/expired — Gmail SMTP)"]
+    end
+
+    subgraph Data ["🗄️ Data Layer — Neon PostgreSQL (single DB)"]
+        db_core[("Core Tables<br/>restaurants · tables · orders · bills<br/>staff · customers")]
+        db_billing[("Billing Tables<br/>billing_plans · billing_addons<br/>subscriptions · payment_history · email_log")]
+        db_blog[("Blog Tables<br/>blog_posts")]
+        storage_split{"USE_R2 flag"}
+        storage_r2[("Cloudflare R2<br/>assets.zentable.in")]
+        storage_local[("Local Disk<br/>static/assets · private/assets")]
+    end
+
+    subgraph External ["🌐 External Integrations"]
+        gemini["Google Gemini API"]
+        upi["Manual UPI Payment<br/>(Phase 3: Razorpay webhook-ready)"]
+        smtp["Gmail SMTP"]
+    end
+
+    %% Client flows
+    C1 & C2 & C3 & C4 & C5 & C6 --> templates
+    C7 --> editor
+    C8 --> templates
+    C1 --> ar
+    C1 & C6 --> ai_chat
+    C4 & C6 & C8 --> qr_share
+
+    %% Frontend to Auth
+    templates --> jwt
+    editor --> jwt
+    C1 --> oauth
+    jwt --> gates
+
+    %% Auth to API
+    gates --> API
+    oauth --> r_menu
+
+    %% API internal
+    API -.-> bg_tasks
+
+    %% API to Core
+    r_staff --> glb
+    r_staff --> trash
+    gates --> feat
+    r_billing --> qr_gen
+    r_billing --> email
+
+    %% API to DB
+    r_menu --> db_core
+    r_staff --> db_core
+    r_owner --> db_core
+    r_blog --> db_blog
+    r_billing --> db_billing
+
+    %% Storage routing
+    glb --> storage_split
+    trash --> storage_split
+    storage_split -->|prod| storage_r2
+    storage_split -->|dev| storage_local
+
+    %% External
+    r_ai --> gemini
+    qr_gen --> upi
+    email --> smtp
+```
 
 ---
 
@@ -139,6 +269,7 @@ zentable/
 ## Setup
 
 ### Prerequisites
+
 - Python 3.11+
 - PostgreSQL
 - Node.js (for GLB optimization via gltf-transform)
@@ -147,8 +278,8 @@ zentable/
 
 ```bash
 # Clone
-git clone <your-repo-url>
-cd zentable
+git clone https://github.com/mohitjangid-iitd/ZenTable.git
+cd ZenTable
 
 # Install dependencies
 pip install -r requirements.txt
@@ -166,6 +297,7 @@ uvicorn main:app --reload
 ### Environment Variables
 
 Create a `.env` file in the project root:
+
 ```
 DATABASE_URL=postgresql://user:password@host:5432/dbname
 SECRET_KEY=your-secret-key-here
@@ -175,6 +307,10 @@ GEMINI_API_KEY=your-gemini-api-key
 SMTP_USER=your-smtp-user
 SMTP_PASS=your-smtp-password
 ZENTABLE_UPI_ID=your-upi-id-here
+
+# Google OAuth
+GOOGLE_CLIENT_ID=your-google-client-id
+GOOGLE_CLIENT_SECRET=your-google-client-secret
 
 # R2 (optional — local storage when USE_R2=false)
 USE_R2=false
@@ -187,16 +323,16 @@ R2_PUBLIC_URL=
 
 ### Access
 
-| URL | Description |
-|---|---|
-| `http://localhost:8000/` | ZenTable landing page |
-| `http://localhost:8000/{client_id}` | Restaurant home page |
-| `http://localhost:8000/{client_id}/menu` | Digital menu |
-| `http://localhost:8000/{client_id}/ar-menu` | AR menu |
-| `http://localhost:8000/blog` | Main ZenTable blog platform |
-| `http://localhost:8000/blog/{slug}` | Specific blog post |
-| `http://localhost:8000/login` | Staff login |
-| `http://localhost:8000/admin` | ZenTable admin panel (prod: `admin.zentable.in`) |
+| URL                                         | Description                                      |
+| ------------------------------------------- | ------------------------------------------------ |
+| `http://localhost:8000/`                    | ZenTable landing page                            |
+| `http://localhost:8000/{client_id}`         | Restaurant home page                             |
+| `http://localhost:8000/{client_id}/menu`    | Digital menu                                     |
+| `http://localhost:8000/{client_id}/ar-menu` | AR menu                                          |
+| `http://localhost:8000/blog`                | Main ZenTable blog platform                      |
+| `http://localhost:8000/blog/{slug}`         | Specific blog post                               |
+| `http://localhost:8000/login`               | Staff login                                      |
+| `http://localhost:8000/admin`               | ZenTable admin panel (prod: `admin.zentable.in`) |
 
 ---
 
@@ -258,23 +394,23 @@ Config structure stored in the DB:
     }
   ]
 }
+```
 
 > [!NOTE]
 > **Dynamic Feature Gating & Locking**: Feature access is checked in real-time by querying the restaurant's subscription status against global database records (`billing_plans` & `billing_addons`). APIs are dynamically locked/unlocked via backend decorators (`require_feature`), and front-end interface components adjust automatically.
-```
 
 ---
 
 ## Staff Roles
 
-| Role | Access |
-|---|---|
-| `owner` | Analytics, QR generator, staff management, order history, menu control, restaurant info management, photo-to-menu (AI), platform help bot |
-| `waiter` | Table management, order placement, order lifecycle, billing |
-| `kitchen` | Live order queue, mark items as ready |
-| `counter` | Table activate/deactivate, payment collection |
-| `blogger` | Create and manage blog posts |
-| `delivery` | View active deliveries, manage delivery flow, update delivery states |
+| Role       | Access                                                                                                                                    |
+| ---------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `owner`    | Analytics, QR generator, staff management, order history, menu control, restaurant info management, photo-to-menu (AI), platform help bot |
+| `waiter`   | Table management, order placement, order lifecycle, billing                                                                               |
+| `kitchen`  | Live order queue, mark items as ready                                                                                                     |
+| `counter`  | Table activate/deactivate, payment collection                                                                                             |
+| `blogger`  | Create and manage blog posts                                                                                                              |
+| `delivery` | View active deliveries, manage delivery flow, update delivery states                                                                      |
 
 ---
 
@@ -300,14 +436,16 @@ Free model sources: Sketchfab, TurboSquid, CGTrader
 
 ## Testing
 
-ZenTable includes a robust suite of ~171 automated unit and behavioral tests. All database queries and external resources are mocked out, allowing tests to run entirely offline in milliseconds.
+ZenTable features over **140 API routes and endpoints**. It includes a robust suite of **~171 automated unit and behavioral tests (90%+ core coverage)**. All database queries and external resources are mocked out, allowing tests to run entirely offline in milliseconds.
 
 To install test dependencies:
+
 ```bash
 pip install pytest httpx
 ```
 
 To execute the test suite:
+
 ```bash
 # Run all tests
 SECRET_KEY=test pytest tests/ -v
@@ -316,7 +454,7 @@ SECRET_KEY=test pytest tests/ -v
 SECRET_KEY=test pytest tests/ -q
 ```
 
-Refer to [PYTEST_GUIDE.md](file:///c:/Users/MOHIT/Desktop/AR%20Menu/Demo/tests/PYTEST_GUIDE.md) for full instructions, including writing smoke and behavioral tests.
+Refer to [PYTEST_GUIDE.md](tests/PYTEST_GUIDE.md) for full instructions, including writing smoke and behavioral tests.
 
 ---
 

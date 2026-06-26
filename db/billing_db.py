@@ -13,11 +13,24 @@ Tables:
 
 from db.connection import _pool, _PgConn          # same pool, no extra connections
 import json
+import time
 from datetime import datetime, date, timedelta
 
 
 def get_db() -> _PgConn:
     return _PgConn()
+
+
+# ════════════════════════════════
+# FEATURE CACHE
+# ════════════════════════════════
+
+_feature_cache: dict = {}
+_CACHE_TTL = 60
+
+
+def _invalidate_feature_cache(client_id: str):
+    _feature_cache.pop(client_id, None)
 
 
 # ════════════════════════════════
@@ -617,6 +630,7 @@ def update_subscription(client_id: str, fields: dict):
     ))
     conn.commit()
     conn.close()
+    _invalidate_feature_cache(client_id)  # cache clear karo
     return get_subscription(client_id)
 
 
@@ -745,6 +759,7 @@ def upsert_subscription_addon(
     ))
     conn.commit()
     conn.close()
+    _invalidate_feature_cache(client_id)  # cache clear karo
     return prices
 
 def remove_subscription_addon(client_id: str, addon_key: str):
@@ -755,6 +770,7 @@ def remove_subscription_addon(client_id: str, addon_key: str):
     )
     conn.commit()
     conn.close()
+    _invalidate_feature_cache(client_id)  # cache clear karo
 
 
 # ════════════════════════════════
@@ -905,29 +921,68 @@ def has_feature(client_id: str, feature_key: str) -> bool:
     Trial mein sab milta hai.
     Active mein plan features + addons check hote hain.
     """
-    sub = get_subscription(client_id)
-    if not sub:
+    now = time.time()
+
+    cached = _feature_cache.get(client_id)
+    if cached and cached["expires"] > now:
+        status = cached["data"]["status"]
+        if status == "expired":
+            return False
+        if status in ("demo", "trial"):
+            return True
+        return feature_key in cached["data"]["features"]
+
+    conn = get_db()
+    try:
+        cur = conn.execute("""
+            SELECT
+                s.status,
+                s.plan_key,
+                bp.features      AS plan_features,
+                COALESCE(
+                    json_agg(sa.addon_key) FILTER (WHERE sa.addon_key IS NOT NULL AND sa.is_active = true),
+                    '[]'::json
+                )                AS addon_keys
+            FROM subscriptions s
+            LEFT JOIN billing_plans bp
+                ON bp.key = s.plan_key
+            LEFT JOIN subscription_addons sa
+                ON sa.client_id = s.client_id
+            WHERE s.client_id = %s
+            GROUP BY s.status, s.plan_key, bp.features
+        """, (client_id,))
+        row = cur.fetchone()
+    finally:
+        conn.close()
+
+    if not row:
         return False
 
-    status = sub["status"]
+    status = row["status"]
+
+    # Plan included features
+    plan_features = row["plan_features"] or {}
+    if isinstance(plan_features, str):
+        plan_features = json.loads(plan_features)
+    included = set(plan_features.get("included", []))
+
+    # Addon keys
+    addon_keys = row["addon_keys"] or []
+    if isinstance(addon_keys, str):
+        addon_keys = json.loads(addon_keys)
+    included.update(addon_keys)
+
+    _feature_cache[client_id] = {
+        "data": {"status": status, "features": included},
+        "expires": now + _CACHE_TTL,
+    }
 
     if status == "expired":
         return False
-
     if status in ("demo", "trial"):
-        return True     # trial mein sab on
-
+        return True
     if status in ("active", "grace"):
-        plan = get_plan(sub["plan_key"])
-        if plan:
-            included = plan["features"].get("included", [])
-            if feature_key in included:
-                return True
-
-        # Addon check
-        addons = get_subscription_addons(client_id)
-        addon_keys = [a["addon_key"] for a in addons if a["is_active"]]
-        return feature_key in addon_keys
+        return feature_key in included
 
     return False
 

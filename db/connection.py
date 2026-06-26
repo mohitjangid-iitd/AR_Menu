@@ -18,7 +18,7 @@ if not DATABASE_URL:
 
 _pool = psycopg2.pool.ThreadedConnectionPool(
     minconn=1,
-    maxconn=50,
+    maxconn=100,
     dsn=DATABASE_URL,
     connect_timeout=10
 )
