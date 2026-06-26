@@ -35,7 +35,7 @@ from templates_env import templates
 async def lifespan(app):
     init_all()
     init_billing_tables()
-    sync_plan_features()    # Naye features DB mein add karo (safe, idempotent)
+    sync_plan_features()
     init_blog_tables()
     purge_expired_trash()
     for r in get_all_restaurants_info():
