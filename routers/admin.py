@@ -850,16 +850,16 @@ async def api_empty_trash(client_id: str = None, auth_token: Optional[str] = Coo
 # EXPORT
 # ════════════════════════════════
 
-@router.get("/api/admin/export/db-zip")
-async def api_export_db_zip(auth_token: Optional[str] = Cookie(None)):
+@router.get("/api/admin/export/db-sql")
+async def api_export_db_sql(auth_token: Optional[str] = Cookie(None)):
     require_auth(auth_token, ["admin"])
-    zip_path = export_full_db_zip()
-    filename = f"zentable_db_{datetime.now(IST).strftime('%d-%m-%Y_%H-%M')}_IST.zip"
+    sql_path = export_full_db_sql()
+    filename = f"zentable_db_{datetime.now(IST).strftime('%d-%m-%Y_%H-%M')}_IST.sql"
     return FileResponse(
-        zip_path,
-        media_type="application/zip",
+        sql_path, 
+        media_type="application/sql", 
         filename=filename,
-        background=BackgroundTask(os.remove, zip_path),
+        background=BackgroundTask(os.remove, sql_path)
     )
 
 

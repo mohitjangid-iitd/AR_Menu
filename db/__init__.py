@@ -32,7 +32,7 @@ from db.core_db import (
     get_top_selling_items, get_lowest_selling_items,
     get_revenue_summary,
     # export
-    export_full_db_zip,
+    export_full_db_sql,
 )
 
 # Staff
