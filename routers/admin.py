@@ -85,7 +85,7 @@ from db import (
     save_restaurant_json, delete_restaurant_full, get_restaurant_branches,
     create_staff, get_staff_list, update_staff_password,
     toggle_staff_active, delete_staff,
-    create_admin, export_full_db_zip,
+    create_admin, export_full_db_sql,
     trash_get_all, trash_get_one,
     trash_remove, trash_remove_by_client, trash_remove_all, trash_remove_expired,
     get_all_site_settings, set_site_setting,
