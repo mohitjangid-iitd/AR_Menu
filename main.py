@@ -9,6 +9,9 @@ from db import get_db, init_all, seed_tables, get_all_restaurants_info, get_all_
 from r2 import USE_R2, r2_public_url, IS_PROD
 from helpers import get_client_data, is_restaurant_active, has_feature
 from trash_utils import purge_expired_trash
+from rate_limit import limiter, rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
 
 from routers.menu import router as menu_router
 from routers.tables import router as tables_router
@@ -70,6 +73,11 @@ async def lifespan(app):
     yield
 
 app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None, lifespan=lifespan)
+
+# ── Rate limiting ──
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
+app.add_middleware(SlowAPIMiddleware)
 
 # ════════════════════════════════
 # STATIC FILES

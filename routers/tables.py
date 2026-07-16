@@ -14,7 +14,7 @@ GET  /api/tables/{client_id}/calls
 """
 
 from typing import Optional
-from fastapi import APIRouter, HTTPException, Cookie, Query
+from fastapi import APIRouter, HTTPException, Cookie, Query, Request
 
 from db import (
     activate_table, activate_all_tables,
@@ -25,12 +25,14 @@ from db import (
 )
 from helpers import get_client_data, require_auth, require_feature
 from auth import create_table_token
+from rate_limit import limiter
 
 router = APIRouter()
 
 
 @router.post("/api/table/{client_id}/{table_no}/activate")
-async def api_activate_table(client_id: str, table_no: int,
+@limiter.limit("20/minute")
+async def api_activate_table(request: Request, client_id: str, table_no: int,
                               auth_token: Optional[str] = Cookie(None)):
     user = require_auth(auth_token, ["waiter", "counter", "owner", "admin"], client_id)
     if not get_client_data(client_id):
@@ -43,7 +45,8 @@ async def api_activate_table(client_id: str, table_no: int,
 
 
 @router.post("/api/table/{client_id}/activate-all")
-async def api_activate_all_tables(client_id: str,
+@limiter.limit("10/minute")
+async def api_activate_all_tables(request: Request, client_id: str,
                                    branch_id: Optional[str] = Query(None),
                                    auth_token: Optional[str] = Cookie(None)):
     user = require_auth(auth_token, ["counter", "owner", "admin"], client_id)
@@ -55,7 +58,8 @@ async def api_activate_all_tables(client_id: str,
 
 
 @router.post("/api/table/{client_id}/{table_no}/close")
-async def api_close_table(client_id: str, table_no: int,
+@limiter.limit("20/minute")
+async def api_close_table(request: Request, client_id: str, table_no: int,
                            auth_token: Optional[str] = Cookie(None)):
     user = require_auth(auth_token, ["waiter", "counter", "owner", "admin"], client_id)
     branch_id = user["branch_id"] or "__default__"
@@ -64,7 +68,8 @@ async def api_close_table(client_id: str, table_no: int,
 
 
 @router.post("/api/table/{client_id}/close-all")
-async def api_close_all_tables(client_id: str,
+@limiter.limit("10/minute")
+async def api_close_all_tables(request: Request, client_id: str,
                                 branch_id: Optional[str] = Query(None),
                                 auth_token: Optional[str] = Cookie(None)):
     user = require_auth(auth_token, ["counter", "owner", "admin"], client_id)
@@ -74,7 +79,8 @@ async def api_close_all_tables(client_id: str,
 
 
 @router.get("/api/tables/{client_id}/summary")
-async def api_table_summary(client_id: str,
+@limiter.limit("60/minute")
+async def api_table_summary(request: Request, client_id: str,
                              branch_id: Optional[str] = Query(None),
                              auth_token: Optional[str] = Cookie(None)):
     user = require_auth(auth_token, ["waiter", "counter", "owner", "admin"], client_id)
@@ -113,7 +119,8 @@ async def api_get_qr_sig(client_id: str, table_no: int,
 # ════════════════════════════════
 
 @router.post("/api/table/{client_id}/{table_no}/call")
-async def api_call_waiter(client_id: str, table_no: int,
+@limiter.limit("3/minute")
+async def api_call_waiter(request: Request, client_id: str, table_no: int,
                           branch_id: Optional[str] = "__default__"):
     """Customer ne bell dabaya — no auth (public endpoint)
     branch_id query param se aa sakta hai — default __default__

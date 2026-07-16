@@ -20,6 +20,7 @@ from templates_env import templates
 from auth import login_staff, login_admin, login_owner, get_redirect_url
 from helpers import get_client_data, get_current_user, is_restaurant_active
 from r2 import IS_PROD
+from rate_limit import limiter
 from site_config import SITE_CONFIG
 from db import create_signup_request
 
@@ -154,7 +155,8 @@ async def api_signup(body: SignupRequest):
     }
 
 @router.post("/api/auth/login")
-async def api_login(body: LoginRequest, response: Response):
+@limiter.limit("5/minute")
+async def api_login(request: Request, body: LoginRequest, response: Response):
     if body.client_id:
         # ── Staff login (waiter / kitchen / counter) ──
         if not is_restaurant_active(body.client_id):
@@ -192,6 +194,7 @@ async def api_login(body: LoginRequest, response: Response):
 
 
 @router.post("/api/auth/logout")
+@limiter.limit("20/minute")
 async def api_logout(request: Request, response: Response):
     response.delete_cookie("auth_token", domain=".zentable.in" if IS_PROD else None)
     response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"

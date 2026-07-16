@@ -7,18 +7,20 @@ GET /glb/{token}           — signed token se GLB file serve
 
 import copy
 import os
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.responses import JSONResponse, FileResponse, RedirectResponse
 
 from helpers import get_client_data
 from glb_token import GLB_TOKEN_EXPIRY, create_glb_token, verify_glb_token
 from r2 import USE_R2, r2_presign
+from rate_limit import limiter
 
 router = APIRouter()
 
 
 @router.get("/api/menu/{client_id}")
-async def get_menu_api(client_id: str, branch_id: str = Query(default="__default__")):
+@limiter.limit("60/minute")
+async def get_menu_api(request: Request, client_id: str, branch_id: str = Query(default="__default__")):
     data = get_client_data(client_id, branch_id=branch_id)
     if not data:
         raise HTTPException(status_code=404, detail="Data not found")
@@ -35,7 +37,8 @@ async def get_menu_api(client_id: str, branch_id: str = Query(default="__default
 
 
 @router.get("/glb/{token}")
-async def serve_glb(token: str):
+@limiter.limit("30/minute")
+async def serve_glb(request: Request, token: str):
     """Signed token se GLB file serve karo"""
     result = verify_glb_token(token)
     if not result:

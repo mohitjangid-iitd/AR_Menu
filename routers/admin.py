@@ -101,6 +101,7 @@ from r2 import (
 )
 from trash_utils import IST, TRASH_DIR, move_to_trash, restore_from_trash, delete_from_trash
 from site_config import SITE_CONFIG
+from rate_limit import limiter
 
 router = APIRouter()
 
@@ -315,7 +316,8 @@ async def api_save_restaurant_json(client_id: str, body: SaveRestaurantRequest,
 
 
 @router.post("/api/admin/restaurant")
-async def api_create_restaurant(body: CreateRestaurantRequest,
+@limiter.limit("10/minute")
+async def api_create_restaurant(request: Request, body: CreateRestaurantRequest,
                                  auth_token: Optional[str] = Cookie(None)):
     require_auth(auth_token, ["admin"])
     client_id = body.client_id.lower().replace(" ", "_").strip()
@@ -371,7 +373,8 @@ async def api_create_restaurant(body: CreateRestaurantRequest,
 
 
 @router.delete("/api/admin/restaurant/{client_id}")
-async def api_delete_restaurant(client_id: str, auth_token: Optional[str] = Cookie(None)):
+@limiter.limit("10/minute")
+async def api_delete_restaurant(request: Request, client_id: str, auth_token: Optional[str] = Cookie(None)):
     require_auth(auth_token, ["admin"])
     if not get_client_data(client_id):
         raise HTTPException(status_code=404, detail="Restaurant not found")
@@ -539,7 +542,8 @@ async def api_admin_get_staff(client_id: str, auth_token: Optional[str] = Cookie
 
 
 @router.post("/api/admin/staff/{client_id}")
-async def api_admin_create_staff(client_id: str, body: CreateStaffRequest,
+@limiter.limit("15/minute")
+async def api_admin_create_staff(request: Request, client_id: str, body: CreateStaffRequest,
                                   auth_token: Optional[str] = Cookie(None)):
     require_auth(auth_token, ["admin"])
     valid_roles = {"owner", "kitchen", "waiter", "counter", "blogger", "delivery"}
@@ -614,7 +618,9 @@ async def api_admin_change_own_password(body: UpdatePasswordRequest,
 # ════════════════════════════════
 
 @router.post("/api/admin/upload/{client_id}")
+@limiter.limit("10/minute")
 async def api_upload_asset(
+    request: Request,
     client_id: str,
     file: UploadFile = File(...),
     type: str = Form(...),
@@ -786,7 +792,8 @@ async def api_get_trash(client_id: str = None, auth_token: Optional[str] = Cooki
 
 
 @router.post("/api/admin/trash/{trash_name}/restore")
-async def api_restore_trash(trash_name: str, auth_token: Optional[str] = Cookie(None)):
+@limiter.limit("10/minute")
+async def api_restore_trash(request: Request, trash_name: str, auth_token: Optional[str] = Cookie(None)):
     require_auth(auth_token, ["admin"])
     ok = restore_from_trash(trash_name)
     if not ok:
@@ -813,7 +820,8 @@ async def api_download_trash(trash_name: str, auth_token: Optional[str] = Cookie
 
 
 @router.delete("/api/admin/trash/{trash_name}")
-async def api_delete_trash(trash_name: str, auth_token: Optional[str] = Cookie(None)):
+@limiter.limit("10/minute")
+async def api_delete_trash(request: Request, trash_name: str, auth_token: Optional[str] = Cookie(None)):
     require_auth(auth_token, ["admin"])
     ok = delete_from_trash(trash_name)
     if not ok:
@@ -851,7 +859,8 @@ async def api_empty_trash(client_id: str = None, auth_token: Optional[str] = Coo
 # ════════════════════════════════
 
 @router.get("/api/admin/export/db-sql")
-async def api_export_db_sql(auth_token: Optional[str] = Cookie(None)):
+@limiter.limit("2/minute")
+async def api_export_db_sql(request: Request, auth_token: Optional[str] = Cookie(None)):
     require_auth(auth_token, ["admin"])
     sql_path = export_full_db_sql()
     filename = f"zentable_db_{datetime.now(IST).strftime('%d-%m-%Y_%H-%M')}_IST.sql"
