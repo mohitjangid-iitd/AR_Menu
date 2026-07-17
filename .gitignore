@@ -37,6 +37,5 @@ data/*.db-shm
 static/assets/*
 private/
 
-# Python version
-.python-version
-
+# Coverage
+.coverage

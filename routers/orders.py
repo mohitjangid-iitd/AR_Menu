@@ -24,6 +24,7 @@ from db import (
     get_table_status,
 )
 from helpers import get_client_data, require_feature, require_auth
+from rate_limit import limiter
 
 router = APIRouter()
 
@@ -67,6 +68,7 @@ class MarkPaidRequest(BaseModel):
 # ── Routes ──
 
 @router.post("/api/order/{client_id}/{table_no}")
+@limiter.limit("10/minute")
 async def api_place_order(request: Request, client_id: str, table_no: int, body: PlaceOrderRequest,
                           branch_id: Optional[str] = "__default__"):
     """
@@ -152,7 +154,8 @@ async def api_filter_orders(client_id: str, status: str = None,
     )
 
 @router.patch("/api/order/{order_id}/status")
-async def api_update_order_status(order_id: int, body: UpdateStatusRequest,
+@limiter.limit("30/minute")
+async def api_update_order_status(request: Request, order_id: int, body: UpdateStatusRequest,
                                    auth_token: Optional[str] = Cookie(None)):
     require_auth(auth_token, ["kitchen", "waiter", "counter", "delivery", "owner", "admin"])
     valid = {"pending", "preparing", "ready", "done", "cancelled", "out_for_delivery", "delivered", "failed"}
@@ -231,13 +234,15 @@ async def api_edit_order_items(order_id: int, body: EditOrderItemsRequest,
 
 
 @router.post("/api/bill/{bill_id}/pay")
-async def api_mark_paid(bill_id: int, body: MarkPaidRequest):
+@limiter.limit("10/minute")
+async def api_mark_paid(request: Request, bill_id: int, body: MarkPaidRequest):
     mark_bill_paid(bill_id, body.payment_mode)
     return {"message": f"Bill {bill_id} marked as paid via {body.payment_mode}"}
 
 
 @router.post("/api/bill/{client_id}/{table_no}")
-async def api_generate_bill(client_id: str, table_no: int, body: BillRequest,
+@limiter.limit("10/minute")
+async def api_generate_bill(request: Request, client_id: str, table_no: int, body: BillRequest,
                              auth_token: Optional[str] = Cookie(None)):
     user = require_auth(auth_token, ["waiter", "counter", "owner", "admin"], client_id)
     branch_id = user["branch_id"] or "__default__"
