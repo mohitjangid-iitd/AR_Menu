@@ -12,31 +12,29 @@ from db.connection import get_db
 # ════════════════════════════════
 
 def init_customer_tables():
-    conn = get_db()
-    cur  = conn._conn.cursor()
-    cur.execute("""
-        CREATE TABLE IF NOT EXISTS customers (
-            id         SERIAL PRIMARY KEY,
-            google_id  TEXT UNIQUE NOT NULL,
-            name       TEXT,
-            email      TEXT,
-            phone      TEXT,
-            address    TEXT,
-            created_at TIMESTAMP DEFAULT NOW()
-        )
-    """)
-    cur.execute("""
-        DO $$
-        BEGIN
-            IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
-                           WHERE table_name='customers' AND column_name='picture') THEN
-                ALTER TABLE customers ADD COLUMN picture TEXT;
-            END IF;
-        END $$;
-    """)
-    conn.commit()
-    conn.close()
-    print("[OK] Customer tables initialized")
+    with get_db() as conn:
+        cur  = conn._conn.cursor()
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS customers (
+                id         SERIAL PRIMARY KEY,
+                google_id  TEXT UNIQUE NOT NULL,
+                name       TEXT,
+                email      TEXT,
+                phone      TEXT,
+                address    TEXT,
+                created_at TIMESTAMP DEFAULT NOW()
+            )
+        """)
+        cur.execute("""
+            DO $$
+            BEGIN
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                               WHERE table_name='customers' AND column_name='picture') THEN
+                    ALTER TABLE customers ADD COLUMN picture TEXT;
+                END IF;
+            END $$;
+        """)
+        print("[OK] Customer tables initialized")
 
 
 # ════════════════════════════════
@@ -45,61 +43,55 @@ def init_customer_tables():
 
 def get_or_create_customer(google_id: str, name: str, email: str, picture: str = "") -> dict:
     """Google login ke baad customer upsert karo — pehli baar create, baad mein fetch"""
-    conn = get_db()
-    conn.execute("""
-        INSERT INTO customers (google_id, name, email, picture)
-        VALUES (%s, %s, %s, %s)
-        ON CONFLICT (google_id) DO UPDATE
-            SET name    = EXCLUDED.name,
-                email   = EXCLUDED.email,
-                picture = EXCLUDED.picture
-    """, (google_id, name, email, picture))
-    conn.commit()
-    cur = conn.execute("SELECT * FROM customers WHERE google_id=%s", (google_id,))
-    row = cur.fetchone()
-    conn.close()
-    return dict(row)
+    with get_db() as conn:
+        conn.execute("""
+            INSERT INTO customers (google_id, name, email, picture)
+            VALUES (%s, %s, %s, %s)
+            ON CONFLICT (google_id) DO UPDATE
+                SET name    = EXCLUDED.name,
+                    email   = EXCLUDED.email,
+                    picture = EXCLUDED.picture
+        """, (google_id, name, email, picture))
+        cur = conn.execute("SELECT * FROM customers WHERE google_id=%s", (google_id,))
+        row = cur.fetchone()
+        return dict(row)
 
 
 def get_customer_by_id(customer_id: int) -> dict | None:
     """Customer by internal ID"""
-    conn = get_db()
-    cur  = conn.execute("SELECT * FROM customers WHERE id=%s", (customer_id,))
-    row  = cur.fetchone()
-    conn.close()
-    return dict(row) if row else None
+    with get_db() as conn:
+        cur  = conn.execute("SELECT * FROM customers WHERE id=%s", (customer_id,))
+        row  = cur.fetchone()
+        return dict(row) if row else None
 
 
 def update_customer_profile(customer_id: int, phone: str, address: str):
     """First time profile complete karo — phone + address save"""
-    conn = get_db()
-    conn.execute("""
-        UPDATE customers SET phone=%s, address=%s WHERE id=%s
-    """, (phone, address, customer_id))
-    conn.commit()
-    conn.close()
+    with get_db() as conn:
+        conn.execute("""
+            UPDATE customers SET phone=%s, address=%s WHERE id=%s
+        """, (phone, address, customer_id))
 
 
 def get_customer_orders(customer_id: int) -> list:
     """Customer ki saari delivery orders — history page ke liye"""
-    conn = get_db()
-    cur  = conn.execute("""
-        SELECT o.*,
-               r_default.config->'restaurant'->>'name' as restaurant_name,
-               r_branch.config->'restaurant'->>'name'  as branch_name
-        FROM orders o
-        LEFT JOIN restaurants r_default
-            ON r_default.client_id = o.client_id AND r_default.branch_id = '__default__'
-        LEFT JOIN restaurants r_branch
-            ON r_branch.client_id  = o.client_id AND r_branch.branch_id  = o.branch_id
-        WHERE o.customer_id=%s AND o.source='delivery'
-        ORDER BY o.created_at DESC
-    """, (customer_id,))
-    rows   = cur.fetchall()
-    conn.close()
-    result = []
-    for r in rows:
-        row          = dict(r)
-        row["items"] = json.loads(row["items"]) if isinstance(row["items"], str) else row["items"]
-        result.append(row)
-    return result
+    with get_db() as conn:
+        cur  = conn.execute("""
+            SELECT o.*,
+                   r_default.config->'restaurant'->>'name' as restaurant_name,
+                   r_branch.config->'restaurant'->>'name'  as branch_name
+            FROM orders o
+            LEFT JOIN restaurants r_default
+                ON r_default.client_id = o.client_id AND r_default.branch_id = '__default__'
+            LEFT JOIN restaurants r_branch
+                ON r_branch.client_id  = o.client_id AND r_branch.branch_id  = o.branch_id
+            WHERE o.customer_id=%s AND o.source='delivery'
+            ORDER BY o.created_at DESC
+        """, (customer_id,))
+        rows   = cur.fetchall()
+        result = []
+        for r in rows:
+            row          = dict(r)
+            row["items"] = json.loads(row["items"]) if isinstance(row["items"], str) else row["items"]
+            result.append(row)
+        return result
