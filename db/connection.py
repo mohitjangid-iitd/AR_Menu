@@ -28,15 +28,27 @@ class _PgConn:
     """
     Thin wrapper around a psycopg2 connection from the pool.
     Mimics the sqlite3 connection API used throughout the codebase:
-      conn.execute(sql, params)  → returns cursor
-      conn.commit()
-      conn.close()              → returns connection to pool (does NOT close it)
+      with get_db() as conn:
+          conn.execute(sql, params)
     Row dicts are returned via RealDictCursor, just like sqlite3.Row.
     """
 
     def __init__(self):
         self._conn = _pool.getconn()
         self._conn.autocommit = False
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        try:
+            if exc_type:
+                self._conn.rollback()
+            else:
+                self._conn.commit()
+        finally:
+            _pool.putconn(self._conn)
+        return False  # Do not suppress exceptions
 
     def execute(self, sql, params=()):
         try:
@@ -51,6 +63,7 @@ class _PgConn:
                 pass
             # fresh connection lo
             self._conn = _pool.getconn()
+            self._conn.autocommit = False
             cur = self._conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
             cur.execute(sql, params)
             return cur
@@ -60,6 +73,7 @@ class _PgConn:
 
     def close(self):
         _pool.putconn(self._conn)
+
 
 
 def get_db() -> _PgConn:
